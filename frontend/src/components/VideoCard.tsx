@@ -187,13 +187,10 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
       </div>
       <div className="p-3">
         {showMatchInfo && matchInfo && (
-          <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
             {matchInfo}
           </p>
         )}
-        <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-1">
-          {title}
-        </h3>
         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <span className="truncate">{channel_title}</span>
           {view_count && (

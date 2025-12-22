@@ -15,48 +15,40 @@ class YouTubeQuotaExhaustedError(Exception):
 
 class YouTubeService:
     # Official channel uploads playlists (replace UC prefix with UU for uploads)
+    # Using official US broadcasters for each league
     OFFICIAL_CHANNELS = {
-        "Premier League": "UUG5qGWdu8nIRZqJ_GgDwQ-w",      # Premier League Official
-        "La Liga": "UUTv-XvfzLX3i4IGWAm4sbmA",            # LaLiga Official
-        "Bundesliga": "UUGYYNGmyhZ_kwBF_lqqXdAQ",          # Bundesliga Official
-        "Serie A": "UUBJeMCIeLQos7wacox4hmLQ",             # Serie A Official
-        "Ligue 1": "UUFosdztTqHjV_3YcR9gGSKg",             # Ligue 1 Official
-        "Champions League": "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo (official UCL)
-        "Europa League": "UUET00YnetHT7tOpu12v8jxg",       # CBS Sports Golazo
+        "Premier League": "UUqZQlzSHbVJrwrn5XvzrzcA",      # NBC Sports (US broadcaster)
+        "La Liga": "UU6c1z7bA__85CIWZ_jpCK-Q",             # ESPN FC (US broadcaster)
+        "Bundesliga": "UU6c1z7bA__85CIWZ_jpCK-Q",          # ESPN FC (US broadcaster)
+        "Serie A": "UUET00YnetHT7tOpu12v8jxg",             # CBS Sports Golazo / Paramount+ (US broadcaster)
+        "Ligue 1": "UU6c1z7bA__85CIWZ_jpCK-Q",             # ESPN FC (US broadcaster)
+        "Champions League": "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo / Paramount+
+        "Europa League": "UUET00YnetHT7tOpu12v8jxg",       # CBS Sports Golazo / Paramount+
         "Copa del Rey": "UU6c1z7bA__85CIWZ_jpCK-Q",        # ESPN FC
-        "Coupe de France": "UU0YatYmg5JRYzXJPxIdRd8g",     # Coupe de France Official
-        "DFB-Pokal": "UUGYYNGmyhZ_kwBF_lqqXdAQ",           # Bundesliga Official (covers DFB Pokal)
-        "Coppa Italia": "UUET00YnetHT7tOpu12v8jxg",        # CBS Sports Golazo
-        "FA Cup": "UUG5qGWdu8nIRZqJ_GgDwQ-w",              # Premier League Official
+        "Coupe de France": "UU6c1z7bA__85CIWZ_jpCK-Q",     # ESPN FC (US broadcaster)
+        "DFB-Pokal": "UU6c1z7bA__85CIWZ_jpCK-Q",           # ESPN FC (US broadcaster)
+        "Coppa Italia": "UUET00YnetHT7tOpu12v8jxg",        # CBS Sports Golazo / Paramount+
+        "FA Cup": "UUqZQlzSHbVJrwrn5XvzrzcA",              # NBC Sports
         "League Cup": "UUET00YnetHT7tOpu12v8jxg",          # CBS Sports Golazo
     }
     
     # Additional channels to search for each league (fallback) - ordered by priority
     # Using uploads playlist IDs (UU prefix instead of UC)
+    # Only US broadcasters allowed
     FALLBACK_CHANNELS = {
         "Premier League": [
-            "UUG5qGWdu8nIRZqJ_GgDwQ-w",   # Premier League Official
-            "UUqZQlzSHbVJrwrn5XvzrzcA",   # NBC Sports (NBCSN)
-            "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports Football
-            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo
+            "UUqZQlzSHbVJrwrn5XvzrzcA",   # NBC Sports
         ],
         "La Liga": [
-            "UUTv-XvfzLX3i4IGWAm4sbmA",   # LaLiga Official
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo
         ],
         "Bundesliga": [
-            "UUGYYNGmyhZ_kwBF_lqqXdAQ",   # Bundesliga Official
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
         "Serie A": [
-            "UUBJeMCIeLQos7wacox4hmLQ",   # Serie A Official
-            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo
-            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
+            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo / Paramount+
         ],
         "Ligue 1": [
-            "UUFosdztTqHjV_3YcR9gGSKg",   # Ligue 1 Official
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
         "Champions League": [
@@ -82,20 +74,15 @@ class YouTubeService:
         ],
         "Copa del Rey": [
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-            "UUTv-XvfzLX3i4IGWAm4sbmA",   # LaLiga Official
         ],
         "Coppa Italia": [
-            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo
-            "UUBJeMCIeLQos7wacox4hmLQ",   # Serie A Official
-            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
+            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo / Paramount+
         ],
         "DFB-Pokal": [
-            "UUGYYNGmyhZ_kwBF_lqqXdAQ",   # Bundesliga Official
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
         "Coupe de France": [
-            "UU0YatYmg5JRYzXJPxIdRd8g",   # Coupe de France Official
-            "UUFosdztTqHjV_3YcR9gGSKg",   # Ligue 1 Official
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
     }
     
@@ -172,21 +159,26 @@ class YouTubeService:
     def _search_channel_playlist(self, playlist_id: str, home_team: str, away_team: str, max_results: int = 10) -> Optional[List[Dict]]:
         """Search recent videos from official channel uploads playlist (3 units per page)
         Returns None if all API keys are exhausted, empty list if no matches found.
+        
+        STRICT MATCHING: Only returns videos where BOTH team names clearly appear.
+        Better to return empty than wrong highlights.
         """
         try:
             videos = []
+            
+            # Normalize team names for matching
             home_lower = home_team.lower()
             away_lower = away_team.lower()
             
-            # Create smart partial matches - avoid common words like "City", "United", "FC"
-            common_words = {'city', 'united', 'fc', 'club', 'real', 'athletic', 'sporting'}
-            home_parts = [part.lower() for part in home_team.split() if len(part) > 2 and part.lower() not in common_words]
-            away_parts = [part.lower() for part in away_team.split() if len(part) > 2 and part.lower() not in common_words]
+            # Get the most unique/identifying part of each team name
+            # e.g., "Atlético Madrid" -> "atlético" (not "madrid" which is ambiguous)
+            home_unique = self._get_unique_team_identifier(home_team)
+            away_unique = self._get_unique_team_identifier(away_team)
             
-            # Paginate through playlist to find older videos (up to 150 videos = 3 pages)
+            # Paginate through playlist to find videos (up to 150 videos = 3 pages)
             next_page_token = None
             pages_fetched = 0
-            max_pages = 3  # Fetch up to 150 videos
+            max_pages = 3
             
             while pages_fetched < max_pages:
                 request_params = {
@@ -199,35 +191,39 @@ class YouTubeService:
                     
                 response = self.youtube.playlistItems().list(**request_params).execute()
                 pages_fetched += 1
-            
-            for item in response.get('items', []):
-                snippet = item['snippet']
-                title_lower = snippet['title'].lower()
-                desc_lower = snippet.get('description', '').lower()
                 
-                # Check if team is mentioned - prefer full name, fallback to unique parts
-                home_match = home_lower in title_lower or (home_parts and any(part in title_lower for part in home_parts))
-                away_match = away_lower in title_lower or (away_parts and any(part in title_lower for part in away_parts))
+                # Process items from this page
+                for item in response.get('items', []):
+                    snippet = item['snippet']
+                    title_lower = snippet['title'].lower()
+                    
+                    # STRICT MATCHING: Check if BOTH teams are clearly mentioned
+                    home_match = self._team_matches_title(home_team, home_unique, title_lower)
+                    away_match = self._team_matches_title(away_team, away_unique, title_lower)
+                    
+                    # Check for highlight-related keywords
+                    highlight_keywords = ['highlight', 'extended', 'recap', 'goals', 'summary', 'resumen']
+                    has_highlight = any(kw in title_lower for kw in highlight_keywords)
+                    
+                    # REQUIRE BOTH teams AND highlight keyword
+                    if home_match and away_match and has_highlight:
+                        videos.append({
+                            'video_id': snippet['resourceId']['videoId'],
+                            'title': snippet['title'],
+                            'description': snippet.get('description', ''),
+                            'thumbnail_url': snippet['thumbnails'].get('high', {}).get('url') or
+                                            snippet['thumbnails'].get('medium', {}).get('url'),
+                            'channel_title': snippet['channelTitle'],
+                            'published_at': snippet['publishedAt'],
+                            'view_count': None,
+                            'duration': None,
+                            'is_official': True
+                        })
                 
-                # Check for highlight-related keywords
-                highlight_keywords = ['highlight', 'extended', 'recap', 'goals', 'summary', 'resumen']
-                has_highlight = any(kw in title_lower for kw in highlight_keywords)
-                
-                # For accurate matching: REQUIRE BOTH teams to be mentioned
-                # This prevents "Man City vs Brentford" matching when looking for "Real Madrid vs Man City"
-                if home_match and away_match and has_highlight:
-                    videos.append({
-                        'video_id': snippet['resourceId']['videoId'],
-                        'title': snippet['title'],
-                        'description': snippet.get('description', ''),
-                        'thumbnail_url': snippet['thumbnails'].get('high', {}).get('url') or
-                                        snippet['thumbnails'].get('medium', {}).get('url'),
-                        'channel_title': snippet['channelTitle'],
-                        'published_at': snippet['publishedAt'],
-                        'view_count': None,
-                        'duration': None,
-                        'is_official': True
-                    })
+                # Get next page token, break if no more pages
+                next_page_token = response.get('nextPageToken')
+                if not next_page_token:
+                    break
             
             return videos[:max_results]
         except HttpError as e:
@@ -240,6 +236,83 @@ class YouTubeService:
                 return None
             print(f"Playlist API error: {e}")
             return []
+    
+    def _normalize_text(self, text: str) -> str:
+        """Normalize text by removing accents and converting to lowercase.
+        This helps match 'Atlético' with 'Atletico', etc.
+        """
+        import unicodedata
+        # Normalize unicode characters and remove accents
+        normalized = unicodedata.normalize('NFD', text.lower())
+        # Remove combining diacritical marks (accents)
+        return ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+    
+    def _get_unique_team_identifier(self, team_name: str) -> str:
+        """Extract the most unique/identifying part of a team name.
+        
+        Examples:
+        - 'Atlético Madrid' -> 'atletico madrid' (normalized, not 'madrid' which matches Real Madrid)
+        - 'Real Madrid' -> 'real madrid' (need both words)
+        - 'Manchester United' -> 'manchester' (unique enough)
+        - 'Manchester City' -> 'manchester city' (need both to distinguish from United)
+        - 'Aston Villa' -> 'aston villa' (need both words)
+        - 'West Ham' -> 'west ham' (need both words)
+        """
+        team_normalized = self._normalize_text(team_name)
+        
+        # Teams that need FULL name to be unique (ambiguous otherwise)
+        # Use normalized (no accents) versions
+        full_name_required = [
+            'real madrid', 'atletico madrid',
+            'manchester united', 'manchester city',
+            'aston villa', 'west ham',
+            'inter milan', 'ac milan',
+            'real sociedad', 'real betis',
+            'sporting', 'athletic',
+        ]
+        
+        for full_name in full_name_required:
+            if full_name in team_normalized:
+                return full_name
+        
+        # For other teams, the first distinctive word is usually enough
+        # But remove common suffixes
+        common_suffixes = {'fc', 'cf', 'sc', 'afc', 'united', 'city'}
+        parts = [p for p in team_normalized.split() if p not in common_suffixes and len(p) > 2]
+        
+        if parts:
+            return parts[0]
+        
+        return team_normalized
+    
+    def _team_matches_title(self, team_full: str, team_unique: str, title: str) -> bool:
+        """Check if a team is mentioned in the video title.
+        
+        Uses strict matching to avoid false positives like:
+        - 'Atlético Madrid' matching 'Real Madrid' (both have 'Madrid')
+        - 'Aston Villa' matching 'West Ham vs Aston Villa' for wrong match
+        
+        Normalizes accents so 'Atlético' matches 'Atletico'.
+        """
+        title_normalized = self._normalize_text(title)
+        team_normalized = self._normalize_text(team_full)
+        
+        # Best case: full team name appears (normalized)
+        if team_normalized in title_normalized:
+            return True
+        
+        # Check for unique identifier (stricter matching)
+        # team_unique is already normalized from _get_unique_team_identifier
+        if team_unique and team_unique in title_normalized:
+            # Extra validation: make sure it's not a partial match of different team
+            # e.g., "atletico" should not match if title has "Athletic Club"
+            if team_unique == 'atletico madrid':
+                # Must not be "Athletic Club" or "Athletic Bilbao" without atletico
+                if 'athletic' in title_normalized and 'atletico' not in title_normalized:
+                    return False
+            return True
+        
+        return False
     
     def _search_youtube(self, query: str, max_results: int = 5) -> List[Dict]:
         published_after = (datetime.utcnow() - timedelta(days=7)).isoformat() + 'Z'

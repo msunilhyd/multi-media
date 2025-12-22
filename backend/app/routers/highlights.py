@@ -140,6 +140,110 @@ def fetch_all_highlights(
     )
 
 
+@router.post("/refresh/{match_id}", response_model=schemas.YouTubeSearchResponse)
+def refresh_match_highlights(
+    match_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete existing highlights for a match and fetch fresh ones from YouTube"""
+    match = db.query(models.Match).options(
+        joinedload(models.Match.league)
+    ).filter(models.Match.id == match_id).first()
+    
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    
+    # Delete existing highlights for this match
+    db.query(models.Highlight).filter(models.Highlight.match_id == match_id).delete()
+    db.commit()
+    
+    # Fetch fresh highlights
+    youtube_service = get_youtube_service()
+    try:
+        videos = youtube_service.search_highlights(
+            match.home_team, 
+            match.away_team,
+            league=match.league.name if match.league else None
+        )
+    except YouTubeQuotaExhaustedError as e:
+        return schemas.YouTubeSearchResponse(
+            success=False,
+            message=str(e),
+            highlights_found=0
+        )
+    
+    total_highlights = 0
+    for video in videos:
+        highlight = models.Highlight(
+            match_id=match.id,
+            youtube_video_id=video['video_id'],
+            title=video['title'],
+            description=video.get('description'),
+            thumbnail_url=video.get('thumbnail_url'),
+            channel_title=video.get('channel_title'),
+            view_count=video.get('view_count'),
+            duration=video.get('duration'),
+            is_official=video.get('is_official', False)
+        )
+        db.add(highlight)
+        total_highlights += 1
+    
+    db.commit()
+    
+    return schemas.YouTubeSearchResponse(
+        success=True,
+        message=f"Refreshed highlights for {match.home_team} vs {match.away_team}",
+        highlights_found=total_highlights
+    )
+
+
+@router.put("/{highlight_id}", response_model=schemas.Highlight)
+def update_highlight(
+    highlight_id: int,
+    youtube_video_id: str = Query(..., description="New YouTube video ID"),
+    db: Session = Depends(get_db)
+):
+    """Manually update a highlight with a correct YouTube video ID"""
+    highlight = db.query(models.Highlight).filter(models.Highlight.id == highlight_id).first()
+    
+    if not highlight:
+        raise HTTPException(status_code=404, detail="Highlight not found")
+    
+    # Fetch video details from YouTube
+    youtube_service = get_youtube_service()
+    try:
+        # Get video details
+        response = youtube_service.youtube.videos().list(
+            part='snippet,statistics,contentDetails',
+            id=youtube_video_id
+        ).execute()
+        
+        if not response.get('items'):
+            raise HTTPException(status_code=404, detail="YouTube video not found")
+        
+        video = response['items'][0]
+        snippet = video['snippet']
+        stats = video.get('statistics', {})
+        content = video.get('contentDetails', {})
+        
+        # Update highlight
+        highlight.youtube_video_id = youtube_video_id
+        highlight.title = snippet['title']
+        highlight.description = snippet.get('description', '')
+        highlight.thumbnail_url = snippet['thumbnails'].get('high', {}).get('url')
+        highlight.channel_title = snippet['channelTitle']
+        highlight.view_count = int(stats.get('viewCount', 0)) if stats.get('viewCount') else None
+        highlight.duration = youtube_service._parse_duration(content.get('duration', ''))
+        
+        db.commit()
+        db.refresh(highlight)
+        
+        return highlight
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching video details: {str(e)}")
+
+
 @router.get("/{league_slug}", response_model=schemas.HighlightsGroupedByLeague)
 def get_highlights_by_league(
     league_slug: str,
