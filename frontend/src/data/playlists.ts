@@ -18,6 +18,15 @@ export interface Playlist {
 
 export const defaultPlaylist: Song[] = [
   {
+    id: 1342,
+    title: "Sahiba",
+    language: "HINDI",
+    year: "2024",
+    composer: "Jasleen Royal",
+    videoId: "Npd94-t1Lv0",
+    movie: "Rockstar",
+  },
+  {
     id: 1341,
     title: "Chinnaware",
     language: "TAMIL",
