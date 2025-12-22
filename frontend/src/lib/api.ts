@@ -144,7 +144,8 @@ export async function fetchHighlightsGrouped(date?: string): Promise<HighlightsG
 }
 
 export async function fetchAllHighlightsGrouped(): Promise<HighlightsGroupedByLeague[]> {
-  const response = await fetch(`${API_BASE_URL}/api/highlights/all`);
+  // Use local API proxy to avoid CORS issues
+  const response = await fetch(`/api/highlights`);
   if (!response.ok) throw new Error('Failed to fetch highlights');
   return response.json();
 }
@@ -172,7 +173,8 @@ export async function fetchHighlightsForMatch(matchId: number): Promise<YouTubeS
 }
 
 export async function fetchAvailableDates(): Promise<string[]> {
-  const response = await fetch(`${API_BASE_URL}/api/matches/dates`);
+  // Use local API proxy to avoid CORS issues
+  const response = await fetch(`/api/dates`);
   if (!response.ok) throw new Error('Failed to fetch dates');
   return response.json();
 }
@@ -184,7 +186,8 @@ export async function scrapeMatchesRangePast(days: number = 7): Promise<ScrapeRe
 }
 
 export async function fetchHighlightsGroupedByDate(date: string): Promise<HighlightsGroupedByLeague[]> {
-  const response = await fetch(`${API_BASE_URL}/api/highlights/all?match_date=${date}`);
+  // Use local API proxy to avoid CORS issues
+  const response = await fetch(`/api/highlights?match_date=${date}`);
   if (!response.ok) throw new Error('Failed to fetch highlights');
   return response.json();
 }
