@@ -1,19 +1,20 @@
-# Football Highlights Dashboard
+# Multi-Media Platform
 
-A full-stack web application that scrapes BBC Sport for football fixtures and displays YouTube highlights grouped by league.
+A full-stack multi-platform application for football highlights and music playlists. Available on web and mobile (iOS/Android).
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, TailwindCSS
+- **Web Frontend**: Next.js 14, React, TailwindCSS
+- **Mobile App**: React Native, Expo, TypeScript
 - **Backend**: FastAPI (Python), SQLAlchemy
 - **Database**: SQLite (dev) / PostgreSQL (prod)
-- **APIs**: YouTube Data API v3
+- **APIs**: YouTube Data API v3, Football API
 
 ## Project Structure
 
 ```
-football-highlights-app/
-├── backend/
+multi-media/
+├── backend/              # FastAPI backend server
 │   ├── app/
 │   │   ├── main.py           # FastAPI app entry point
 │   │   ├── models.py         # SQLAlchemy models
@@ -23,18 +24,23 @@ football-highlights-app/
 │   │   ├── scraper.py        # BBC Sport scraper
 │   │   ├── youtube_service.py # YouTube API service
 │   │   └── routers/          # API routes
-│   │       ├── matches.py
-│   │       ├── leagues.py
-│   │       └── highlights.py
 │   ├── requirements.txt
-│   └── .env
-├── frontend/
+│   └── DEPLOY.md
+├── frontend/             # Next.js web application
 │   ├── src/
 │   │   ├── app/              # Next.js app router pages
 │   │   ├── components/       # React components
 │   │   └── lib/              # API utilities
 │   ├── package.json
-│   └── next.config.js
+│   └── DEPLOY.md
+├── mobile/               # React Native + Expo mobile app
+│   ├── src/
+│   │   ├── navigation/       # App navigation
+│   │   ├── screens/          # Mobile screens
+│   │   └── services/         # API client
+│   ├── App.tsx
+│   ├── package.json
+│   └── README.md
 └── README.md
 ```
 
@@ -72,11 +78,77 @@ npm install
 npm run dev
 ```
 
-### 3. Access the Application
+### 3. Setup Mobile App (Optional)
 
-- **Frontend**: http://localhost:3000
+```bash
+cd mobile
+
+# Install dependencies
+npm install
+
+# Copy environment file
+cp .env.example .env
+# Edit .env and set EXPO_PUBLIC_API_URL to your backend URL
+
+# Start Expo dev server
+npm start
+```
+
+### 4. Access the Applications
+
+- **Web Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/api/docs
+- **API Docs**: http://localhost:8000/docs
+- **Mobile**: Scan QR code with Expo Go app
+
+## 📱 Mobile App Features
+
+The mobile app includes all advanced features:
+
+- ✅ **Full-Screen Video Player** - YouTube integration with play/pause controls
+- ✅ **Authentication** - Login/signup with JWT token management
+- ✅ **Real-Time Search** - Search highlights by title or competition
+- ✅ **Favorites** - Bookmark highlights and playlists with local storage
+- ✅ **Push Notifications** - Get notified about new highlights
+- ✅ **Offline Caching** - Browse content without internet (1-hour cache)
+
+### Mobile Screens
+
+1. **Highlights** - Browse football highlights with search
+2. **Playlists** - Access music playlists
+3. **Favorites** - View all saved favorites
+4. **Profile** - Manage settings and notifications
+
+For detailed mobile documentation, see [`mobile/README.md`](./mobile/README.md)
+
+## 🚀 Deployment
+
+### Frontend (Vercel)
+```bash
+cd frontend
+vercel deploy --prod
+```
+
+### Backend (Railway)
+See [`backend/DEPLOY.md`](./backend/DEPLOY.md) for Railway deployment instructions.
+
+### Mobile (Expo EAS)
+```bash
+cd mobile
+eas build --platform android
+eas build --platform ios
+```
+
+## 📚 Documentation
+
+- **Frontend**: [`frontend/DEPLOY.md`](./frontend/DEPLOY.md)
+- **Backend**: [`backend/DEPLOY.md`](./backend/DEPLOY.md)
+- **Mobile**: [`mobile/README.md`](./mobile/README.md)
+
+## 🤝 Contributing
+
+Contributions are welcome! This is a learning project.
+
+## 📄 License
 
 MIT License - For educational purposes only.
-# multi-media

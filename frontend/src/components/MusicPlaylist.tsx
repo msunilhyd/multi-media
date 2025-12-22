@@ -187,13 +187,25 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
             modestbranding: 1,
             start: firstSong.startSeconds || 0,
             end: firstSong.endSeconds,
+            vq: 'hd1080', // Request 1080p quality by default
           },
           events: {
             onReady: (event) => {
               if (!isActive) return;
               setIsReady(true);
               try {
-                event.target.setPlaybackQuality('hd1080');
+                // Set to highest available quality
+                const qualities = event.target.getAvailableQualityLevels();
+                if (qualities && qualities.length > 0) {
+                  // Quality levels: highres, hd1080, hd720, large, medium, small
+                  if (qualities.includes('hd1080')) {
+                    event.target.setPlaybackQuality('hd1080');
+                  } else if (qualities.includes('highres')) {
+                    event.target.setPlaybackQuality('highres');
+                  } else {
+                    event.target.setPlaybackQuality(qualities[0]);
+                  }
+                }
               } catch (e) {
                 // Quality setting not supported
               }
