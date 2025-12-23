@@ -91,6 +91,7 @@ export default function FootballPage() {
     };
     
     initializePage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Format date for display (e.g., "Dec 20" or "Today")
@@ -202,10 +203,10 @@ export default function FootballPage() {
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
               No Highlights Available
             </h2>
-            <p{selectedDate 
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              {selectedDate 
                 ? `No highlights found for ${formatDateLabel(selectedDate)}. Try selecting a different date.`
                 : 'Try selecting a date using the date picker above.'}
-              Try selecting a different date using the date picker above.
             </p>
           </div>
         ) : (
