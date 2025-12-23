@@ -1,7 +1,8 @@
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { Audio } from 'expo-av';
 import { Song } from '../types/playlist';
+import { AppState } from 'react-native';
 
-const API_URL = 'http://192.168.0.18:8000'; // Your local backend - update if different
+const API_URL = 'https://multi-media-production.up.railway.app';
 
 interface AudioStreamResponse {
   audioUrl: string;
@@ -16,22 +17,64 @@ export class AudioService {
   private sound: Audio.Sound | null = null;
   private currentSong: Song | null = null;
   private isPlaying: boolean = false;
-  private onStatusUpdate?: (status: AVPlaybackStatus) => void;
 
   constructor() {
-    // Configure audio session for background playback
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      staysActiveInBackground: true, // ✅ Key for background playback
-      interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-      interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
-      playThroughEarpieceAndroid: false
-    });
+    // Setup background audio with simplified configuration
+    this.setupBackgroundAudio();
+    
+    // Listen for app state changes
+    AppState.addEventListener('change', this.handleAppStateChange.bind(this));
+    console.log('🎵 AudioService initialized with background support');
   }
 
-  // Get audio stream URL from your backend
+  private async setupBackgroundAudio() {
+    try {
+      // Use basic audio configuration that works for iOS background playback
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        staysActiveInBackground: true,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false
+      });
+      console.log('🎵 Background audio configured successfully');
+    } catch (error) {
+      console.error('Failed to setup background audio:', error);
+    }
+  }
+
+  private handleAppStateChange = async (nextAppState: string) => {
+    if (nextAppState === 'background' || nextAppState === 'inactive') {
+      console.log('🎵 App backgrounded - ensuring audio continues');
+      // Re-apply audio mode to ensure background playback
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false
+        });
+        
+        // Ensure sound is still playing
+        if (this.sound && this.isPlaying) {
+          const status = await this.sound.getStatusAsync();
+          if (status.isLoaded && !status.isPlaying) {
+            console.log('🎵 Resuming playback in background');
+            await this.sound.playAsync();
+          } else {
+            console.log('🎵 Audio is already playing in background');
+          }
+        }
+      } catch (error) {
+        console.error('Error maintaining background audio:', error);
+      }
+    } else if (nextAppState === 'active') {
+      console.log('🎵 App returned to foreground');
+    }
+  };
+
+  // Get audio stream URL from backend
   private async getAudioStreamUrl(song: Song): Promise<AudioStreamResponse> {
     const params = new URLSearchParams();
     if (song.startSeconds) params.append('start_seconds', song.startSeconds.toString());
@@ -39,46 +82,86 @@ export class AudioService {
     
     const url = `${API_URL}/api/audio/stream/${song.videoId}${params.toString() ? '?' + params.toString() : ''}`;
     
+    console.log(`🔄 Fetching audio stream from: ${url}`);
+    
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to get audio stream: ${response.statusText}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log(`✅ Got audio data:`, JSON.stringify(data, null, 2));
+    
+    // Validate the response
+    if (!data.audioUrl && !data.audio_url) {
+      throw new Error('No audio URL in response');
+    }
+    
+    // Return with proper field name
+    return {
+      audioUrl: data.audioUrl || data.audio_url,
+      title: data.title,
+      duration: data.duration,
+      videoId: data.videoId || data.video_id,
+      startSeconds: data.startSeconds || data.start_seconds,
+      endSeconds: data.endSeconds || data.end_seconds
+    };
   }
 
-  // Play a song with true background support
+  // Play a song
   async playSong(song: Song): Promise<void> {
     try {
-      // Stop current song if playing
+      console.log(`🎵 Loading audio for: ${song.title}`);
+      
+      // Get audio stream URL from backend
+      const audioData = await this.getAudioStreamUrl(song);
+      
+      console.log(`📡 Audio URL received: ${audioData.audioUrl}`);
+      
+      // Validate audioUrl before using it
+      if (!audioData.audioUrl || typeof audioData.audioUrl !== 'string') {
+        throw new Error(`Invalid audio URL: ${audioData.audioUrl}`);
+      }
+      
+      // Stop current sound
       if (this.sound) {
         await this.sound.unloadAsync();
         this.sound = null;
       }
 
-      console.log(`Loading audio for: ${song.title}`);
-      
-      // Get audio stream URL from backend
-      const audioData = await this.getAudioStreamUrl(song);
-      
-      console.log(`Got audio URL, loading...`);
-
-      // Create and load sound
+      // Create and load new sound with proper settings
       const { sound } = await Audio.Sound.createAsync(
         { uri: audioData.audioUrl },
         { 
-          shouldPlay: true,
-          positionMillis: song.startSeconds ? song.startSeconds * 1000 : 0,
-          isLooping: false,
+          shouldPlay: false, 
+          volume: 1.0,
+          progressUpdateIntervalMillis: 1000,
+          // Don't stop when app goes to background
+          androidImplementation: 'MediaPlayer'
         },
-        this.onPlaybackStatusUpdate.bind(this)
+        null,
+        true  // Enable downloading for offline capability
       );
 
       this.sound = sound;
+
+      // Configure to continue playing in background
+      await this.sound.setStatusAsync({
+        shouldPlay: true,
+        progressUpdateIntervalMillis: 1000
+      });
+
+      // Start playback from specified position if provided
+      if (song.startSeconds) {
+        await this.sound.setPositionAsync(song.startSeconds * 1000);
+      }
+      
+      await this.sound.playAsync();
+      
       this.currentSong = song;
       this.isPlaying = true;
-      
-      console.log(`✅ Now playing: ${song.title} (Background enabled)`);
+
+      console.log('✅ Audio playing with background support');
 
     } catch (error) {
       console.error('Error playing song:', error);
@@ -116,22 +199,6 @@ export class AudioService {
     }
   }
 
-  // Set up status listener
-  setOnStatusUpdate(callback: (status: AVPlaybackStatus) => void) {
-    this.onStatusUpdate = callback;
-  }
-
-  private onPlaybackStatusUpdate(status: AVPlaybackStatus) {
-    if (this.onStatusUpdate) {
-      this.onStatusUpdate(status);
-    }
-    
-    if (status.isLoaded) {
-      this.isPlaying = status.isPlaying;
-    }
-  }
-
-  // Getters
   getCurrentSong(): Song | null {
     return this.currentSong;
   }

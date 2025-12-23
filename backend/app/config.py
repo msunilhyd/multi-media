@@ -6,7 +6,7 @@ from typing import List, Dict, Set
 class Settings(BaseSettings):
     app_name: str = "Football Highlights API"
     database_url: str = "sqlite:///./football_highlights.db"
-    youtube_api_keys: str  # Comma-separated list
+    youtube_api_keys: str = ""  # Comma-separated list - optional for audio streaming
     football_api_key: str = ""  # football-data.org API key
     
     # Email notification settings (for missing highlights alerts)

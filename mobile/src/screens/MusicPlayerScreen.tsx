@@ -8,7 +8,6 @@ import {
   Alert,
   ActivityIndicator
 } from 'react-native';
-import { AVPlaybackStatus } from 'expo-av';
 import { audioService } from '../services/audioService';
 import { Song, samplePlaylist } from '../types/playlist';
 
@@ -20,15 +19,7 @@ export default function MusicPlayerScreen() {
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    // Listen to playback status
-    audioService.setOnStatusUpdate((status: AVPlaybackStatus) => {
-      if (status.isLoaded) {
-        setIsPlaying(status.isPlaying);
-        setPosition(status.positionMillis || 0);
-        setDuration(status.durationMillis || 0);
-      }
-    });
-
+    // No need for status updates with expo-audio - it handles background automatically
     return () => {
       audioService.unloadAsync();
     };
@@ -36,12 +27,14 @@ export default function MusicPlayerScreen() {
 
   const playSong = async (song: Song) => {
     try {
+      console.log(`🎵 Playing song: ${song.title} (${song.videoId})`);
       setIsLoading(true);
       await audioService.playSong(song);
       setCurrentSong(song);
+      console.log(`✅ Song loaded successfully`);
     } catch (error) {
-      Alert.alert('Error', `Failed to play ${song.title}`);
-      console.error('Play error:', error);
+      console.error('❌ Play error:', error);
+      Alert.alert('Error', `Failed to play ${song.title}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -51,8 +44,10 @@ export default function MusicPlayerScreen() {
     try {
       if (isPlaying) {
         await audioService.pauseAsync();
+        setIsPlaying(false);
       } else {
         await audioService.resumeAsync();
+        setIsPlaying(true);
       }
     } catch (error) {
       console.error('Toggle play/pause error:', error);

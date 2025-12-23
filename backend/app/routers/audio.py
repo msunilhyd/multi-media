@@ -13,10 +13,10 @@ router = APIRouter(prefix="/api/audio", tags=["audio"])
 class AudioExtractor:
     def __init__(self):
         self.ydl_opts = {
-            'format': 'bestaudio/best',
+            'format': 'bestaudio[ext=m4a]/bestaudio[acodec=aac]/bestaudio',  # Prefer iOS-compatible formats
             'noplaylist': True,
             'extractaudio': True,
-            'audioformat': 'mp3',
+            'audioformat': 'm4a',  # Prefer m4a format for iOS compatibility
             'quiet': True,
             'no_warnings': True,
         }
@@ -42,11 +42,22 @@ class AudioExtractor:
             if 'url' in result:
                 audio_url = result['url']
             elif 'formats' in result:
-                # Find best audio format
+                # Find best iOS-compatible audio format
                 audio_formats = [f for f in result['formats'] if f.get('acodec') != 'none']
                 if audio_formats:
-                    # Sort by quality and get the best one
-                    best_audio = max(audio_formats, key=lambda x: x.get('abr', 0) or 0)
+                    # Prioritize iOS-compatible formats (m4a, aac, mp4)
+                    ios_compatible = [f for f in audio_formats if 
+                                    f.get('ext') in ['m4a', 'mp4'] or 
+                                    f.get('acodec', '').startswith('aac') or
+                                    'mp4' in f.get('url', '')]
+                    
+                    if ios_compatible:
+                        # Sort iOS-compatible formats by quality
+                        best_audio = max(ios_compatible, key=lambda x: x.get('abr', 0) or 0)
+                    else:
+                        # Fallback to best available audio format
+                        best_audio = max(audio_formats, key=lambda x: x.get('abr', 0) or 0)
+                    
                     audio_url = best_audio.get('url')
             
             if not audio_url:

@@ -1,19 +1,37 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Music Player",
+    "slug": "music-player",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "musicplayer",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio",
+          "audio",
+          "audio",
+          "audio"
+        ],
+        "AVAudioSessionCategory": "AVAudioSessionCategoryPlayback",
+        "AVAudioSessionCategoryOptions": [
+          "AVAudioSessionCategoryOptionMixWithOthers",
+          "AVAudioSessionCategoryOptionMixWithOthers",
+          "AVAudioSessionCategoryOptionMixWithOthers",
+          "AVAudioSessionCategoryOptionMixWithOthers"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.anonymous.music-player"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +43,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "454fd06b-a3de-441b-b594-028675095b45"
+      }
     }
   }
 }
