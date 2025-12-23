@@ -65,13 +65,32 @@ export default function FootballPage() {
   };
 
   useEffect(() => {
-    // Default to yesterday's date
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-    setSelectedDate(yesterdayStr);
-    loadHighlights(yesterdayStr);
-    loadAvailableDates();
+    const initializePage = async () => {
+      // Load available dates first
+      const dates = await fetchAvailableDates();
+      setAvailableDates(dates);
+      
+      // Try to find the most recent date with highlights
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      
+      let defaultDate = yesterday; // fallback to yesterday
+      
+      // Check if today has highlights
+      if (dates.includes(today)) {
+        defaultDate = today;
+      } else if (dates.includes(yesterday)) {
+        defaultDate = yesterday;
+      } else if (dates.length > 0) {
+        // Use the most recent date with highlights
+        defaultDate = dates[0];
+      }
+      
+      setSelectedDate(defaultDate);
+      await loadHighlights(defaultDate);
+    };
+    
+    initializePage();
   }, []);
 
   // Format date for display (e.g., "Dec 20" or "Today")
