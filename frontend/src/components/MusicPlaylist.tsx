@@ -309,13 +309,29 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
     };
   }, [isMounted, playlist.songs, handleNext]);
 
+  const handlePrevious = useCallback(() => {
+    const prevIndex = currentIndex === 0 ? playlist.songs.length - 1 : currentIndex - 1;
+    const prevSong = playlist.songs[prevIndex];
+    
+    setCurrentIndex(prevIndex);
+    setCurrentSong(prevSong);
+    
+    if (playerRef.current && prevSong && typeof playerRef.current.loadVideoById === 'function') {
+      playerRef.current.loadVideoById({
+        videoId: prevSong.videoId,
+        startSeconds: prevSong.startSeconds,
+        endSeconds: prevSong.endSeconds,
+      });
+    }
+  }, [currentIndex, playlist.songs]);
+
   // Media Session API for better mobile experience and background control
   useEffect(() => {
     if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && currentSong) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: currentSong.title,
-        artist: currentSong.singer,
-        album: playlist.name,
+        artist: currentSong.composer,
+        album: playlist.title,
         artwork: [
           { src: 'https://via.placeholder.com/96x96/8B5CF6/FFFFFF?text=♪', sizes: '96x96', type: 'image/png' },
           { src: 'https://via.placeholder.com/128x128/8B5CF6/FFFFFF?text=♪', sizes: '128x128', type: 'image/png' },
@@ -342,7 +358,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
       // Update playback state
       navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
     }
-  }, [currentSong, playlist.name, isPlaying, handlePrevious, handleNext]);
+  }, [currentSong, playlist.title, isPlaying, handlePrevious, handleNext]);
 
   // Wake Lock API to keep screen active during playback
   useEffect(() => {
@@ -370,22 +386,6 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
       }
     };
   }, [isPlaying]);
-
-  const handlePrevious = () => {
-    const prevIndex = currentIndex === 0 ? playlist.songs.length - 1 : currentIndex - 1;
-    const prevSong = playlist.songs[prevIndex];
-    
-    setCurrentIndex(prevIndex);
-    setCurrentSong(prevSong);
-    
-    if (playerRef.current && prevSong && typeof playerRef.current.loadVideoById === 'function') {
-      playerRef.current.loadVideoById({
-        videoId: prevSong.videoId,
-        startSeconds: prevSong.startSeconds,
-        endSeconds: prevSong.endSeconds,
-      });
-    }
-  };
 
   const handlePlayPause = () => {
     if (!playerRef.current || !isReady) return;
