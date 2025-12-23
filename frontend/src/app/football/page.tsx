@@ -35,6 +35,8 @@ export default function FootballPage() {
     try {
       setIsLoading(true);
       setError(null);
+      // Clear previous data immediately to avoid showing stale data
+      setHighlightsData([]);
       const data = date 
         ? await fetchHighlightsGroupedByDate(date)
         : await fetchAllHighlightsGrouped();
@@ -52,6 +54,7 @@ export default function FootballPage() {
   };
 
   const handleDateSelect = async (date: string) => {
+    console.log('Date selected:', date);
     setSelectedDate(date);
     await loadHighlights(date);
   };
@@ -180,7 +183,9 @@ export default function FootballPage() {
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
               No Highlights Available
             </h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
+            <p{selectedDate 
+                ? `No highlights found for ${formatDateLabel(selectedDate)}. Try selecting a different date.`
+                : 'Try selecting a date using the date picker above.'}
               Try selecting a different date using the date picker above.
             </p>
           </div>
