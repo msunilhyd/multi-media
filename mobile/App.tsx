@@ -6,6 +6,7 @@ import { AppState } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import MusicPlayerScreen from './src/screens/MusicPlayerScreen';
+import MusicPlaylistScreen from './src/screens/MusicPlaylistScreen';
 import FootballScreen from './src/screens/FootballScreen';
 
 const Tab = createBottomTabNavigator();
@@ -56,6 +57,8 @@ export default function App() {
 
             if (route.name === 'Football') {
               iconName = focused ? 'football' : 'football-outline';
+            } else if (route.name === 'Background Audio') {
+              iconName = focused ? 'headset' : 'headset-outline';
             } else {
               iconName = focused ? 'musical-notes' : 'musical-notes-outline';
             }
@@ -82,10 +85,17 @@ export default function App() {
           }}
         />
         <Tab.Screen 
-          name="Music" 
+          name="Playlist" 
+          component={MusicPlaylistScreen}
+          options={{
+            title: 'Music Playlist'
+          }}
+        />
+        <Tab.Screen 
+          name="Background Audio" 
           component={MusicPlayerScreen}
           options={{
-            title: 'Music Player'
+            title: 'Background Audio'
           }}
         />
       </Tab.Navigator>

@@ -29,6 +29,7 @@ export default function FootballScreen() {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [videoModalVisible, setVideoModalVisible] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
 
   const loadAvailableDates = async () => {
     try {
@@ -125,7 +126,8 @@ export default function FootballScreen() {
 
   const playVideo = (videoId: string) => {
     setSelectedVideoId(videoId);
-    setPlaying(true);
+    setPlaying(false);
+    setPlayerReady(false);
     setVideoModalVisible(true);
   };
 
@@ -133,6 +135,7 @@ export default function FootballScreen() {
     setPlaying(false);
     setVideoModalVisible(false);
     setSelectedVideoId(null);
+    setPlayerReady(false);
   };
 
   const toggleLeague = (leagueId: number) => {
@@ -306,8 +309,8 @@ export default function FootballScreen() {
                 onChangeState={(state) => {
                   console.log('Player state:', state);
                 }}
-                webViewStyle={{ 
-                  opacity: 0.99,
+                onReady={() => {
+                  console.log('Player ready');
                 }}
                 webViewProps={{
                   allowsInlineMediaPlayback: true,
