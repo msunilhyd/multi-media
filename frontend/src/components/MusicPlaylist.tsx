@@ -39,6 +39,20 @@ declare global {
   }
 }
 
+// Wake Lock API types
+interface WakeLockSentinel extends EventTarget {
+  readonly released: boolean;
+  readonly type: 'screen';
+  release(): Promise<void>;
+  addEventListener(type: 'release', listener: (ev: Event) => void): void;
+}
+
+interface Navigator {
+  wakeLock?: {
+    request(type: 'screen'): Promise<WakeLockSentinel>;
+  };
+}
+
 interface YTPlayer {
   playVideo: () => void;
   pauseVideo: () => void;
@@ -64,6 +78,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const playlistRef = useRef<HTMLDivElement>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   
   // Helper to normalize language (trim whitespace and uppercase)
   const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
@@ -293,6 +308,68 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
       }
     };
   }, [isMounted, playlist.songs, handleNext]);
+
+  // Media Session API for better mobile experience and background control
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && currentSong) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentSong.title,
+        artist: currentSong.singer,
+        album: playlist.name,
+        artwork: [
+          { src: 'https://via.placeholder.com/96x96/8B5CF6/FFFFFF?text=♪', sizes: '96x96', type: 'image/png' },
+          { src: 'https://via.placeholder.com/128x128/8B5CF6/FFFFFF?text=♪', sizes: '128x128', type: 'image/png' },
+          { src: 'https://via.placeholder.com/192x192/8B5CF6/FFFFFF?text=♪', sizes: '192x192', type: 'image/png' },
+          { src: 'https://via.placeholder.com/256x256/8B5CF6/FFFFFF?text=♪', sizes: '256x256', type: 'image/png' },
+        ]
+      });
+
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (playerRef.current) {
+          playerRef.current.playVideo();
+        }
+      });
+      
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (playerRef.current) {
+          playerRef.current.pauseVideo();
+        }
+      });
+      
+      navigator.mediaSession.setActionHandler('previoustrack', handlePrevious);
+      navigator.mediaSession.setActionHandler('nexttrack', handleNext);
+
+      // Update playback state
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    }
+  }, [currentSong, playlist.name, isPlaying, handlePrevious, handleNext]);
+
+  // Wake Lock API to keep screen active during playback
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      if (isPlaying && 'wakeLock' in navigator) {
+        try {
+          wakeLockRef.current = await navigator.wakeLock!.request('screen');
+          console.log('Wake lock active');
+        } catch (err) {
+          console.log('Wake lock request failed:', err);
+        }
+      } else if (wakeLockRef.current && !isPlaying) {
+        wakeLockRef.current.release();
+        wakeLockRef.current = null;
+        console.log('Wake lock released');
+      }
+    };
+
+    requestWakeLock();
+
+    return () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release();
+        wakeLockRef.current = null;
+      }
+    };
+  }, [isPlaying]);
 
   const handlePrevious = () => {
     const prevIndex = currentIndex === 0 ? playlist.songs.length - 1 : currentIndex - 1;
