@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .routers import leagues, matches, highlights
+from .routers import leagues, matches, highlights, admin
 from .config import get_settings
 from .scheduler import start_scheduler, shutdown_scheduler
 
@@ -42,6 +42,7 @@ app.add_middleware(
 app.include_router(leagues.router)
 app.include_router(matches.router)
 app.include_router(highlights.router)
+app.include_router(admin.router)
 
 
 @app.get("/")
