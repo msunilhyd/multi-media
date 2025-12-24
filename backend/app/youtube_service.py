@@ -29,7 +29,8 @@ class YouTubeService:
         "DFB-Pokal": "UU6c1z7bA__85CIWZ_jpCK-Q",           # ESPN FC (US broadcaster)
         "Coppa Italia": "UUET00YnetHT7tOpu12v8jxg",        # CBS Sports Golazo / Paramount+
         "FA Cup": "UUqZQlzSHbVJrwrn5XvzrzcA",              # NBC Sports
-        "League Cup": "UUET00YnetHT7tOpu12v8jxg",          # CBS Sports Golazo
+        "League Cup": "UUKy1dAqELo0zrOtPkf0eTMw",          # Sky Sports Football (UK broadcaster)
+        "EFL Cup": "UUKy1dAqELo0zrOtPkf0eTMw",             # Sky Sports Football
     }
     
     # Additional channels to search for each league (fallback) - ordered by priority
@@ -68,8 +69,13 @@ class YouTubeService:
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
         "League Cup": [
+            "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports Football (primary for EFL Cup)
             "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo
-            "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports Football
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
+        ],
+        "EFL Cup": [
+            "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports Football (primary for EFL Cup)
+            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
         "Copa del Rey": [
@@ -103,10 +109,13 @@ class YouTubeService:
             return True
         return False
     
-    def search_highlights(self, home_team: str, away_team: str, league: str = None, max_results: int = 5) -> List[Dict]:
+    def search_highlights(self, home_team: str, away_team: str, league: str = None, match_date: date = None, max_results: int = 5) -> List[Dict]:
         """
         Search for match highlights using channel playlists only (no expensive search API).
         Each playlist call costs only 3 API units vs 100 units for search.
+        
+        Args:
+            match_date: Date of the match to search highlights for. Helps filter videos by publish date.
         """
         if not self.youtube:
             raise YouTubeQuotaExhaustedError("No YouTube API keys configured")
@@ -123,6 +132,7 @@ class YouTubeService:
                 primary_channel, 
                 home_team, 
                 away_team,
+                match_date=match_date,
                 max_results=10
             )
             # None means all API keys exhausted
@@ -144,6 +154,7 @@ class YouTubeService:
                     fallback_playlist, 
                     home_team, 
                     away_team,
+                    match_date=match_date,
                     max_results=10
                 )
                 if fallback_videos is None:
@@ -156,12 +167,15 @@ class YouTubeService:
         print(f"No highlights found for {home_team} vs {away_team} in {len(channels_tried)} channels")
         return []
     
-    def _search_channel_playlist(self, playlist_id: str, home_team: str, away_team: str, max_results: int = 10) -> Optional[List[Dict]]:
+    def _search_channel_playlist(self, playlist_id: str, home_team: str, away_team: str, match_date: date = None, max_results: int = 10) -> Optional[List[Dict]]:
         """Search recent videos from official channel uploads playlist (3 units per page)
         Returns None if all API keys are exhausted, empty list if no matches found.
         
         STRICT MATCHING: Only returns videos where BOTH team names clearly appear.
         Better to return empty than wrong highlights.
+        
+        Args:
+            match_date: Date of the match. Videos published 2 days before to 7 days after are considered.
         """
         try:
             videos = []
@@ -175,10 +189,30 @@ class YouTubeService:
             home_unique = self._get_unique_team_identifier(home_team)
             away_unique = self._get_unique_team_identifier(away_team)
             
-            # Paginate through playlist to find videos (up to 150 videos = 3 pages)
+            # Date filtering: highlights usually uploaded within 24-48 hours after match
+            # Allow 1 day before (for early uploads) to 2 days after for recent matches
+            # For older matches, extend window to catch late uploads
+            earliest_date = None
+            latest_date = None
+            if match_date:
+                days_since_match = (date.today() - match_date).days
+                
+                # For recent matches (yesterday/today): tight 1-2 day window
+                if days_since_match <= 2:
+                    earliest_date = match_date - timedelta(days=1)
+                    latest_date = match_date + timedelta(days=2)
+                # For older matches: wider 7-day window to catch late uploads
+                else:
+                    earliest_date = match_date - timedelta(days=2)
+                    latest_date = match_date + timedelta(days=7)
+                
+                print(f"[YouTube] Searching {playlist_id} for videos between {earliest_date} and {latest_date}")
+            
+            # Paginate through playlist to find videos (up to 250 videos = 5 pages with date filter)
+            # Increased from 3 to 5 pages since we're filtering by date
             next_page_token = None
             pages_fetched = 0
-            max_pages = 3
+            max_pages = 5 if match_date else 3
             
             while pages_fetched < max_pages:
                 request_params = {
@@ -196,6 +230,26 @@ class YouTubeService:
                 for item in response.get('items', []):
                     snippet = item['snippet']
                     title_lower = snippet['title'].lower()
+                    published_at = snippet.get('publishedAt', '')
+                    
+                    # DATE FILTERING: Skip videos outside the date range
+                    if match_date and published_at:
+                        try:
+                            # Parse ISO 8601 date (e.g., "2025-12-23T14:40:13Z")
+                            video_date = datetime.fromisoformat(published_at.replace('Z', '+00:00')).date()
+                            
+                            # Skip if video is too old or too new
+                            if video_date < earliest_date or video_date > latest_date:
+                                continue
+                            
+                            # Stop searching if we've gone too far back in time
+                            if video_date < earliest_date:
+                                print(f"[YouTube] Reached videos older than {earliest_date}, stopping search")
+                                next_page_token = None  # Stop pagination
+                                break
+                        except (ValueError, AttributeError) as e:
+                            # If date parsing fails, include the video (don't filter)
+                            pass
                     
                     # STRICT MATCHING: Check if BOTH teams are clearly mentioned
                     home_match = self._team_matches_title(home_team, home_unique, title_lower)
@@ -231,7 +285,7 @@ class YouTubeService:
             if 'quotaExceeded' in str(e):
                 if self._rotate_api_key():
                     # Retry with new key
-                    return self._search_channel_playlist(playlist_id, home_team, away_team, max_results)
+                    return self._search_channel_playlist(playlist_id, home_team, away_team, match_date, max_results)
                 # All keys exhausted
                 return None
             print(f"Playlist API error: {e}")

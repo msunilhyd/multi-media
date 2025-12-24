@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Dict, Any
+from datetime import date, timedelta
 from ..database import get_db
 from .. import models
+from ..scheduler import fetch_highlights_for_yesterday, fetch_highlights_for_today, refresh_today_scores
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -45,3 +47,140 @@ def fix_data_integrity(db: Session = Depends(get_db)) -> Dict[str, Any]:
     db.commit()
     
     return result
+
+
+@router.post("/fetch-highlights")
+async def manual_fetch_highlights(days_back: int = 1, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Manually trigger highlights fetching for recent matches"""
+    
+    result = {
+        "message": "Highlights fetch completed",
+        "matches_processed": 0,
+        "highlights_found": 0,
+        "errors": []
+    }
+    
+    try:
+        # Fetch highlights for yesterday (or specified days back)
+        await fetch_highlights_for_yesterday(send_notification=False)
+        
+        # Count highlights in database
+        highlights_count = db.query(models.Highlight).count()
+        result["highlights_found"] = highlights_count
+        
+        return result
+    except Exception as e:
+        result["errors"].append(str(e))
+        return result
+
+
+@router.post("/add-sample-highlights")
+def add_sample_highlights(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Add some sample highlights data for testing purposes"""
+    
+    result = {
+        "message": "Sample highlights added",
+        "highlights_created": 0,
+        "details": []
+    }
+    
+    # Get some recent matches without highlights
+    matches_without_highlights = db.query(models.Match).filter(
+        ~models.Match.highlights.any()
+    ).limit(5).all()
+    
+    sample_highlights_data = [
+        {
+            "title": "Best Goals & Highlights",
+            "youtube_video_id": "dQw4w9WgXcQ",  # Sample ID
+            "thumbnail_url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+            "channel_title": "Official Football Highlights",
+            "duration": "PT5M30S",
+            "view_count": 125000,
+            "description": "Match highlights featuring the best goals and moments"
+        },
+        {
+            "title": "Extended Highlights",
+            "youtube_video_id": "oHg5SJYRHA0",  # Sample ID
+            "thumbnail_url": "https://i.ytimg.com/vi/oHg5SJYRHA0/maxresdefault.jpg", 
+            "channel_title": "Sports Channel",
+            "duration": "PT8M45S",
+            "view_count": 87500,
+            "description": "Extended match highlights with key moments"
+        }
+    ]
+    
+    for i, match in enumerate(matches_without_highlights):
+        if i < len(sample_highlights_data):
+            highlight_data = sample_highlights_data[i]
+            
+            highlight = models.Highlight(
+                match_id=match.id,
+                youtube_video_id=highlight_data["youtube_video_id"],
+                title=f"{match.home_team} vs {match.away_team} - {highlight_data['title']}",
+                description=highlight_data["description"],
+                thumbnail_url=highlight_data["thumbnail_url"],
+                channel_title=highlight_data["channel_title"],
+                view_count=highlight_data["view_count"],
+                duration=highlight_data["duration"],
+                is_official=True
+            )
+            
+            db.add(highlight)
+            result["highlights_created"] += 1
+            result["details"].append({
+                "match": f"{match.home_team} vs {match.away_team}",
+                "date": str(match.match_date),
+                "highlight_title": highlight.title
+            })
+    
+    db.commit()
+    return result
+
+
+@router.post("/refresh-scores")
+async def manual_refresh_scores() -> Dict[str, Any]:
+    """Manually trigger the score/status refresh for today's matches"""
+    try:
+        await refresh_today_scores()
+        return {
+            "success": True,
+            "message": "Score refresh completed. Check server logs for details."
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error refreshing scores: {str(e)}"
+        }
+
+
+@router.post("/fetch-yesterday-highlights")
+async def manual_fetch_yesterday_highlights(send_notification: bool = False) -> Dict[str, Any]:
+    """Manually trigger highlights fetch for yesterday's finished matches"""
+    try:
+        await fetch_highlights_for_yesterday(send_notification=send_notification)
+        return {
+            "success": True,
+            "message": "Highlights fetch completed. Check server logs for details."
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error fetching highlights: {str(e)}"
+        }
+
+
+@router.post("/fetch-today-highlights")
+async def manual_fetch_today_highlights() -> Dict[str, Any]:
+    """Manually trigger highlights fetch for today's finished matches"""
+    try:
+        await fetch_highlights_for_today()
+        return {
+            "success": True,
+            "message": "Today's highlights fetch completed. Check server logs for details."
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error fetching today's highlights: {str(e)}"
+        }

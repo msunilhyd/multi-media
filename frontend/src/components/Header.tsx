@@ -2,14 +2,30 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Trophy, Music, Home, Sparkles, Disc3 } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
+import { useState } from 'react';
+import { Trophy, Music, Home, Sparkles, Disc3, User, LogOut, Settings } from 'lucide-react';
+import AuthModal from './AuthModal';
 
 export default function Header() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [showUserMenu, setShowUserMenu] = useState(false);
   
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
     return pathname?.startsWith(path);
+  };
+
+  const handleAuthClick = (mode: 'signin' | 'signup') => {
+    setAuthMode(mode);
+    setShowAuthModal(true);
+  };
+
+  const handleSwitchAuthMode = () => {
+    setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
   };
 
   return (
@@ -82,9 +98,77 @@ export default function Header() {
                 <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
               )}
             </Link>
+            
+            {/* User Authentication */}
+            <div className="flex items-center gap-4 pointer-events-auto">
+              {status === 'loading' ? (
+                <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+              ) : session ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-blue-500/50 rounded-xl transition-all"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="font-medium">{session.user?.name || session.user?.email}</span>
+                  </button>
+
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-2 w-48 z-50">
+                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{session.user?.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{session.user?.email}</p>
+                      </div>
+                      <Link
+                        href="/profile"
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <Settings className="w-4 h-4 inline mr-2" />
+                        Profile & Settings
+                      </Link>
+                      <button
+                        onClick={() => {
+                          signOut();
+                          setShowUserMenu(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <LogOut className="w-4 h-4 inline mr-2" />
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleAuthClick('signin')}
+                    className="px-4 py-2 text-gray-300 hover:text-white transition-colors font-medium"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => handleAuthClick('signup')}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all font-medium shadow-lg"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        mode={authMode}
+        onSwitchMode={handleSwitchAuthMode}
+      />
     </header>
   );
 }

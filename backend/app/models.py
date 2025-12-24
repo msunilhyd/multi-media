@@ -3,6 +3,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
 
+# Import user-related models
+from .models_users import User, UserFavoriteTeam, NotificationPreference, Notification
+
 
 class League(Base):
     __tablename__ = "leagues"
@@ -31,6 +34,8 @@ class Match(Base):
     match_time = Column(String(10), nullable=True)
     status = Column(String(50), default="scheduled")  # scheduled, live, finished
     espn_event_id = Column(String(100), nullable=True, unique=True)
+    highlight_fetch_attempts = Column(Integer, default=0)  # Track retry attempts
+    last_highlight_fetch_attempt = Column(DateTime, nullable=True)  # Last attempt timestamp
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     

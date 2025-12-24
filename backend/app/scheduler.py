@@ -304,6 +304,7 @@ async def fetch_highlights_for_yesterday(send_notification: bool = False):
                     home_team=match.home_team,
                     away_team=match.away_team,
                     league=league_name,
+                    match_date=match.match_date,
                     max_results=1
                 )
                 
@@ -360,6 +361,121 @@ async def fetch_highlights_for_yesterday(send_notification: bool = False):
         db.close()
 
 
+async def fetch_highlights_for_today():
+    """
+    Fetch YouTube highlights for today's finished matches with retry logic.
+    Runs every 1-2 hours throughout the day.
+    Tracks retry attempts and stops after 12 attempts (24 hours).
+    """
+    print(f"\n[Scheduler] Fetching highlights for today's finished matches at {datetime.now()}")
+    
+    db = SessionLocal()
+    today = date.today()
+    highlights_found = 0
+    matches_checked = 0
+    max_retry_attempts = 12  # Stop after 12 attempts (24 hours with 2-hour intervals)
+    
+    try:
+        # Get today's finished matches without highlights
+        todays_finished_matches = db.query(models.Match).filter(
+            models.Match.match_date == today,
+            models.Match.status == 'finished'
+        ).all()
+        
+        if not todays_finished_matches:
+            print(f"[Scheduler] No finished matches for today ({today})")
+            return
+        
+        # Filter to matches without highlights and under retry limit
+        matches_to_process = []
+        for match in todays_finished_matches:
+            # Skip if already has highlights
+            existing_highlight = db.query(models.Highlight).filter(
+                models.Highlight.match_id == match.id
+            ).first()
+            
+            if existing_highlight:
+                continue
+            
+            # Skip if exceeded retry attempts
+            if match.highlight_fetch_attempts >= max_retry_attempts:
+                continue
+            
+            # Check if it's a team of interest
+            league_name = match.league.name if match.league else "Unknown"
+            if match_has_team_of_interest(match.home_team, match.away_team, league_name):
+                matches_to_process.append(match)
+        
+        if not matches_to_process:
+            finished_count = len(todays_finished_matches)
+            with_highlights = sum(1 for m in todays_finished_matches if db.query(models.Highlight).filter(models.Highlight.match_id == m.id).first())
+            print(f"[Scheduler] All today's finished matches processed ({with_highlights}/{finished_count} have highlights)")
+            return
+        
+        print(f"[Scheduler] Processing {len(matches_to_process)} matches needing highlights")
+        
+        youtube_service = get_youtube_service()
+        
+        for match in matches_to_process:
+            matches_checked += 1
+            league_name = match.league.name if match.league else None
+            
+            # Update retry tracking
+            match.highlight_fetch_attempts += 1
+            match.last_highlight_fetch_attempt = datetime.now()
+            
+            try:
+                print(f"[Scheduler] Searching highlights (attempt {match.highlight_fetch_attempts}): {match.home_team} vs {match.away_team}")
+                
+                videos = youtube_service.search_highlights(
+                    home_team=match.home_team,
+                    away_team=match.away_team,
+                    league=league_name,
+                    match_date=match.match_date,
+                    max_results=1
+                )
+                
+                if videos:
+                    video = videos[0]
+                    # Store highlight in DB
+                    highlight = models.Highlight(
+                        match_id=match.id,
+                        youtube_video_id=video['video_id'],
+                        title=video['title'],
+                        description=video.get('description', ''),
+                        thumbnail_url=video.get('thumbnail_url', ''),
+                        channel_title=video.get('channel_title', ''),
+                        published_at=video.get('published_at'),
+                        view_count=video.get('view_count', 0),
+                        duration=video.get('duration', ''),
+                        is_official=video.get('is_official', False)
+                    )
+                    db.add(highlight)
+                    db.commit()
+                    highlights_found += 1
+                    print(f"[Scheduler] ✓ Found: {video['title'][:50]}...")
+                else:
+                    print(f"[Scheduler] ✗ No highlights yet (will retry later)")
+                    db.commit()  # Save the retry attempt count
+                    
+            except YouTubeQuotaExhaustedError:
+                print(f"[Scheduler] YouTube quota exhausted - stopping today's highlight fetch")
+                db.commit()  # Save retry attempts before exiting
+                break
+            except Exception as e:
+                print(f"[Scheduler] Error fetching highlight: {e}")
+                db.commit()  # Save retry attempt even on error
+                continue
+        
+        print(f"[Scheduler] Today's highlights fetch complete! Found {highlights_found}/{matches_checked} highlights\n")
+        
+    except Exception as e:
+        print(f"[Scheduler] Error in today's highlights fetch job: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 def start_scheduler():
     """Start the scheduler with configured jobs"""
     
@@ -402,6 +518,16 @@ def start_scheduler():
         kwargs={"send_notification": True}
     )
     
+    # Fetch highlights for today's finished matches every hour throughout the day
+    # Matches happen at various times globally, highlights typically uploaded within 1-3 hours after match ends
+    scheduler.add_job(
+        fetch_highlights_for_today,
+        CronTrigger(hour='12-23', minute=0),  # Every hour from 12 PM to 11 PM
+        id="fetch_today_highlights",
+        name="Today's Highlights Fetch",
+        replace_existing=True
+    )
+    
     # Also run immediately on startup to ensure data is fresh
     scheduler.add_job(
         prefetch_upcoming_matches,
@@ -415,7 +541,8 @@ def start_scheduler():
     print("[Scheduler] Started! Jobs scheduled:")
     print("  - Daily prefetch at 6:00 AM")
     print("  - Score status refresh every 2 hours")
-    print("  - Highlights fetch at 8 AM and 2 PM")
+    print("  - Highlights fetch at 8 AM and 2 PM (yesterday's matches)")
+    print("  - Today's highlights fetch every hour (12 PM - 11 PM)")
     print("  - Startup prefetch (running now)")
 
 

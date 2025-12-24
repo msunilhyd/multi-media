@@ -5,10 +5,13 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const matchDate = searchParams.get('match_date');
+  const teams = searchParams.get('teams');
   
-  const url = matchDate 
-    ? `${BACKEND_URL}/api/highlights/all?match_date=${matchDate}`
-    : `${BACKEND_URL}/api/highlights/all`;
+  const params = new URLSearchParams();
+  if (matchDate) params.append('match_date', matchDate);
+  if (teams) params.append('teams', teams);
+  
+  const url = `${BACKEND_URL}/api/highlights/all${params.toString() ? `?${params}` : ''}`;
   
   try {
     const response = await fetch(url, {

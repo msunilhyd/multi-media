@@ -17,7 +17,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import YoutubePlayer from 'react-native-youtube-iframe';
-import { fetchAllHighlightsGrouped, fetchAvailableDates, fetchHighlightsGroupedByDate, HighlightsGroupedByLeague, Match, Highlight } from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchAllHighlightsGrouped, fetchAvailableDates, fetchHighlightsGroupedByDate, fetchHighlightsGroupedWithTeamFilter, HighlightsGroupedByLeague, Match, Highlight } from '../services/api';
+import TeamSelector from '../components/TeamSelector';
 
 export default function FootballScreen() {
   const [highlightsData, setHighlightsData] = useState<HighlightsGroupedByLeague[]>([]);
@@ -26,13 +28,30 @@ export default function FootballScreen() {
   const [error, setError] = useState<string | null>(null);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [expandedLeagueId, setExpandedLeagueId] = useState<number | null>(null);
+  const [expandedLeagueIds, setExpandedLeagueIds] = useState<Set<number>>(new Set());
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [videoModalVisible, setVideoModalVisible] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const toastOpacity = useRef(new Animated.Value(0)).current;
+
+  const loadFavoriteTeams = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('favoriteTeams');
+      if (saved) {
+        const teams = JSON.parse(saved);
+        console.log('Loaded favorite teams:', teams);
+        setSelectedTeams(teams);
+        return teams;
+      }
+      return [];
+    } catch (e) {
+      console.error('Failed to load saved teams:', e);
+      return [];
+    }
+  };
 
   const loadAvailableDates = async () => {
     try {
@@ -43,27 +62,43 @@ export default function FootballScreen() {
     }
   };
 
-  const loadHighlights = async (date?: string) => {
+  const loadHighlightsWithTeams = async (date: string | undefined, teams: string[]) => {
     try {
       setIsLoading(true);
       setError(null);
       setHighlightsData([]);
       
-      const data = date 
-        ? await fetchHighlightsGroupedByDate(date)
-        : await fetchAllHighlightsGrouped();
+      console.log('Loading highlights with teams:', teams, 'and date:', date);
+      const data = teams.length > 0
+        ? await fetchHighlightsGroupedWithTeamFilter(teams, date)
+        : date 
+          ? await fetchHighlightsGroupedByDate(date)
+          : await fetchAllHighlightsGrouped();
       
+      console.log('Loaded highlights:', data.length, 'leagues');
       setHighlightsData(data);
       
       if (data.length > 0) {
-        setExpandedLeagueId(data[0].league.id);
+        setExpandedLeagueIds(new Set([data[0].league.id]));
       }
+      
+      return data;
     } catch (err) {
       setError('Failed to load highlights');
       console.error(err);
+      return [];
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadHighlights = async (date?: string) => {
+    return await loadHighlightsWithTeams(date, selectedTeams);
+  };
+
+  const handleTeamsChange = async (teams: string[]) => {
+    setSelectedTeams(teams);
+    await loadHighlights(selectedDate || undefined);
   };
 
   const onRefresh = async () => {
@@ -79,11 +114,20 @@ export default function FootballScreen() {
 
   const handleShowAll = async () => {
     setSelectedDate(null);
-    await loadHighlights();
+    const data = await loadHighlights();
+    // Expand all leagues after loading
+    if (data && data.length > 0) {
+      const allLeagueIds = data.map(item => item.league.id);
+      setExpandedLeagueIds(new Set(allLeagueIds));
+    }
   };
 
   useEffect(() => {
     const initializePage = async () => {
+      // Load favorite teams first
+      const teams = await loadFavoriteTeams();
+      console.log('Teams loaded before highlights:', teams);
+      
       const allDates = await fetchAvailableDates();
       
       // Filter out future dates - only show today and past dates
@@ -105,7 +149,8 @@ export default function FootballScreen() {
       }
       
       setSelectedDate(defaultDate);
-      await loadHighlights(defaultDate);
+      // Load highlights with the teams that were just loaded
+      await loadHighlightsWithTeams(defaultDate, teams);
     };
     
     initializePage();
@@ -158,7 +203,15 @@ export default function FootballScreen() {
   };
 
   const toggleLeague = (leagueId: number) => {
-    setExpandedLeagueId(expandedLeagueId === leagueId ? null : leagueId);
+    setExpandedLeagueIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(leagueId)) {
+        newSet.delete(leagueId);
+      } else {
+        newSet.add(leagueId);
+      }
+      return newSet;
+    });
   };
 
   const renderDatePicker = () => (
@@ -167,14 +220,16 @@ export default function FootballScreen() {
       showsHorizontalScrollIndicator={false}
       style={styles.datePickerContainer}
     >
-      <TouchableOpacity
-        style={[styles.dateButton, !selectedDate && styles.dateButtonActive]}
-        onPress={handleShowAll}
-      >
-        <Text style={[styles.dateButtonText, !selectedDate && styles.dateButtonTextActive]}>
-          All
-        </Text>
-      </TouchableOpacity>
+      {selectedTeams.length === 0 && (
+        <TouchableOpacity
+          style={[styles.dateButton, !selectedDate && styles.dateButtonActive]}
+          onPress={handleShowAll}
+        >
+          <Text style={[styles.dateButtonText, !selectedDate && styles.dateButtonTextActive]}>
+            All
+          </Text>
+        </TouchableOpacity>
+      )}
       {availableDates.map((date) => (
         <TouchableOpacity
           key={date}
@@ -230,7 +285,7 @@ export default function FootballScreen() {
   );
 
   const renderLeagueSection = ({ item }: { item: HighlightsGroupedByLeague }) => {
-    const isExpanded = expandedLeagueId === item.league.id;
+    const isExpanded = expandedLeagueIds.has(item.league.id);
     
     return (
       <View style={styles.leagueSection}>
@@ -282,6 +337,12 @@ export default function FootballScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.controlsContainer}>
+        <TeamSelector
+          selectedTeams={selectedTeams}
+          onTeamsChange={handleTeamsChange}
+        />
+      </View>
       {renderDatePicker()}
       
       {isLoading ? (
@@ -362,6 +423,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111827',
+  },
+  controlsContainer: {
+    backgroundColor: '#1f2937',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
   },
   centerContainer: {
     flex: 1,

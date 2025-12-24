@@ -19,7 +19,7 @@ export default function FootballPage() {
   const [error, setError] = useState<string | null>(null);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [expandedLeagueId, setExpandedLeagueId] = useState<number | null>(null);
+  const [expandedLeagueIds, setExpandedLeagueIds] = useState<Set<number>>(new Set());
   const [showComingSoon, setShowComingSoon] = useState(false);
 
   const loadAvailableDates = async () => {
@@ -37,17 +37,21 @@ export default function FootballPage() {
       setError(null);
       // Clear previous data immediately to avoid showing stale data
       setHighlightsData([]);
+      
       const data = date 
         ? await fetchHighlightsGroupedByDate(date)
         : await fetchAllHighlightsGrouped();
+      
       setHighlightsData(data);
       // Set the first league as expanded by default
       if (data.length > 0) {
-        setExpandedLeagueId(data[0].league.id);
+        setExpandedLeagueIds(new Set([data[0].league.id]));
       }
+      return data;
     } catch (err) {
       setError('Failed to load highlights. Make sure the backend is running.');
       console.error(err);
+      return [];
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +65,12 @@ export default function FootballPage() {
 
   const handleShowAll = async () => {
     setSelectedDate(null);
-    await loadHighlights();
+    const data = await loadHighlights();
+    // Expand all leagues after loading
+    if (data && data.length > 0) {
+      const allLeagueIds = data.map(item => item.league.id);
+      setExpandedLeagueIds(new Set(allLeagueIds));
+    }
   };
 
   useEffect(() => {
@@ -226,10 +235,18 @@ export default function FootballPage() {
               <LeagueSection 
                 key={leagueData.league.id} 
                 leagueData={leagueData} 
-                isExpanded={expandedLeagueId === leagueData.league.id}
-                onToggle={() => setExpandedLeagueId(
-                  expandedLeagueId === leagueData.league.id ? null : leagueData.league.id
-                )}
+                isExpanded={expandedLeagueIds.has(leagueData.league.id)}
+                onToggle={() => {
+                  setExpandedLeagueIds(prev => {
+                    const newSet = new Set(prev);
+                    if (newSet.has(leagueData.league.id)) {
+                      newSet.delete(leagueData.league.id);
+                    } else {
+                      newSet.add(leagueData.league.id);
+                    }
+                    return newSet;
+                  });
+                }}
               />
             ))}
           </div>
