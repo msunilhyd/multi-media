@@ -33,7 +33,7 @@ class YouTubeService:
         "EFL Cup": "UUKy1dAqELo0zrOtPkf0eTMw",             # Sky Sports Football
         "Indian Super League": "UUSQ8md_xMUPrIxiH-lT2-xw",       # Indian Super League Official
         "MLS": "UUSZbXT5TLLW_i-5W8FZpFsg",                   # Major League Soccer Official
-        "Süper Lig": "UUJukok5AzIaF26bIRZ3Kxlw",              # beIN SPORTS Türkiye
+        "Süper Lig": "UU0YatYmg5JRYzXJPxIdRd8g",              # beIN SPORTS USA (Türkiye coverage)
     }
     
     # Additional channels to search for each league (fallback) - ordered by priority
