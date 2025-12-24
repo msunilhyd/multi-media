@@ -41,7 +41,7 @@ class Highlight(HighlightBase):
     id: int
     match_id: int
     published_at: Optional[datetime] = None
-    is_official: bool
+    is_official: Optional[bool] = False
     created_at: datetime
     
     class Config:
