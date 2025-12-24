@@ -1,33 +1,121 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { defaultPlaylist, Song } from '../data/playlists';
 
 export default function MusicPlaylistScreen() {
+  const playerRef = useRef<any>(null);
+  const flatListRef = useRef<FlatList>(null);
   const [currentSong, setCurrentSong] = useState<Song | null>(defaultPlaylist[0] || null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [isShuffleOn, setIsShuffleOn] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [languageFilter, setLanguageFilter] = useState<string>('');
+  const [composerFilter, setComposerFilter] = useState<string>('');
+  const [yearFilter, setYearFilter] = useState<string>('');
+
+  // Helper to normalize language
+  const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
+
+  // Extract unique values for filters
+  const languages = useMemo(() => 
+    Array.from(new Set(defaultPlaylist.map(s => normalizeLanguage(s.language)))).filter(l => l && l !== '-').sort(),
+    []
+  );
+
+  const composers = useMemo(() => 
+    Array.from(new Set(defaultPlaylist.map(s => s.composer))).filter(c => c && c !== '-').sort(),
+    []
+  );
+
+  const years = useMemo(() => 
+    Array.from(new Set(defaultPlaylist.map(s => s.year))).filter(y => y && y !== '-').sort((a, b) => b.localeCompare(a)),
+    []
+  );
+
+  // Filter songs
+  const filteredSongs = useMemo(() => {
+    return defaultPlaylist.filter(song => {
+      if (languageFilter && normalizeLanguage(song.language) !== languageFilter) return false;
+      if (composerFilter && song.composer !== composerFilter) return false;
+      if (yearFilter && song.year !== yearFilter) return false;
+      return true;
+    });
+  }, [languageFilter, composerFilter, yearFilter]);
+
+  const hasActiveFilters = languageFilter || composerFilter || yearFilter;
+
+  const clearFilters = () => {
+    setLanguageFilter('');
+    setComposerFilter('');
+    setYearFilter('');
+  };
+
+  const scrollToTop = () => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
+
+  const togglePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
 
   const playSong = (song: Song, index: number) => {
     setCurrentSong(song);
     setCurrentIndex(index);
     setIsPlaying(true);
+    
+    // Scroll to show the song just above the player
+    const filteredIndex = filteredSongs.findIndex(s => s.id === song.id);
+    if (filteredIndex !== -1) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: filteredIndex,
+          animated: true,
+          viewPosition: 0.5,
+        });
+      }, 100);
+    }
   };
 
-  const playNext = () => {
-    const nextIndex = (currentIndex + 1) % defaultPlaylist.length;
+  const playNext = useCallback(() => {
+    let nextIndex: number;
+    
+    if (isShuffleOn) {
+      do {
+        nextIndex = Math.floor(Math.random() * defaultPlaylist.length);
+      } while (nextIndex === currentIndex && defaultPlaylist.length > 1);
+    } else {
+      nextIndex = (currentIndex + 1) % defaultPlaylist.length;
+    }
+    
     const nextSong = defaultPlaylist[nextIndex];
     setCurrentIndex(nextIndex);
     setCurrentSong(nextSong);
     setIsPlaying(true);
-  };
+    
+    // Scroll to show the song just above the player
+    const filteredIndex = filteredSongs.findIndex(s => s.id === nextSong.id);
+    if (filteredIndex !== -1) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: filteredIndex,
+          animated: true,
+          viewPosition: 0.5,
+        });
+      }, 100);
+    }
+  }, [currentIndex, isShuffleOn, filteredSongs]);
 
   const playPrevious = () => {
     const prevIndex = currentIndex === 0 ? defaultPlaylist.length - 1 : currentIndex - 1;
@@ -35,59 +123,175 @@ export default function MusicPlaylistScreen() {
     setCurrentIndex(prevIndex);
     setCurrentSong(prevSong);
     setIsPlaying(true);
+    
+    // Scroll to show the song just above the player
+    const filteredIndex = filteredSongs.findIndex(s => s.id === prevSong.id);
+    if (filteredIndex !== -1) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: filteredIndex,
+          animated: true,
+          viewPosition: 0.5,
+        });
+      }, 100);
+    }
   };
 
-  const renderSongItem = ({ item, index }: { item: Song; index: number }) => (
-    <TouchableOpacity
-      style={[
-        styles.songItem,
-        currentSong?.id === item.id && styles.songItemActive,
-      ]}
-      onPress={() => playSong(item, index)}
-    >
-      <View style={styles.songInfo}>
-        <Text style={styles.songTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
-        <Text style={styles.songDetails}>
-          {item.composer} • {item.year} • {item.language}
-        </Text>
-      </View>
-      {currentSong?.id === item.id && isPlaying && (
-        <Ionicons name="volume-high" size={20} color="#3b82f6" />
-      )}
-    </TouchableOpacity>
-  );
+  const renderSongItem = ({ item, index }: { item: Song; index: number }) => {
+    const originalIndex = defaultPlaylist.findIndex(s => s.id === item.id);
+    const isActive = originalIndex === currentIndex;
+    
+    return (
+      <TouchableOpacity
+        style={[
+          styles.songItem,
+          isActive && styles.songItemActive,
+        ]}
+        onPress={() => playSong(item, originalIndex)}
+      >
+        {isActive && (
+          <View style={styles.playingIndicator}>
+            <Ionicons name="musical-note" size={16} color="#3b82f6" />
+          </View>
+        )}
+        <View style={styles.songInfo}>
+          <Text style={[styles.songTitle, isActive && styles.songTitleActive]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={styles.songDetails}>
+            {item.composer} • {item.year} • {item.language}
+          </Text>
+        </View>
+        {isActive && isPlaying && (
+          <Ionicons name="volume-high" size={20} color="#3b82f6" />
+        )}
+        {isActive && !isPlaying && (
+          <Ionicons name="pause-circle" size={20} color="#9ca3af" />
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="musical-notes" size={32} color="#3b82f6" />
-        <Text style={styles.headerTitle}>Music Playlist</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>
+            {hasActiveFilters ? `${filteredSongs.length} of ${defaultPlaylist.length}` : `${defaultPlaylist.length} songs`}
+          </Text>
+        </View>
+        <View style={styles.headerRight}>
+          <TouchableOpacity 
+            style={[styles.headerButton, (showFilters || hasActiveFilters) && styles.headerButtonActive]} 
+            onPress={() => setShowFilters(!showFilters)}
+          >
+            <Ionicons name="filter" size={20} color="#ffffff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} onPress={scrollToTop}>
+            <Ionicons name="arrow-up" size={20} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <FlatList
-        data={defaultPlaylist}
-        renderItem={renderSongItem}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: 280 }
-        ]}
-      />
+      {showFilters && (
+        <View style={styles.filterPanel}>
+          <View style={styles.filterRow}>
+            <Text style={styles.filterLabel}>Language:</Text>
+            <Picker
+              selectedValue={languageFilter}
+              onValueChange={setLanguageFilter}
+              style={styles.picker}
+            >
+              <Picker.Item label="All Languages" value="" />
+              {languages.map(lang => (
+                <Picker.Item key={lang} label={lang} value={lang} />
+              ))}
+            </Picker>
+          </View>
+
+          <View style={styles.filterRow}>
+            <Text style={styles.filterLabel}>Composer:</Text>
+            <Picker
+              selectedValue={composerFilter}
+              onValueChange={setComposerFilter}
+              style={styles.picker}
+            >
+              <Picker.Item label="All Composers" value="" />
+              {composers.map(comp => (
+                <Picker.Item key={comp} label={comp} value={comp} />
+              ))}
+            </Picker>
+          </View>
+
+          <View style={styles.filterRow}>
+            <Text style={styles.filterLabel}>Year:</Text>
+            <Picker
+              selectedValue={yearFilter}
+              onValueChange={setYearFilter}
+              style={styles.picker}
+            >
+              <Picker.Item label="All Years" value="" />
+              {years.map(year => (
+                <Picker.Item key={year} label={year} value={year} />
+              ))}
+            </Picker>
+          </View>
+
+          {hasActiveFilters && (
+            <TouchableOpacity style={styles.clearFiltersButton} onPress={clearFilters}>
+              <Ionicons name="close-circle" size={18} color="#ffffff" />
+              <Text style={styles.clearFiltersText}>Clear Filters</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {filteredSongs.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No songs match your filters</Text>
+          <TouchableOpacity onPress={clearFilters}>
+            <Text style={styles.clearLink}>Clear filters</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={filteredSongs}
+          renderItem={renderSongItem}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: 220 }
+          ]}
+          onScrollToIndexFailed={(info) => {
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({
+                index: info.index,
+                animated: true,
+                viewPosition: 0.5,
+              });
+            }, 500);
+          }}
+        />
+      )}
 
       <View style={styles.playerContainer}>
         <View style={styles.playerWrapper}>
           <YoutubePlayer
+            ref={playerRef}
             height={150}
             play={isPlaying}
             videoId={currentSong?.videoId || defaultPlaylist[0]?.videoId}
             onChangeState={(state) => {
+              console.log('Player state:', state);
               if (state === 'ended') {
                 playNext();
               }
             }}
-            webViewStyle={{ opacity: 0.99 }}
+            onReady={() => {
+              console.log('Player ready');
+              setIsReady(true);
+            }}
             webViewProps={{
               allowsInlineMediaPlayback: true,
               mediaPlaybackRequiresUserAction: false,
@@ -95,34 +299,39 @@ export default function MusicPlaylistScreen() {
           />
         </View>
 
-        <View style={styles.songInfoContainer}>
-          <Text style={styles.modalSongTitle} numberOfLines={1}>
-            {currentSong?.title || 'Select a song'}
-          </Text>
-          <Text style={styles.modalSongDetails} numberOfLines={1}>
-            {currentSong ? `${currentSong.composer} • ${currentSong.movie}` : 'No song playing'}
-          </Text>
-        </View>
-
         <View style={styles.controls}>
+          <TouchableOpacity 
+            onPress={() => setIsShuffleOn(!isShuffleOn)} 
+            style={styles.controlButton}
+          >
+            <Ionicons 
+              name="shuffle" 
+              size={24} 
+              color={isShuffleOn ? '#22c55e' : '#9ca3af'} 
+            />
+          </TouchableOpacity>
+          
           <TouchableOpacity onPress={playPrevious} style={styles.controlButton}>
             <Ionicons name="play-skip-back" size={28} color="#ffffff" />
           </TouchableOpacity>
           
           <TouchableOpacity
-            onPress={() => setIsPlaying(!isPlaying)}
+            onPress={togglePlayPause}
             style={styles.playButton}
+            disabled={!isReady}
           >
             <Ionicons
               name={isPlaying ? 'pause' : 'play'}
               size={32}
-              color="#ffffff"
+              color="#7c3aed"
             />
           </TouchableOpacity>
             
           <TouchableOpacity onPress={playNext} style={styles.controlButton}>
             <Ionicons name="play-skip-forward" size={28} color="#ffffff" />
           </TouchableOpacity>
+          
+          <View style={styles.spacer} />
         </View>
       </View>
     </View>
@@ -137,14 +346,88 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 12,
     backgroundColor: '#1f2937',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
     gap: 8,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#ffffff',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  headerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerButtonActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  filterPanel: {
+    backgroundColor: '#1f2937',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
+  },
+  filterRow: {
+    marginBottom: 8,
+  },
+  filterLabel: {
+    color: '#9ca3af',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  picker: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: '#ffffff',
+    height: 40,
+  },
+  clearFiltersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+    padding: 10,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  clearFiltersText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyText: {
+    color: '#9ca3af',
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  clearLink: {
+    color: '#3b82f6',
+    fontSize: 14,
   },
   listContent: {
     padding: 8,
@@ -163,6 +446,15 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#3b82f6',
   },
+  playingIndicator: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
   songInfo: {
     flex: 1,
   },
@@ -171,6 +463,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     marginBottom: 2,
+  },
+  songTitleActive: {
+    color: '#3b82f6',
   },
   songDetails: {
     fontSize: 11,
@@ -189,36 +484,27 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#000000',
   },
-  songInfoContainer: {
-    padding: 8,
-    alignItems: 'center',
-  },
-  modalSongTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 2,
-  },
-  modalSongDetails: {
-    fontSize: 12,
-    color: '#9ca3af',
-    textAlign: 'center',
-  },
   controls: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 12,
-    paddingHorizontal: 32,
-    gap: 32,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    gap: 16,
+    backgroundColor: '#1f2937',
   },
   controlButton: {
-    padding: 4,
+    padding: 8,
   },
   playButton: {
-    backgroundColor: '#3b82f6',
+    width: 56,
+    height: 56,
     borderRadius: 28,
-    padding: 10,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  spacer: {
+    width: 24,
   },
 });

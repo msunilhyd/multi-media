@@ -13,6 +13,7 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import YoutubePlayer from 'react-native-youtube-iframe';
@@ -30,6 +31,8 @@ export default function FootballScreen() {
   const [videoModalVisible, setVideoModalVisible] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
 
   const loadAvailableDates = async () => {
     try {
@@ -129,6 +132,22 @@ export default function FootballScreen() {
     setPlaying(false);
     setPlayerReady(false);
     setVideoModalVisible(true);
+    
+    // Show toast message
+    setShowToast(true);
+    Animated.sequence([
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.delay(11000),
+      Animated.timing(toastOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setShowToast(false));
   };
 
   const closeVideo = () => {
@@ -299,6 +318,16 @@ export default function FootballScreen() {
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
+          
+          {showToast && (
+            <Animated.View style={[styles.toastContainer, { opacity: toastOpacity }]}>
+              <Ionicons name="information-circle" size={20} color="#ffffff" />
+              <Text style={styles.toastText}>
+                If video gets stuck on ad, close and try again
+              </Text>
+            </Animated.View>
+          )}
+          
           {selectedVideoId ? (
             <View style={styles.videoPlayerWrapper}>
               <YoutubePlayer
@@ -521,6 +550,30 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: 120,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(59, 130, 246, 0.95)',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  toastText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
   },
   videoPlayerWrapper: {
     width: Dimensions.get('window').width,
