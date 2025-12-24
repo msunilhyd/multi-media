@@ -55,7 +55,7 @@ export default function TeamSelector({ selectedTeams, onTeamsChange }: TeamSelec
   };
 
   const selectAllTeamsInLeague = (leagueTeams: string[]) => {
-    const newTeams = [...new Set([...selectedTeams, ...leagueTeams])];
+    const newTeams = Array.from(new Set([...selectedTeams, ...leagueTeams]));
     onTeamsChange(newTeams);
     localStorage.setItem('favoriteTeams', JSON.stringify(newTeams));
   };
