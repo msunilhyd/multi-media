@@ -31,6 +31,7 @@ class YouTubeService:
         "FA Cup": "UUqZQlzSHbVJrwrn5XvzrzcA",              # NBC Sports
         "League Cup": "UUKy1dAqELo0zrOtPkf0eTMw",          # Sky Sports Football (UK broadcaster)
         "EFL Cup": "UUKy1dAqELo0zrOtPkf0eTMw",             # Sky Sports Football
+        "Indian Super League": "UUSQ8md_xMUPrIxiH-lT2-xw",       # Indian Super League Official
     }
     
     # Additional channels to search for each league (fallback) - ordered by priority
@@ -89,6 +90,9 @@ class YouTubeService:
         ],
         "Coupe de France": [
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
+        ],
+        "Indian Super League": [
+            "UUSQ8md_xMUPrIxiH-lT2-xw",   # ISL Official
         ],
     }
     
