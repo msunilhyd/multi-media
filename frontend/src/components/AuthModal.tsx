@@ -172,7 +172,7 @@ export default function AuthModal({ isOpen, onClose, mode, onSwitchMode }: AuthM
                   <button
                     type="button"
                     onClick={() => {
-                      setMode('signup');
+                      onSwitchMode();
                       setError('');
                     }}
                     className="text-blue-600 hover:text-blue-800 underline"
