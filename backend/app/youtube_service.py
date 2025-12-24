@@ -1,7 +1,7 @@
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from typing import List, Dict, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import re
 from .config import get_settings
 

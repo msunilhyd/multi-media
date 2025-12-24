@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .routers import leagues, matches, highlights, admin, audio, teams, auth
+from .routers import leagues, matches, highlights, admin, audio, teams  # , auth
 from .config import get_settings
 from .scheduler import start_scheduler, shutdown_scheduler
 
@@ -45,7 +45,7 @@ app.include_router(highlights.router)
 app.include_router(admin.router)
 app.include_router(audio.router)
 app.include_router(teams.router)
-app.include_router(auth.router)
+# app.include_router(auth.router)  # Disabled - requires bcrypt
 
 
 @app.get("/")
