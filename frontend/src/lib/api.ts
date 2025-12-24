@@ -239,3 +239,88 @@ export async function fetchHighlightsGroupedWithTeamFilter(teams: string[], date
   if (!response.ok) throw new Error('Failed to fetch highlights');
   return response.json();
 }
+
+// Music types and API
+export interface Song {
+  id: number;
+  title: string;
+  language: string;
+  year: string | null;
+  composer: string;
+  videoId: string;
+  movie: string | null;
+  startSeconds?: number | null;
+  endSeconds?: number | null;
+}
+
+export interface Artist {
+  id: number;
+  name: string;
+  slug: string;
+  language: string | null;
+}
+
+export interface Language {
+  language: string;
+  count: number;
+}
+
+export interface MusicStats {
+  total_songs: number;
+  total_artists: number;
+  total_languages: number;
+}
+
+export async function fetchSongs(
+  language?: string,
+  search?: string,
+  year?: string,
+  artist?: string,
+  limit: number = 100,
+  offset: number = 0
+): Promise<Song[]> {
+  const params = new URLSearchParams();
+  if (language) params.append('language', language);
+  if (search) params.append('search', search);
+  if (year) params.append('year', year);
+  if (artist) params.append('artist', artist);
+  params.append('limit', limit.toString());
+  params.append('offset', offset.toString());
+  
+  const response = await fetch(`${API_BASE_URL}/music/songs?${params.toString()}`);
+  if (!response.ok) throw new Error('Failed to fetch songs');
+  return response.json();
+}
+
+export async function fetchSong(songId: number): Promise<Song> {
+  const response = await fetch(`${API_BASE_URL}/music/songs/${songId}`);
+  if (!response.ok) throw new Error('Failed to fetch song');
+  return response.json();
+}
+
+export async function fetchLanguages(): Promise<Language[]> {
+  const response = await fetch(`${API_BASE_URL}/music/languages`);
+  if (!response.ok) throw new Error('Failed to fetch languages');
+  return response.json();
+}
+
+export async function fetchArtists(
+  language?: string,
+  search?: string,
+  limit: number = 50
+): Promise<Artist[]> {
+  const params = new URLSearchParams();
+  if (language) params.append('language', language);
+  if (search) params.append('search', search);
+  params.append('limit', limit.toString());
+  
+  const response = await fetch(`${API_BASE_URL}/music/artists?${params.toString()}`);
+  if (!response.ok) throw new Error('Failed to fetch artists');
+  return response.json();
+}
+
+export async function fetchMusicStats(): Promise<MusicStats> {
+  const response = await fetch(`${API_BASE_URL}/music/stats`);
+  if (!response.ok) throw new Error('Failed to fetch music stats');
+  return response.json();
+}

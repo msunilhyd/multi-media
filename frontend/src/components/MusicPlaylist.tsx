@@ -2,8 +2,14 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X } from 'lucide-react';
-import { Song, Playlist } from '@/data/playlists';
+import type { Song } from '@/lib/api';
 import PlaylistItem from './PlaylistItem';
+
+interface Playlist {
+  slug: string;
+  title: string;
+  songs: Song[];
+}
 
 interface MusicPlaylistProps {
   playlist: Playlist;
@@ -120,6 +126,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   // Use refs to access current state values in callbacks without causing re-renders
   const isShuffleOnRef = useRef(isShuffleOn);
   const currentIndexRef = useRef(currentIndex);
+  const filteredSongsRef = useRef(filteredSongs);
   
   // Set mounted state on client
   useEffect(() => {
@@ -134,21 +141,74 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
+  
+  useEffect(() => {
+    filteredSongsRef.current = filteredSongs;
+  }, [filteredSongs]);
+  
+  // Reset to first song when filters change
+  useEffect(() => {
+    if (filteredSongs.length > 0 && currentSong) {
+      // Check if current song is still in filtered list
+      const currentSongInFiltered = filteredSongs.find(s => s.id === currentSong.id);
+      if (!currentSongInFiltered) {
+        // Current song not in filtered list, switch to first filtered song
+        const firstSong = filteredSongs[0];
+        setCurrentIndex(0);
+        setCurrentSong(firstSong);
+        
+        if (playerRef.current && isReady && typeof playerRef.current.loadVideoById === 'function') {
+          playerRef.current.loadVideoById({
+            videoId: firstSong.videoId,
+            startSeconds: firstSong.startSeconds,
+            endSeconds: firstSong.endSeconds,
+          });
+        }
+      }
+    }
+  }, [filteredSongs, currentSong, isReady]);
+  
+  // Auto-scroll playlist to show current song in center
+  useEffect(() => {
+    if (playlistRef.current && currentIndex >= 0) {
+      const playlistContainer = playlistRef.current;
+      const songElements = playlistContainer.children;
+      
+      if (songElements[currentIndex]) {
+        const songElement = songElements[currentIndex] as HTMLElement;
+        const containerHeight = playlistContainer.clientHeight;
+        const songHeight = songElement.offsetHeight;
+        const songTop = songElement.offsetTop;
+        
+        // Calculate scroll position to center the song
+        const scrollPosition = songTop - (containerHeight / 2) + (songHeight / 2);
+        
+        // Smooth scroll to the song
+        playlistContainer.scrollTo({
+          top: scrollPosition,
+          behavior: 'smooth'
+        });
+      }
+    }
+  }, [currentIndex, filteredSongs]);
 
   const handleNext = useCallback(() => {
+    const songs = filteredSongsRef.current;
+    if (songs.length === 0) return;
+    
     const prevIndex = currentIndexRef.current;
     let nextIndex: number;
     
     if (isShuffleOnRef.current) {
       // Get a random index different from current
       do {
-        nextIndex = Math.floor(Math.random() * playlist.songs.length);
-      } while (nextIndex === prevIndex && playlist.songs.length > 1);
+        nextIndex = Math.floor(Math.random() * songs.length);
+      } while (nextIndex === prevIndex && songs.length > 1);
     } else {
-      nextIndex = (prevIndex + 1) % playlist.songs.length;
+      nextIndex = (prevIndex + 1) % songs.length;
     }
     
-    const nextSong = playlist.songs[nextIndex];
+    const nextSong = songs[nextIndex];
     
     setCurrentIndex(nextIndex);
     setCurrentSong(nextSong);
@@ -160,7 +220,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
         endSeconds: nextSong.endSeconds,
       });
     }
-  }, [playlist.songs]);
+  }, []);
 
   // Load YouTube IFrame API
   useEffect(() => {
@@ -310,8 +370,11 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   }, [isMounted, playlist.songs, handleNext]);
 
   const handlePrevious = useCallback(() => {
-    const prevIndex = currentIndex === 0 ? playlist.songs.length - 1 : currentIndex - 1;
-    const prevSong = playlist.songs[prevIndex];
+    const songs = filteredSongsRef.current;
+    if (songs.length === 0) return;
+    
+    const prevIndex = currentIndex === 0 ? songs.length - 1 : currentIndex - 1;
+    const prevSong = songs[prevIndex];
     
     setCurrentIndex(prevIndex);
     setCurrentSong(prevSong);
@@ -323,7 +386,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
         endSeconds: prevSong.endSeconds,
       });
     }
-  }, [currentIndex, playlist.songs]);
+  }, [currentIndex]);
 
   // Media Session API for better mobile experience and background control
   useEffect(() => {
@@ -402,7 +465,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   };
 
   const handleSongSelect = (index: number) => {
-    const song = playlist.songs[index];
+    const song = filteredSongs[index];
     if (!song) return;
     
     setCurrentIndex(index);
@@ -595,15 +658,14 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
                 </div>
               ) : (
                 filteredSongs.map((song, index) => {
-                  const originalIndex = playlist.songs.findIndex(s => s.id === song.id);
                   return (
                     <PlaylistItem
                       key={song.id}
                       song={song}
-                      index={originalIndex}
-                      isActive={originalIndex === currentIndex}
-                      isPlaying={originalIndex === currentIndex && isPlaying}
-                      onSelect={() => handleSongSelect(originalIndex)}
+                      index={index}
+                      isActive={index === currentIndex}
+                      isPlaying={index === currentIndex && isPlaying}
+                      onSelect={() => handleSongSelect(index)}
                     />
                   );
                 })

@@ -43,28 +43,36 @@ export const authOptions: AuthOptions = {
             // User doesn't exist
             if (credentials.name) {
               // This is a signup attempt, try to register
-              const registerResponse = await fetch(`${API_BASE_URL}/api/auth/register`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  email: credentials.email,
-                  password: credentials.password,
-                  name: credentials.name,
-                }),
-              })
+              try {
+                const registerResponse = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    email: credentials.email,
+                    password: credentials.password,
+                    name: credentials.name,
+                  }),
+                })
 
-              if (registerResponse.ok) {
-                const newUser = await registerResponse.json()
-                return {
-                  id: newUser.id.toString(),
-                  email: newUser.email,
-                  name: newUser.name,
+                if (registerResponse.ok) {
+                  const newUser = await registerResponse.json()
+                  return {
+                    id: newUser.id.toString(),
+                    email: newUser.email,
+                    name: newUser.name,
+                  }
+                } else {
+                  const errorData = await registerResponse.json().catch(() => ({}))
+                  throw new Error(errorData.detail || 'Registration failed')
                 }
-              } else {
-                const errorData = await registerResponse.json().catch(() => ({}))
-                throw new Error(errorData.detail || 'Registration failed')
+              } catch (registerError) {
+                console.error('Registration error:', registerError)
+                if (registerError instanceof Error) {
+                  throw registerError
+                }
+                throw new Error('Failed to register. Please try again.')
               }
             } else {
               // This is a signin attempt but user doesn't exist
@@ -126,6 +134,7 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user }: any) {
       if (user) {
         token.sub = user.id
+        token.picture = user.image
       }
       return token
     },
@@ -133,6 +142,9 @@ export const authOptions: AuthOptions = {
     async session({ session, token }: any) {
       if (token.sub) {
         session.user.id = token.sub
+      }
+      if (token.picture) {
+        session.user.image = token.picture
       }
       return session
     },

@@ -1,7 +1,7 @@
 'use client';
 
 import { Play, Pause } from 'lucide-react';
-import { Song } from '@/data/playlists';
+import type { Song } from '@/lib/api';
 
 interface PlaylistItemProps {
   song: Song;

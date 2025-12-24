@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useState } from 'react';
 import { Trophy, Music, Home, Sparkles, Disc3, User, LogOut, Settings } from 'lucide-react';
@@ -9,6 +9,7 @@ import AuthModal from './AuthModal';
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session, status } = useSession();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -109,17 +110,38 @@ export default function Header() {
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-blue-500/50 rounded-xl transition-all"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
+                    {session.user?.image ? (
+                      <img 
+                        src={session.user.image} 
+                        alt={session.user?.name || 'User'}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                    )}
                     <span className="font-medium">{session.user?.name || session.user?.email}</span>
                   </button>
 
                   {showUserMenu && (
                     <div className="absolute right-0 top-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-2 w-48 z-50">
-                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{session.user?.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{session.user?.email}</p>
+                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                        {session.user?.image ? (
+                          <img 
+                            src={session.user.image} 
+                            alt={session.user?.name || 'User'}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                            <User className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{session.user?.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{session.user?.email}</p>
+                        </div>
                       </div>
                       <Link
                         href="/profile"
@@ -130,9 +152,10 @@ export default function Header() {
                         Profile & Settings
                       </Link>
                       <button
-                        onClick={() => {
-                          signOut();
+                        onClick={async () => {
                           setShowUserMenu(false);
+                          await signOut({ redirect: false });
+                          router.push('/');
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
