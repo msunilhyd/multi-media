@@ -12,65 +12,18 @@ class ESPNFootballAPI:
     
     # ESPN league slugs
     LEAGUES = {
-        # Top 5 European leagues
+        # Top leagues
         "eng.1": "Premier League",
         "esp.1": "La Liga", 
         "ger.1": "Bundesliga",
         "ita.1": "Serie A",
         "fra.1": "Ligue 1",
-        # Other European leagues
-        "ned.1": "Eredivisie",
-        "por.1": "Primeira Liga",
-        "sco.1": "Scottish Premiership",
-        "bel.1": "Belgian Pro League",
-        "tur.1": "Süper Lig",
-        "aut.1": "Austrian Bundesliga",
-        "sui.1": "Swiss Super League",
-        "gre.1": "Greek Super League",
-        "rus.1": "Russian Premier League",
-        "cze.1": "Czech First League",
-        "den.1": "Danish Superliga",
-        "nor.1": "Norwegian Eliteserien",
-        "swe.1": "Swedish Allsvenskan",
-        "isr.1": "Israeli Premier League",
-        # Americas
-        "usa.1": "MLS",
-        "mex.1": "Liga MX",
-        "arg.1": "Argentine Liga",
-        "bra.1": "Brazilian Serie A",
-        "chi.1": "Chilean Primera",
-        "col.1": "Colombian Primera A",
-        "uru.1": "Uruguayan Primera",
-        "par.1": "Paraguayan Primera",
-        "ecu.1": "Ecuadorian Serie A",
-        "ven.1": "Venezuelan Primera",
-        "per.1": "Peruvian Liga 1",
-        "crc.1": "Costa Rican Primera",
-        # Asia & Oceania
         "ind.1": "Indian Super League",
-        "jpn.1": "J.League",
-        "chn.1": "Chinese Super League",
-        "aus.1": "A-League Men",
-        # Africa
-        "rsa.1": "South African Premiership",
-        # European club competitions
+        "usa.1": "MLS",
+        "tur.1": "Süper Lig",
+        # European competitions
         "uefa.champions": "Champions League",
         "uefa.europa": "Europa League",
-        # Continental competitions
-        "conmebol.libertadores": "Copa Libertadores",
-        "conmebol.sudamericana": "Copa Sudamericana",
-        "concacaf.champions": "Concacaf Champions Cup",
-        # International tournaments
-        "fifa.world": "FIFA World Cup",
-        "uefa.euro": "European Championship",
-        "conmebol.america": "Copa América",
-        # World Cup Qualifiers
-        "fifa.worldq.uefa": "WC Qualifying UEFA",
-        "fifa.worldq.conmebol": "WC Qualifying CONMEBOL",
-        "fifa.worldq.caf": "WC Qualifying CAF",
-        "fifa.worldq.afc": "WC Qualifying AFC",
-        "fifa.worldq.concacaf": "WC Qualifying CONCACAF",
-        "fifa.worldq.ofc": "WC Qualifying OFC",
         # Domestic cups
         "eng.fa": "FA Cup",
         "eng.league_cup": "League Cup",

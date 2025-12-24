@@ -17,73 +17,23 @@ class YouTubeService:
     # Official channel uploads playlists (replace UC prefix with UU for uploads)
     # Using official US broadcasters for each league
     OFFICIAL_CHANNELS = {
-        # Top 5 European leagues
-        "Premier League": "UUqZQlzSHbVJrwrn5XvzrzcA",      # NBC Sports
-        "La Liga": "UU6c1z7bA__85CIWZ_jpCK-Q",             # ESPN FC
-        "Bundesliga": "UU6c1z7bA__85CIWZ_jpCK-Q",          # ESPN FC
-        "Serie A": "UUET00YnetHT7tOpu12v8jxg",             # CBS Sports Golazo
-        "Ligue 1": "UU6c1z7bA__85CIWZ_jpCK-Q",             # ESPN FC
-        # Other European leagues
-        "Eredivisie": "UU4vmPjKs8tJM0HMd9JmgZ-g",          # ESPN MX
-        "Primeira Liga": "UU6c1z7bA__85CIWZ_jpCK-Q",       # ESPN FC
-        "Scottish Premiership": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        "Belgian Pro League": "UU6c1z7bA__85CIWZ_jpCK-Q",  # ESPN FC
-        "Süper Lig": "UU0YatYmg5JRYzXJPxIdRd8g",           # beIN SPORTS USA
-        "Austrian Bundesliga": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        "Swiss Super League": "UU6c1z7bA__85CIWZ_jpCK-Q",  # ESPN FC
-        "Greek Super League": "UU6c1z7bA__85CIWZ_jpCK-Q",  # ESPN FC
-        "Russian Premier League": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        "Czech First League": "UU6c1z7bA__85CIWZ_jpCK-Q",  # ESPN FC
-        "Danish Superliga": "UU6c1z7bA__85CIWZ_jpCK-Q",    # ESPN FC
-        "Norwegian Eliteserien": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        "Swedish Allsvenskan": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        "Israeli Premier League": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        # Americas
-        "MLS": "UUSZbXT5TLLW_i-5W8FZpFsg",                  # MLS Official
-        "Liga MX": "UU6c1z7bA__85CIWZ_jpCK-Q",             # ESPN FC
-        "Argentine Liga": "UU6c1z7bA__85CIWZ_jpCK-Q",      # ESPN FC
-        "Brazilian Serie A": "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-        "Chilean Primera": "UU6c1z7bA__85CIWZ_jpCK-Q",     # ESPN FC
-        "Colombian Primera A": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        "Uruguayan Primera": "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-        "Paraguayan Primera": "UU6c1z7bA__85CIWZ_jpCK-Q",  # ESPN FC
-        "Ecuadorian Serie A": "UU6c1z7bA__85CIWZ_jpCK-Q",  # ESPN FC
-        "Venezuelan Primera": "UU6c1z7bA__85CIWZ_jpCK-Q",  # ESPN FC
-        "Peruvian Liga 1": "UU6c1z7bA__85CIWZ_jpCK-Q",     # ESPN FC
-        "Costa Rican Primera": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        # Asia & Oceania
-        "Indian Super League": "UUSQ8md_xMUPrIxiH-lT2-xw", # ISL Official
-        "J.League": "UU6c1z7bA__85CIWZ_jpCK-Q",            # ESPN FC
-        "Chinese Super League": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        "A-League Men": "UU6c1z7bA__85CIWZ_jpCK-Q",        # ESPN FC
-        # Africa
-        "South African Premiership": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        # European club competitions
-        "Champions League": "UUET00YnetHT7tOpu12v8jxg",    # CBS Sports Golazo
-        "Europa League": "UUET00YnetHT7tOpu12v8jxg",       # CBS Sports Golazo
-        # Continental competitions
-        "Copa Libertadores": "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-        "Copa Sudamericana": "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-        "Concacaf Champions Cup": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        # International tournaments
-        "FIFA World Cup": "UU6c1z7bA__85CIWZ_jpCK-Q",      # ESPN FC
-        "European Championship": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        "Copa América": "UU6c1z7bA__85CIWZ_jpCK-Q",        # ESPN FC
-        # World Cup Qualifiers
-        "WC Qualifying UEFA": "UU6c1z7bA__85CIWZ_jpCK-Q",  # ESPN FC
-        "WC Qualifying CONMEBOL": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        "WC Qualifying CAF": "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-        "WC Qualifying AFC": "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-        "WC Qualifying CONCACAF": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
-        "WC Qualifying OFC": "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-        # Domestic cups
-        "FA Cup": "UUqZQlzSHbVJrwrn5XvzrzcA",              # NBC Sports
-        "League Cup": "UUKy1dAqELo0zrOtPkf0eTMw",          # Sky Sports Football
-        "EFL Cup": "UUKy1dAqELo0zrOtPkf0eTMw",             # Sky Sports Football
+        "Premier League": "UUqZQlzSHbVJrwrn5XvzrzcA",      # NBC Sports (US broadcaster)
+        "La Liga": "UU6c1z7bA__85CIWZ_jpCK-Q",             # ESPN FC (US broadcaster)
+        "Bundesliga": "UU6c1z7bA__85CIWZ_jpCK-Q",          # ESPN FC (US broadcaster)
+        "Serie A": "UUET00YnetHT7tOpu12v8jxg",             # CBS Sports Golazo / Paramount+ (US broadcaster)
+        "Ligue 1": "UU6c1z7bA__85CIWZ_jpCK-Q",             # ESPN FC (US broadcaster)
+        "Champions League": "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo / Paramount+
+        "Europa League": "UUET00YnetHT7tOpu12v8jxg",       # CBS Sports Golazo / Paramount+
         "Copa del Rey": "UU6c1z7bA__85CIWZ_jpCK-Q",        # ESPN FC
-        "Coupe de France": "UU6c1z7bA__85CIWZ_jpCK-Q",     # ESPN FC
-        "DFB-Pokal": "UU6c1z7bA__85CIWZ_jpCK-Q",           # ESPN FC
-        "Coppa Italia": "UUET00YnetHT7tOpu12v8jxg",        # CBS Sports Golazo
+        "Coupe de France": "UU6c1z7bA__85CIWZ_jpCK-Q",     # ESPN FC (US broadcaster)
+        "DFB-Pokal": "UU6c1z7bA__85CIWZ_jpCK-Q",           # ESPN FC (US broadcaster)
+        "Coppa Italia": "UUET00YnetHT7tOpu12v8jxg",        # CBS Sports Golazo / Paramount+
+        "FA Cup": "UUqZQlzSHbVJrwrn5XvzrzcA",              # NBC Sports
+        "League Cup": "UUKy1dAqELo0zrOtPkf0eTMw",          # Sky Sports Football (UK broadcaster)
+        "EFL Cup": "UUKy1dAqELo0zrOtPkf0eTMw",             # Sky Sports Football
+        "Indian Super League": "UUSQ8md_xMUPrIxiH-lT2-xw",       # Indian Super League Official
+        "MLS": "UUSZbXT5TLLW_i-5W8FZpFsg",                   # Major League Soccer Official
+        "Süper Lig": "UU0YatYmg5JRYzXJPxIdRd8g",              # beIN SPORTS USA (Türkiye coverage)
     }
     
     # Additional channels to search for each league (fallback) - ordered by priority
