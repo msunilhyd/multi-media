@@ -141,7 +141,7 @@ export default function FootballScreen() {
         duration: 300,
         useNativeDriver: true,
       }),
-      Animated.delay(11000),
+      Animated.delay(15000),
       Animated.timing(toastOpacity, {
         toValue: 0,
         duration: 300,
@@ -248,7 +248,7 @@ export default function FootballScreen() {
             <View>
               <Text style={styles.leagueName}>{item.league.name}</Text>
               <Text style={styles.leagueStats}>
-                {item.matches.length} matches · {item.total_highlights} highlights
+                {item.matches.length} matches
               </Text>
             </View>
           </View>
@@ -401,6 +401,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginTop: 12,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   leagueHeader: {
     flexDirection: 'row',

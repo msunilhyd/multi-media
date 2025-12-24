@@ -193,6 +193,59 @@ export default function MusicPlaylistScreen() {
         </View>
       </View>
 
+      {/* Player at the top */}
+      <View style={styles.playerContainer}>
+        <View style={styles.playerWrapper}>
+          <YoutubePlayer
+            ref={playerRef}
+            height={200}
+            play={isPlaying}
+            videoId={currentSong?.videoId || defaultPlaylist[0]?.videoId}
+            initialPlayerParams={{
+              controls: true,
+              modestbranding: false,
+            }}
+            onChangeState={(state) => {
+              console.log('Player state:', state);
+              if (state === 'ended') {
+                playNext();
+              }
+            }}
+            onReady={() => {
+              console.log('Player ready');
+              setIsReady(true);
+            }}
+            webViewProps={{
+              allowsInlineMediaPlayback: true,
+              mediaPlaybackRequiresUserAction: false,
+            }}
+          />
+        </View>
+
+        <View style={styles.controls}>
+          <TouchableOpacity 
+            onPress={() => setIsShuffleOn(!isShuffleOn)} 
+            style={styles.controlButton}
+          >
+            <Ionicons 
+              name="shuffle" 
+              size={24} 
+              color={isShuffleOn ? '#22c55e' : '#9ca3af'} 
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={playPrevious} style={styles.controlButton}>
+            <Ionicons name="play-skip-back" size={28} color="#ffffff" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={playNext} style={styles.controlButton}>
+            <Ionicons name="play-skip-forward" size={28} color="#ffffff" />
+          </TouchableOpacity>
+          
+          <View style={styles.spacer} />
+        </View>
+      </View>
+
       {showFilters && (
         <View style={styles.filterPanel}>
           <View style={styles.filterRow}>
@@ -282,6 +335,10 @@ export default function MusicPlaylistScreen() {
             height={150}
             play={isPlaying}
             videoId={currentSong?.videoId || defaultPlaylist[0]?.videoId}
+            initialPlayerParams={{
+              controls: true,
+              modestbranding: false,
+            }}
             onChangeState={(state) => {
               console.log('Player state:', state);
               if (state === 'ended') {
@@ -315,18 +372,6 @@ export default function MusicPlaylistScreen() {
             <Ionicons name="play-skip-back" size={28} color="#ffffff" />
           </TouchableOpacity>
           
-          <TouchableOpacity
-            onPress={togglePlayPause}
-            style={styles.playButton}
-            disabled={!isReady}
-          >
-            <Ionicons
-              name={isPlaying ? 'pause' : 'play'}
-              size={32}
-              color="#7c3aed"
-            />
-          </TouchableOpacity>
-            
           <TouchableOpacity onPress={playNext} style={styles.controlButton}>
             <Ionicons name="play-skip-forward" size={28} color="#ffffff" />
           </TouchableOpacity>
@@ -349,6 +394,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 12,
     backgroundColor: '#1f2937',
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -373,12 +420,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerButtonActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   filterPanel: {
     backgroundColor: '#1f2937',
@@ -398,13 +445,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: '#ffffff',
     height: 40,
+    borderRadius: 6,
   },
   clearFiltersButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
     padding: 10,
     borderRadius: 6,
     marginTop: 4,

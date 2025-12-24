@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useEffect } from 'react';
-import { AppState } from 'react-native';
+import { AppState, View, Text } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import MusicPlayerScreen from './src/screens/MusicPlayerScreen';
@@ -10,6 +10,22 @@ import MusicPlaylistScreen from './src/screens/MusicPlaylistScreen';
 import FootballScreen from './src/screens/FootballScreen';
 
 const Tab = createBottomTabNavigator();
+
+// Custom header component with clean gradient text
+const CustomHeader = () => (
+  <View style={{ backgroundColor: '#1f2937', paddingTop: 50, paddingBottom: 14, alignItems: 'center', justifyContent: 'center' }}>
+    <Text style={{ 
+      fontSize: 32, 
+      fontWeight: '800', 
+      fontStyle: 'italic',
+      textAlign: 'center',
+      color: '#60a5fa',
+      letterSpacing: 0.5,
+    }}>
+      LinusPlaylists
+    </Text>
+  </View>
+);
 
 export default function App() {
   useEffect(() => {
@@ -66,11 +82,11 @@ export default function App() {
             return <Ionicons name={iconName} size={size} color={color} />;
           },
           tabBarActiveTintColor: '#3b82f6',
-          tabBarInactiveTintColor: 'gray',
+          tabBarInactiveTintColor: '#9ca3af',
           headerStyle: {
             backgroundColor: '#1f2937',
           },
-          headerTintColor: '#fff',
+          headerTintColor: '#ffffff',
           tabBarStyle: {
             backgroundColor: '#1f2937',
             borderTopColor: '#374151',
@@ -81,21 +97,24 @@ export default function App() {
           name="Football" 
           component={FootballScreen}
           options={{
-            title: 'Football Highlights'
+            header: () => <CustomHeader />,
+            tabBarLabel: 'Football Highlights'
           }}
         />
         <Tab.Screen 
           name="Playlist" 
           component={MusicPlaylistScreen}
           options={{
-            title: 'Music Playlist'
+            header: () => <CustomHeader />,
+            tabBarLabel: 'Music Playlist'
           }}
         />
         <Tab.Screen 
           name="Background Audio" 
           component={MusicPlayerScreen}
           options={{
-            title: 'Background Audio'
+            header: () => <CustomHeader />,
+            tabBarLabel: 'Background Audio'
           }}
         />
       </Tab.Navigator>

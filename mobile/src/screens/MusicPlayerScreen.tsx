@@ -8,7 +8,9 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Animated,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { audioService } from '../services/audioService';
@@ -27,6 +29,7 @@ export default function MusicPlayerScreen() {
   const [languageFilter, setLanguageFilter] = useState<string>('');
   const [composerFilter, setComposerFilter] = useState<string>('');
   const [yearFilter, setYearFilter] = useState<string>('');
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   // Helper to normalize language
   const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
@@ -72,6 +75,34 @@ export default function MusicPlayerScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    // Auto-hide the ephemeral message after 5 seconds
+    const timer = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start();
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [fadeAnim]);
+
+  // Pause audio when navigating away from this screen
+  useFocusEffect(
+    useCallback(() => {
+      // Screen is focused - do nothing, let user control playback
+      return () => {
+        // Screen is unfocused - pause the audio
+        if (isPlaying) {
+          audioService.pauseAsync();
+          setIsPlaying(false);
+          console.log('🎵 Paused audio - navigated away from Background Audio');
+        }
+      };
+    }, [isPlaying])
+  );
+
   const playSong = async (song: Song, filteredIndex?: number) => {
     try {
       console.log(`🎵 Playing song: ${song.title} (${song.videoId})`);
@@ -84,19 +115,31 @@ export default function MusicPlayerScreen() {
       setIsPlaying(true);
       console.log(`✅ Song loaded successfully`);
       
-      // Scroll to show the song in filtered list
-      if (filteredIndex !== undefined) {
+      // Scroll to show the song centered in filtered list
+      if (filteredIndex !== undefined && filteredIndex >= 0) {
         setTimeout(() => {
-          flatListRef.current?.scrollToIndex({
-            index: filteredIndex,
-            animated: true,
-            viewPosition: 0.4,
+          const itemHeight = 80;
+          // Simple calculation: position song at 250px from top of visible area
+          const targetPosition = Math.max(0, (filteredIndex * itemHeight) - 700);
+          
+          flatListRef.current?.scrollToOffset({
+            offset: targetPosition,
+            animated: true
           });
-        }, 100);
+          console.log(`Scrolled to offset ${targetPosition} for index ${filteredIndex}`);
+        }, 300);
       }
     } catch (error) {
       console.error('❌ Play error:', error);
-      Alert.alert('Error', `Failed to play ${song.title}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // If it's a stream error, automatically skip to next song
+      if (errorMessage.includes('Failed to get audio stream') || errorMessage.includes('404')) {
+        console.log('⏭️ Stream failed, skipping to next song...');
+        setTimeout(() => playNext(), 500);
+      } else {
+        Alert.alert('Error', `Failed to play ${song.title}: ${errorMessage}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -164,14 +207,21 @@ export default function MusicPlayerScreen() {
       onPress={() => playSong(item, index)}
     >
       <View style={styles.songInfo}>
-        <Text style={styles.songTitle}>{item.title}</Text>
+        <Text style={[styles.songTitle, currentSong?.id === item.id && styles.currentSongTitle]}>
+          {item.title}
+        </Text>
         <Text style={styles.songDetails}>
           {item.composer} • {item.language} • {item.year}
         </Text>
-        <Text style={styles.movieName}>{item.movie}</Text>
       </View>
-      {currentSong?.id === item.id && isPlaying && (
-        <Text style={styles.playingIndicator}>♪</Text>
+      {currentSong?.id === item.id && (
+        <View style={styles.playingIconContainer}>
+          <Ionicons 
+            name={isPlaying ? 'volume-high' : 'pause'} 
+            size={24} 
+            color="#8B5CF6" 
+          />
+        </View>
       )}
     </TouchableOpacity>
   );
@@ -181,26 +231,19 @@ export default function MusicPlayerScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.title}>Music Playlist</Text>
-          <Text style={styles.subtitle}>Background Audio • {defaultPlaylist.length} songs</Text>
+          <Text style={styles.headerTitle}>
+            {hasActiveFilters ? `${filteredSongs.length} of ${defaultPlaylist.length}` : `${defaultPlaylist.length} songs`}
+          </Text>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => setShowFilters(!showFilters)} style={styles.headerButton}>
-            <Ionicons 
-              name="filter" 
-              size={24} 
-              color={hasActiveFilters ? '#4ade80' : '#ffffff'} 
-            />
+          <TouchableOpacity 
+            style={[styles.headerButton, (showFilters || hasActiveFilters) && styles.headerButtonActive]} 
+            onPress={() => setShowFilters(!showFilters)}
+          >
+            <Ionicons name="filter" size={20} color="#ffffff" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={toggleShuffle} style={styles.headerButton}>
-            <Ionicons 
-              name="shuffle" 
-              size={24} 
-              color={isShuffleOn ? '#4ade80' : '#ffffff'} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={scrollToTop} style={styles.headerButton}>
-            <Ionicons name="arrow-up-circle" size={24} color="#ffffff" />
+          <TouchableOpacity style={styles.headerButton} onPress={scrollToTop}>
+            <Ionicons name="arrow-up" size={20} color="#ffffff" />
           </TouchableOpacity>
         </View>
       </View>
@@ -259,60 +302,6 @@ export default function MusicPlayerScreen() {
         </View>
       )}
 
-      {/* Current Song Display */}
-      {currentSong && (
-        <View style={styles.nowPlaying}>
-          <Text style={styles.nowPlayingTitle}>Now Playing</Text>
-          <Text style={styles.currentSongTitle}>{currentSong.title}</Text>
-          <Text style={styles.currentSongArtist}>{currentSong.composer}</Text>
-          
-          {/* Progress */}
-          <View style={styles.progressContainer}>
-            <Text style={styles.timeText}>{formatTime(position)}</Text>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { width: duration > 0 ? `${(position / duration) * 100}%` : '0%' }
-                ]} 
-              />
-            </View>
-            <Text style={styles.timeText}>{formatTime(duration)}</Text>
-          </View>
-
-          {/* Controls */}
-          <View style={styles.controls}>
-            <TouchableOpacity 
-              style={styles.navButton} 
-              onPress={playPrevious}
-              disabled={isLoading}
-            >
-              <Ionicons name="play-skip-back" size={28} color="#ffffff" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.controlButton} 
-              onPress={togglePlayPause}
-              disabled={isLoading}
-            >
-              <Ionicons 
-                name={isLoading ? 'hourglass' : isPlaying ? 'pause' : 'play'} 
-                size={32} 
-                color="#ffffff" 
-              />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.navButton} 
-              onPress={playNext}
-              disabled={isLoading}
-            >
-              <Ionicons name="play-skip-forward" size={28} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
       {/* Loading Indicator */}
       {isLoading && (
         <View style={styles.loadingContainer}>
@@ -337,21 +326,72 @@ export default function MusicPlayerScreen() {
           renderItem={renderSongItem}
           keyExtractor={(item) => item.id.toString()}
           style={styles.songList}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          getItemLayout={(data, index) => ({
+            length: 80,
+            offset: 80 * index,
+            index,
+          })}
           onScrollToIndexFailed={(info) => {
             const wait = new Promise(resolve => setTimeout(resolve, 500));
             wait.then(() => {
-              flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+              flatListRef.current?.scrollToIndex({ 
+                index: info.index, 
+                animated: true,
+                viewOffset: 200
+              });-3
             });
           }}
         />
       )}
-      
-      {/* Background Play Info */}
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>
-          🎵 This music will continue playing when you switch to other apps!
-        </Text>
-      </View>
+
+      {/* Bottom Player */}
+      {currentSong && (
+        <View style={styles.bottomPlayer}>
+          <View style={styles.bottomControls}>
+            <TouchableOpacity 
+              onPress={toggleShuffle} 
+              style={styles.bottomNavButton}
+            >
+              <Ionicons 
+                name="shuffle" 
+                size={20} 
+                color={isShuffleOn ? '#22c55e' : '#9ca3af'} 
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.bottomNavButton} 
+              onPress={playPrevious}
+              disabled={isLoading}
+            >
+              <Ionicons name="play-skip-back" size={24} color="#ffffff" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.bottomPlayButton} 
+              onPress={togglePlayPause}
+              disabled={isLoading}
+            >
+              <Ionicons 
+                name={isLoading ? 'hourglass' : isPlaying ? 'pause' : 'play'} 
+                size={28} 
+                color="#ffffff" 
+              />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.bottomNavButton} 
+              onPress={playNext}
+              disabled={isLoading}
+            >
+              <Ionicons name="play-skip-forward" size={24} color="#ffffff" />
+            </TouchableOpacity>
+            
+            <View style={styles.spacer} />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -359,24 +399,43 @@ export default function MusicPlayerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
-    paddingTop: 50,
+    backgroundColor: '#111827',
+    paddingTop: 0,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'space-between',
+    padding: 12,
+    backgroundColor: '#1f2937',
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
   },
   headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     flex: 1,
   },
   headerRight: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
   headerButton: {
-    padding: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerButtonActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   title: {
     fontSize: 24,
@@ -388,70 +447,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8B5CF6',
   },
-  nowPlaying: {
-    backgroundColor: '#2a2a2a',
-    margin: 20,
-    padding: 20,
-    borderRadius: 10,
-  },
-  nowPlayingTitle: {
-    color: '#8B5CF6',
-    fontSize: 14,
-    marginBottom: 10,
-  },
-  currentSongTitle: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  currentSongArtist: {
-    color: '#cccccc',
-    fontSize: 14,
-    marginBottom: 15,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  timeText: {
-    color: '#cccccc',
-    fontSize: 12,
-    width: 40,
-    textAlign: 'center',
-  },
-  progressBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: '#444',
-    marginHorizontal: 10,
-    borderRadius: 2,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#8B5CF6',
-    borderRadius: 2,
-  },
-  controls: {
+  ephemeralInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 20,
+    backgroundColor: '#1f2937',
+    marginHorizontal: 20,
+    marginTop: 4,
+    marginBottom: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    gap: 10,
   },
-  controlButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#8B5CF6',
-    justifyContent: 'center',
+  ephemeralText: {
+    color: '#9ca3af',
+    fontSize: 13,
+  },
+  bottomPlayer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#1f2937',
+    borderTopWidth: 1,
+    borderTopColor: '#374151',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  bottomControls: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 30,
   },
-  navButton: {
+  bottomPlayButton: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#444',
+    backgroundColor: '#8B5CF6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomNavButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    backgroundColor: '#374151',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -460,21 +503,22 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   loadingText: {
-    color: '#cccccc',
+    color: '#9ca3af',
     marginTop: 10,
   },
   songList: {
     flex: 1,
+    marginBottom: 90,
   },
   songItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: '#374151',
   },
   currentSongItem: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#1f2937',
   },
   songInfo: {
     flex: 1,
@@ -485,8 +529,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
   },
+  currentSongTitle: {
+    color: '#8B5CF6',
+  },
   songDetails: {
-    color: '#cccccc',
+    color: '#9ca3af',
     fontSize: 12,
     marginBottom: 2,
   },
@@ -494,25 +541,14 @@ const styles = StyleSheet.create({
     color: '#8B5CF6',
     fontSize: 11,
   },
-  playingIndicator: {
-    color: '#8B5CF6',
-    fontSize: 20,
-  },
-  infoBox: {
-    backgroundColor: '#2a2a2a',
-    margin: 20,
-    padding: 15,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#8B5CF6',
-  },
-  infoText: {
-    color: '#cccccc',
-    fontSize: 12,
-    textAlign: 'center',
+  playingIconContainer: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filtersContainer: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#1f2937',
     marginHorizontal: 20,
     marginBottom: 10,
     padding: 15,
@@ -528,7 +564,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   picker: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: '#ffffff',
     borderRadius: 8,
   },
@@ -561,9 +597,12 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyText: {
-    color: '#666',
+    color: '#9ca3af',
     fontSize: 16,
     marginTop: 16,
     textAlign: 'center',
+  },
+  spacer: {
+    width: 45,
   },
 });
