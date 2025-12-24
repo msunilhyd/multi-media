@@ -19,6 +19,7 @@ class ESPNFootballAPI:
         "ita.1": "Serie A",
         "fra.1": "Ligue 1",
         "ind.1": "Indian Super League",
+        "usa.1": "MLS",
         # European competitions
         "uefa.champions": "Champions League",
         "uefa.europa": "Europa League",
