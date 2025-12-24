@@ -1,0 +1,188 @@
+RECENT MATCHES BY COMPETITION (December 2025)
+==============================================
+Search YouTube for these matches to find official highlight channels!
+
+PREMIER LEAGUE (eng.1)
+2025-12-22: Liverpool vs Leicester City
+2025-12-22: Manchester City vs Everton
+
+LA LIGA (esp.1)
+2025-12-22: Barcelona vs Atletico Madrid
+2025-12-21: Real Madrid vs Sevilla
+
+BUNDESLIGA (ger.1)
+2025-12-21: Bayern Munich vs RB Leipzig
+2025-12-21: Borussia Dortmund vs Wolfsburg
+
+SERIE A (ita.1)
+2025-12-23: Inter Milan vs Como
+2025-12-23: Atalanta vs Empoli
+
+LIGUE 1 (fra.1)
+2025-12-21: PSG vs Lyon
+2025-12-21: Marseille vs Saint-Etienne
+
+EREDIVISIE (ned.1)
+2025-12-22: Ajax vs AZ Alkmaar
+2025-12-21: PSV Eindhoven vs Feyenoord
+
+PRIMEIRA LIGA (por.1)
+2025-12-22: Benfica vs Estoril
+2025-12-22: Porto vs Sporting CP
+
+SCOTTISH PREMIERSHIP (sco.1)
+2025-12-22: Celtic vs Motherwell
+2025-12-22: Rangers vs St Mirren
+
+BELGIAN PRO LEAGUE (bel.1)
+2025-12-22: Club Brugge vs Genk
+2025-12-21: Anderlecht vs Standard Liege
+
+SÜPER LIG (tur.1)
+2025-12-22: Galatasaray vs Fenerbahce
+2025-12-20: Besiktas vs Rizespor (we already have beIN SPORTS USA for this!)
+
+AUSTRIAN BUNDESLIGA (aut.1)
+2025-12-21: Red Bull Salzburg vs Rapid Wien
+2025-12-21: Sturm Graz vs LASK
+
+SWISS SUPER LEAGUE (sui.1)
+2025-12-22: Young Boys vs Basel
+2025-12-21: FC Zurich vs Grasshoppers
+
+GREEK SUPER LEAGUE (gre.1)
+2025-12-22: Olympiacos vs Panathinaikos
+2025-12-22: AEK Athens vs PAOK
+
+RUSSIAN PREMIER LEAGUE (rus.1)
+[League on winter break]
+
+CZECH FIRST LEAGUE (cze.1)
+[League on winter break]
+
+DANISH SUPERLIGA (den.1)
+[League on winter break]
+
+NORWEGIAN ELITESERIEN (nor.1)
+[League on winter break - season runs Apr-Nov]
+
+SWEDISH ALLSVENSKAN (swe.1)
+[League on winter break - season runs Apr-Nov]
+
+ISRAELI PREMIER LEAGUE (isr.1)
+2024-12-22: Maccabi Tel Aviv vs Hapoel Beer Sheva
+2024-12-21: Maccabi Haifa vs Hapoel Tel Aviv
+
+MLS (usa.1)
+2024-12-07: LA Galaxy vs New York Red Bulls (MLS Cup Final)
+2024-11-30: LA Galaxy vs Seattle Sounders (Conference Finals)
+
+LIGA MX (mex.1)
+2024-12-15: Club America vs Monterrey (Final)
+2024-12-12: Tigres vs Cruz Azul (Semifinal)
+
+ARGENTINE LIGA (arg.1)
+2024-12-22: Boca Juniors vs River Plate
+2024-12-22: Racing Club vs Independiente
+
+BRAZILIAN SERIE A (bra.1)
+2024-12-08: Botafogo vs Sao Paulo (Final round)
+2024-12-08: Flamengo vs Vitoria
+
+CHILEAN PRIMERA (chi.1)
+2024-12-15: Colo-Colo vs Universidad de Chile (Final)
+2024-12-11: Colo-Colo vs Huachipato (Semifinal)
+
+COLOMBIAN PRIMERA A (col.1)
+2024-12-22: Atletico Nacional vs Deportivo Pasto (Final)
+2024-12-18: Atletico Nacional vs America de Cali (Semifinal)
+
+URUGUAYAN PRIMERA (uru.1)
+2024-12-15: Nacional vs Penarol
+2024-12-14: Liverpool vs Defensor Sporting
+
+PARAGUAYAN PRIMERA (par.1)
+2024-12-22: Olimpia vs Cerro Porteno
+2024-12-21: Libertad vs Guarani
+
+ECUADORIAN SERIE A (ecu.1)
+2024-12-22: Independiente del Valle vs Barcelona SC (Final)
+2024-12-18: LDU Quito vs Emelec (Semifinal)
+
+VENEZUELAN PRIMERA (ven.1)
+2024-12-15: Caracas FC vs Deportivo Tachira
+2024-12-14: Zamora FC vs Estudiantes de Merida
+
+PERUVIAN LIGA 1 (per.1)
+2024-12-22: Universitario vs Alianza Lima (Final)
+2024-12-18: Sporting Cristal vs Melgar (Semifinal)
+
+COSTA RICAN PRIMERA (crc.1)
+2024-12-22: Alajuelense vs Herediano (Final)
+2024-12-18: Saprissa vs San Carlos (Semifinal)
+
+INDIAN SUPER LEAGUE (ind.1)
+[Season on break]
+
+J.LEAGUE (jpn.1)
+2024-12-07: Vissel Kobe vs Hiroshima (Final round)
+2024-12-07: Yokohama F. Marinos vs Kashima Antlers
+
+CHINESE SUPER LEAGUE (chn.1)
+2024-11-02: Shanghai Port vs Shanghai Shenhua (Final round)
+2024-11-02: Shandong Taishan vs Beijing Guoan
+
+A-LEAGUE MEN (aus.1)
+2024-12-21: Melbourne Victory vs Western United
+2024-12-21: Sydney FC vs Melbourne City
+
+SOUTH AFRICAN PREMIERSHIP (rsa.1)
+2024-12-22: Mamelodi Sundowns vs Kaizer Chiefs
+2024-12-21: Orlando Pirates vs AmaZulu
+
+CHAMPIONS LEAGUE (uefa.champions)
+2024-12-11: Atalanta vs Real Madrid
+2024-12-11: Barcelona vs Borussia Dortmund
+
+EUROPA LEAGUE (uefa.europa)
+2024-12-12: Manchester United vs Viktoria Plzen
+2024-12-12: Tottenham vs Rangers
+
+COPA LIBERTADORES (conmebol.libertadores)
+2024-11-30: Atletico Mineiro vs Botafogo (Final)
+
+COPA SUDAMERICANA (conmebol.sudamericana)
+2024-11-23: Racing vs Cruzeiro (Final)
+
+CONCACAF CHAMPIONS CUP (concacaf.champions)
+[Tournament scheduled for Feb-May 2025]
+
+FIFA WORLD CUP (fifa.world)
+[Next tournament: 2026]
+
+EUROPEAN CHAMPIONSHIP (uefa.euro)
+[Next tournament: 2028]
+
+COPA AMÉRICA (conmebol.america)
+[Next tournament: 2024 Final was Argentina vs Colombia]
+
+FA CUP (eng.fa)
+[Round of 64 scheduled for Jan 2025]
+
+LEAGUE CUP (eng.league_cup)
+2024-12-18: Tottenham vs Manchester United (Quarterfinal)
+2024-12-18: Arsenal vs Crystal Palace (Quarterfinal)
+
+COPA DEL REY (esp.copa_del_rey)
+[Round of 32 scheduled for Jan 2025]
+
+COUPE DE FRANCE (fra.coupe_de_france)
+[Round of 64 scheduled for Dec 2024-Jan 2025]
+
+DFB-POKAL (ger.dfb_pokal)
+2024-12-04: Bayern Munich vs Bayer Leverkusen (Round of 16)
+2024-12-04: Arminia Bielefeld vs Freiburg
+
+COPPA ITALIA (ita.coppa_italia)
+2024-12-18: Inter Milan vs Udinese (Round of 16)
+2024-12-18: Lazio vs Napoli (Round of 16)

@@ -24,7 +24,7 @@ class YouTubeService:
         "Serie A": "UUET00YnetHT7tOpu12v8jxg",             # CBS Sports Golazo
         "Ligue 1": "UU6c1z7bA__85CIWZ_jpCK-Q",             # ESPN FC
         # Other European leagues
-        "Eredivisie": "UU6c1z7bA__85CIWZ_jpCK-Q",          # ESPN FC
+        "Eredivisie": "UU4vmPjKs8tJM0HMd9JmgZ-g",          # ESPN MX
         "Primeira Liga": "UU6c1z7bA__85CIWZ_jpCK-Q",       # ESPN FC
         "Scottish Premiership": "UU6c1z7bA__85CIWZ_jpCK-Q", # ESPN FC
         "Belgian Pro League": "UU6c1z7bA__85CIWZ_jpCK-Q",  # ESPN FC
