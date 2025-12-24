@@ -347,8 +347,7 @@ async def fetch_highlights_for_yesterday(send_notification: bool = False):
                         channel_title=video.get('channel_title', ''),
                         published_at=video.get('published_at'),
                         view_count=video.get('view_count', 0),
-                        duration=video.get('duration', ''),
-                        is_official=video.get('is_official', False)
+                        duration=video.get('duration', '')
                     )
                     db.add(highlight)
                     db.commit()
@@ -474,8 +473,7 @@ async def fetch_highlights_for_today():
                         channel_title=video.get('channel_title', ''),
                         published_at=video.get('published_at'),
                         view_count=video.get('view_count', 0),
-                        duration=video.get('duration', ''),
-                        is_official=video.get('is_official', False)
+                        duration=video.get('duration', '')
                     )
                     db.add(highlight)
                     db.commit()

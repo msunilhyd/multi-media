@@ -270,8 +270,7 @@ class YouTubeService:
                             'channel_title': snippet['channelTitle'],
                             'published_at': snippet['publishedAt'],
                             'view_count': None,
-                            'duration': None,
-                            'is_official': True
+                            'duration': None
                         })
                 
                 # Get next page token, break if no more pages
@@ -463,18 +462,14 @@ class YouTubeService:
         
         for video in videos:
             title_lower = video['title'].lower()
-            channel_lower = video['channel_title'].lower()
             
-            is_official = any(ch in channel_lower for ch in official_channels)
             is_extended = 'extended' in title_lower or 'full' in title_lower
             
-            video['is_official'] = is_official
-            
-            # Only keep official channels OR extended highlights
-            if is_official:
-                official_videos.append(video)
-            elif is_extended:
+            # Categorize videos
+            if is_extended:
                 extended_videos.append(video)
+            else:
+                official_videos.append(video)
         
         # Prioritize: official first, then extended
         filtered_videos = official_videos + extended_videos
@@ -487,9 +482,6 @@ class YouTubeService:
         def score_video(video: Dict) -> int:
             score = 0
             title_lower = video['title'].lower()
-            
-            if video.get('is_official'):
-                score += 100
             
             if 'extended' in title_lower:
                 score += 50
@@ -533,8 +525,7 @@ class YouTubeService:
                 'channel_title': 'Football Highlights HD',
                 'published_at': datetime.utcnow().isoformat() + 'Z',
                 'view_count': 150000,
-                'duration': '10:25',
-                'is_official': False
+                'duration': '10:25'
             },
             {
                 'video_id': f'mock_{home_team[:3]}_{away_team[:3]}_2',
@@ -544,8 +535,7 @@ class YouTubeService:
                 'channel_title': 'Premier League',
                 'published_at': datetime.utcnow().isoformat() + 'Z',
                 'view_count': 500000,
-                'duration': '15:30',
-                'is_official': True
+                'duration': '15:30'
             }
         ]
 

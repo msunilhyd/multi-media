@@ -56,7 +56,6 @@ class Highlight(Base):
     published_at = Column(DateTime, nullable=True)
     view_count = Column(Integer, nullable=True)
     duration = Column(String(20), nullable=True)
-    is_official = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())
     
     match = relationship("Match", back_populates="highlights")

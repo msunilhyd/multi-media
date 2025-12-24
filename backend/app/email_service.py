@@ -79,7 +79,7 @@ def send_missing_highlights_notification(missing_matches: List[Dict]) -> bool:
                 <li>Get the video ID from the URL (e.g., <code>dQw4w9WgXcQ</code> from youtube.com/watch?v=<strong>dQw4w9WgXcQ</strong>)</li>
                 <li>Run this SQL to add the highlight:
                     <pre>
-INSERT INTO highlights (match_id, youtube_video_id, title, channel_title, is_official)
+INSERT INTO highlights (match_id, youtube_video_id, title, channel_title)
 VALUES (&lt;match_id&gt;, '&lt;video_id&gt;', '&lt;title&gt;', '&lt;channel&gt;', 1);
                     </pre>
                 </li>
