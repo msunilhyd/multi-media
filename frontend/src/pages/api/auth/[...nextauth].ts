@@ -1,10 +1,10 @@
-import NextAuth from 'next-auth'
+import NextAuth, { AuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 
-export const authOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     // Email/Password authentication
     CredentialsProvider({
@@ -95,7 +95,7 @@ export const authOptions = {
   ],
 
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile }: any) {
       if (account?.provider === 'google') {
         try {
           // Register/login Google user with backend
@@ -123,14 +123,14 @@ export const authOptions = {
       return true
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user }: any) {
       if (user) {
         token.sub = user.id
       }
       return token
     },
 
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       if (token.sub) {
         session.user.id = token.sub
       }
@@ -140,11 +140,10 @@ export const authOptions = {
 
   pages: {
     signIn: '/auth/signin',
-    signUp: '/auth/signup',
   },
 
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
   },
 
   secret: process.env.NEXTAUTH_SECRET,
