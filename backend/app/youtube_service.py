@@ -322,6 +322,7 @@ class YouTubeService:
         - 'Manchester City' -> 'manchester city' (need both to distinguish from United)
         - 'Aston Villa' -> 'aston villa' (need both words)
         - 'West Ham' -> 'west ham' (need both words)
+        - 'Fatih Karagümrük' -> 'karagumruk' (normalized, unique identifier)
         """
         team_normalized = self._normalize_text(team_name)
         
@@ -334,6 +335,8 @@ class YouTubeService:
             'inter milan', 'ac milan',
             'real sociedad', 'real betis',
             'sporting', 'athletic',
+            # Turkish teams with potentially ambiguous names
+            'istanbul basaksehir', 'caykur rizespor',
         ]
         
         for full_name in full_name_required:
@@ -357,14 +360,33 @@ class YouTubeService:
         - 'Atlético Madrid' matching 'Real Madrid' (both have 'Madrid')
         - 'Aston Villa' matching 'West Ham vs Aston Villa' for wrong match
         
-        Normalizes accents so 'Atlético' matches 'Atletico'.
+        Normalizes accents so 'Atlético' matches 'Atletico', 'Karagümrük' matches 'Karagumruk'.
         """
         title_normalized = self._normalize_text(title)
         team_normalized = self._normalize_text(team_full)
         
+        # Alternate spellings for teams (especially Turkish teams with special chars)
+        # Maps normalized team name -> list of acceptable variations in video titles
+        alternate_names = {
+            'fatih karagumruk': ['karagumruk', 'karagümrük', 'f. karagumruk'],
+            'caykur rizespor': ['rizespor', 'caykur', 'çaykur'],
+            'istanbul basaksehir': ['basaksehir', 'başakşehir', 'i. basaksehir'],
+            'besiktas': ['besiktas', 'beşiktaş', 'bjk'],
+            'fenerbahce': ['fenerbahce', 'fenerbahçe', 'fener', 'fb'],
+            'galatasaray': ['galatasaray', 'gala', 'gs'],
+        }
+        
         # Best case: full team name appears (normalized)
         if team_normalized in title_normalized:
             return True
+        
+        # Check for alternate names
+        for main_name, alternates in alternate_names.items():
+            if main_name in team_normalized:
+                for alt in alternates:
+                    alt_normalized = self._normalize_text(alt)
+                    if alt_normalized in title_normalized:
+                        return True
         
         # Check for unique identifier (stricter matching)
         # team_unique is already normalized from _get_unique_team_identifier
