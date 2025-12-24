@@ -8,24 +8,50 @@ import { Ionicons } from '@expo/vector-icons';
 import MusicPlayerScreen from './src/screens/MusicPlayerScreen';
 import MusicPlaylistScreen from './src/screens/MusicPlaylistScreen';
 import FootballScreen from './src/screens/FootballScreen';
+import { useFonts, PlayfairDisplay_700Bold_Italic } from '@expo-google-fonts/playfair-display';
 
 const Tab = createBottomTabNavigator();
 
-// Custom header component with clean gradient text
-const CustomHeader = () => (
-  <View style={{ backgroundColor: '#1f2937', paddingTop: 50, paddingBottom: 14, alignItems: 'center', justifyContent: 'center' }}>
-    <Text style={{ 
-      fontSize: 32, 
-      fontWeight: '800', 
-      fontStyle: 'italic',
-      textAlign: 'center',
-      color: '#60a5fa',
-      letterSpacing: 0.5,
+// Custom header component with gradient text matching frontend
+const CustomHeader = () => {
+  const [fontsLoaded] = useFonts({
+    PlayfairDisplay_700Bold_Italic,
+  });
+
+  return (
+    <View style={{ 
+      backgroundColor: '#1f2937', 
+      paddingTop: 50, 
+      paddingBottom: 14, 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      flexDirection: 'row'
     }}>
-      LinusPlaylists
-    </Text>
-  </View>
-);
+      <Text style={{ 
+        fontSize: 32, 
+        fontFamily: fontsLoaded ? 'PlayfairDisplay_700Bold_Italic' : 'System',
+        fontWeight: fontsLoaded ? undefined : '700',
+        fontStyle: fontsLoaded ? undefined : 'italic',
+        textAlign: 'center',
+        color: '#60a5fa',
+        letterSpacing: 0.5,
+      }}>
+        Linus
+      </Text>
+      <Text style={{ 
+        fontSize: 32, 
+        fontFamily: fontsLoaded ? 'PlayfairDisplay_700Bold_Italic' : 'System',
+        fontWeight: fontsLoaded ? undefined : '700',
+        fontStyle: fontsLoaded ? undefined : 'italic',
+        textAlign: 'center',
+        color: '#c084fc',
+        letterSpacing: 0.5,
+      }}>
+        Playlists
+      </Text>
+    </View>
+  );
+};
 
 export default function App() {
   useEffect(() => {
@@ -79,10 +105,19 @@ export default function App() {
               iconName = focused ? 'musical-notes' : 'musical-notes-outline';
             }
 
-            return <Ionicons name={iconName} size={size} color={color} />;
+            // Set color based on route and focused state
+            const activeColor = route.name === 'Football' ? '#3b82f6' : '#8b5cf6';
+            const finalColor = focused ? activeColor : '#9ca3af';
+            
+            return <Ionicons name={iconName} size={size} color={finalColor} />;
           },
-          tabBarActiveTintColor: '#3b82f6',
+          tabBarActiveTintColor: 'transparent', // Not used since we handle color in tabBarIcon
           tabBarInactiveTintColor: '#9ca3af',
+          tabBarLabelStyle: ({ focused }) => ({
+            color: focused 
+              ? (route.name === 'Football' ? '#3b82f6' : '#8b5cf6')
+              : '#9ca3af'
+          }),
           headerStyle: {
             backgroundColor: '#1f2937',
           },

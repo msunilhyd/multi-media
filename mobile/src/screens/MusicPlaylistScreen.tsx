@@ -75,71 +75,63 @@ export default function MusicPlaylistScreen() {
     setCurrentIndex(index);
     setIsPlaying(true);
     
-    // Scroll to show the song just above the player
-    const filteredIndex = filteredSongs.findIndex(s => s.id === song.id);
-    if (filteredIndex !== -1) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: filteredIndex,
-          animated: true,
-          viewPosition: 0.5,
-        });
-      }, 100);
-    }
+    // Scroll to show the song in the filtered list
+    setTimeout(() => {
+      flatListRef.current?.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    }, 100);
   };
 
   const playNext = useCallback(() => {
+    const playlist = hasActiveFilters ? filteredSongs : defaultPlaylist;
     let nextIndex: number;
     
     if (isShuffleOn) {
       do {
-        nextIndex = Math.floor(Math.random() * defaultPlaylist.length);
-      } while (nextIndex === currentIndex && defaultPlaylist.length > 1);
+        nextIndex = Math.floor(Math.random() * playlist.length);
+      } while (nextIndex === currentIndex && playlist.length > 1);
     } else {
-      nextIndex = (currentIndex + 1) % defaultPlaylist.length;
+      nextIndex = (currentIndex + 1) % playlist.length;
     }
     
-    const nextSong = defaultPlaylist[nextIndex];
+    const nextSong = playlist[nextIndex];
     setCurrentIndex(nextIndex);
     setCurrentSong(nextSong);
     setIsPlaying(true);
     
-    // Scroll to show the song just above the player
-    const filteredIndex = filteredSongs.findIndex(s => s.id === nextSong.id);
-    if (filteredIndex !== -1) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: filteredIndex,
-          animated: true,
-          viewPosition: 0.5,
-        });
-      }, 100);
-    }
-  }, [currentIndex, isShuffleOn, filteredSongs]);
+    // Scroll to show the song
+    setTimeout(() => {
+      flatListRef.current?.scrollToIndex({
+        index: nextIndex,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    }, 100);
+  }, [currentIndex, isShuffleOn, filteredSongs, hasActiveFilters]);
 
   const playPrevious = () => {
-    const prevIndex = currentIndex === 0 ? defaultPlaylist.length - 1 : currentIndex - 1;
-    const prevSong = defaultPlaylist[prevIndex];
+    const playlist = hasActiveFilters ? filteredSongs : defaultPlaylist;
+    const prevIndex = currentIndex === 0 ? playlist.length - 1 : currentIndex - 1;
+    const prevSong = playlist[prevIndex];
     setCurrentIndex(prevIndex);
     setCurrentSong(prevSong);
     setIsPlaying(true);
     
-    // Scroll to show the song just above the player
-    const filteredIndex = filteredSongs.findIndex(s => s.id === prevSong.id);
-    if (filteredIndex !== -1) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: filteredIndex,
-          animated: true,
-          viewPosition: 0.5,
-        });
-      }, 100);
-    }
+    // Scroll to show the song
+    setTimeout(() => {
+      flatListRef.current?.scrollToIndex({
+        index: prevIndex,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    }, 100);
   };
 
   const renderSongItem = ({ item, index }: { item: Song; index: number }) => {
-    const originalIndex = defaultPlaylist.findIndex(s => s.id === item.id);
-    const isActive = originalIndex === currentIndex;
+    const isActive = currentSong?.id === item.id;
     
     return (
       <TouchableOpacity
@@ -147,11 +139,11 @@ export default function MusicPlaylistScreen() {
           styles.songItem,
           isActive && styles.songItemActive,
         ]}
-        onPress={() => playSong(item, originalIndex)}
+        onPress={() => playSong(item, index)}
       >
         {isActive && (
           <View style={styles.playingIndicator}>
-            <Ionicons name="musical-note" size={16} color="#3b82f6" />
+            <Ionicons name="musical-note" size={16} color="#8b5cf6" />
           </View>
         )}
         <View style={styles.songInfo}>
@@ -312,10 +304,7 @@ export default function MusicPlaylistScreen() {
           data={filteredSongs}
           renderItem={renderSongItem}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={[
-            styles.listContent,
-            { paddingBottom: 220 }
-          ]}
+          contentContainerStyle={styles.listContent}
           onScrollToIndexFailed={(info) => {
             setTimeout(() => {
               flatListRef.current?.scrollToIndex({
@@ -327,58 +316,6 @@ export default function MusicPlaylistScreen() {
           }}
         />
       )}
-
-      <View style={styles.playerContainer}>
-        <View style={styles.playerWrapper}>
-          <YoutubePlayer
-            ref={playerRef}
-            height={150}
-            play={isPlaying}
-            videoId={currentSong?.videoId || defaultPlaylist[0]?.videoId}
-            initialPlayerParams={{
-              controls: true,
-              modestbranding: false,
-            }}
-            onChangeState={(state) => {
-              console.log('Player state:', state);
-              if (state === 'ended') {
-                playNext();
-              }
-            }}
-            onReady={() => {
-              console.log('Player ready');
-              setIsReady(true);
-            }}
-            webViewProps={{
-              allowsInlineMediaPlayback: true,
-              mediaPlaybackRequiresUserAction: false,
-            }}
-          />
-        </View>
-
-        <View style={styles.controls}>
-          <TouchableOpacity 
-            onPress={() => setIsShuffleOn(!isShuffleOn)} 
-            style={styles.controlButton}
-          >
-            <Ionicons 
-              name="shuffle" 
-              size={24} 
-              color={isShuffleOn ? '#22c55e' : '#9ca3af'} 
-            />
-          </TouchableOpacity>
-          
-          <TouchableOpacity onPress={playPrevious} style={styles.controlButton}>
-            <Ionicons name="play-skip-back" size={28} color="#ffffff" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity onPress={playNext} style={styles.controlButton}>
-            <Ionicons name="play-skip-forward" size={28} color="#ffffff" />
-          </TouchableOpacity>
-          
-          <View style={styles.spacer} />
-        </View>
-      </View>
     </View>
   );
 }
@@ -474,7 +411,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   clearLink: {
-    color: '#3b82f6',
+    color: '#8b5cf6',
     fontSize: 14,
   },
   listContent: {
@@ -492,13 +429,13 @@ const styles = StyleSheet.create({
   songItemActive: {
     backgroundColor: '#374151',
     borderLeftWidth: 4,
-    borderLeftColor: '#3b82f6',
+    borderLeftColor: '#8b5cf6',
   },
   playingIndicator: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -513,20 +450,16 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   songTitleActive: {
-    color: '#3b82f6',
+    color: '#8b5cf6',
   },
   songDetails: {
     fontSize: 11,
     color: '#9ca3af',
   },
   playerContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: '#1f2937',
-    borderTopWidth: 1,
-    borderTopColor: '#374151',
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
   },
   playerWrapper: {
     width: '100%',
