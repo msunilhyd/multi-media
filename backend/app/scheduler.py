@@ -73,22 +73,40 @@ async def fetch_matches_for_date(target_date: date, db: Session) -> int:
                 
                 if existing:
                     # Update status/scores if changed
-                    if existing.status != match["status"]:
-                        existing.status = match["status"]
-                        existing.home_score = match.get("home_score")
-                        existing.away_score = match.get("away_score")
+                    home_score = match.get("home_score")
+                    away_score = match.get("away_score")
+                    
+                    # Auto-set status to finished if match has scores
+                    if home_score is not None and away_score is not None:
+                        new_status = "finished"
+                    else:
+                        new_status = match["status"]
+                    
+                    if existing.status != new_status or existing.home_score != home_score or existing.away_score != away_score:
+                        existing.status = new_status
+                        existing.home_score = home_score
+                        existing.away_score = away_score
                         db.commit()
                 else:
                     # Create new match
+                    home_score = match.get("home_score")
+                    away_score = match.get("away_score")
+                    
+                    # Auto-set status to finished if match has scores
+                    if home_score is not None and away_score is not None:
+                        status = "finished"
+                    else:
+                        status = match["status"]
+                    
                     new_match = models.Match(
                         league_id=db_league.id,
                         home_team=match["home_team"],
                         away_team=match["away_team"],
-                        home_score=match.get("home_score"),
-                        away_score=match.get("away_score"),
+                        home_score=home_score,
+                        away_score=away_score,
                         match_date=target_date,
                         match_time=match.get("match_time"),
-                        status=match["status"],
+                        status=status,
                         espn_event_id=match.get("espn_event_id")
                     )
                     db.add(new_match)
@@ -218,21 +236,30 @@ async def refresh_today_scores():
                 
                 if existing:
                     # Update if status or scores changed
+                    home_score = match.get("home_score")
+                    away_score = match.get("away_score")
+                    
+                    # Auto-set status to finished if match has scores
+                    if home_score is not None and away_score is not None:
+                        new_status = "finished"
+                    else:
+                        new_status = match["status"]
+                    
                     changed = False
-                    if existing.status != match["status"]:
-                        existing.status = match["status"]
+                    if existing.status != new_status:
+                        existing.status = new_status
                         changed = True
-                    if existing.home_score != match.get("home_score"):
-                        existing.home_score = match.get("home_score")
+                    if existing.home_score != home_score:
+                        existing.home_score = home_score
                         changed = True
-                    if existing.away_score != match.get("away_score"):
-                        existing.away_score = match.get("away_score")
+                    if existing.away_score != away_score:
+                        existing.away_score = away_score
                         changed = True
                     
                     if changed:
                         db.commit()
                         updated_count += 1
-                        print(f"[Scheduler] Updated: {match['home_team']} vs {match['away_team']} - {match['status']}")
+                        print(f"[Scheduler] Updated: {match['home_team']} vs {match['away_team']} - {new_status}")
         
         print(f"[Scheduler] Score refresh complete! Updated {updated_count} matches\n")
         
