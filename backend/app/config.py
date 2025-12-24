@@ -126,8 +126,8 @@ def is_team_of_interest(team_name: str, league_name: str) -> bool:
 
 
 def match_has_team_of_interest(home_team: str, away_team: str, league_name: str) -> bool:
-    """Check if either team in the match is a team of interest"""
-    return is_team_of_interest(home_team, league_name) or is_team_of_interest(away_team, league_name)
+    """Fetch highlights for all teams in all leagues"""
+    return True
 
 
 @lru_cache()
