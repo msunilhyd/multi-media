@@ -81,7 +81,7 @@ export default function FootballPage() {
       
       // Try to find the most recent date with highlights
       const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const yesterday = getYesterdayString();
       
       let defaultDate = yesterday; // fallback to yesterday
       
@@ -103,15 +103,21 @@ export default function FootballPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Helper function to get yesterday's date string consistently
+  const getYesterdayString = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
+  };
+
   // Format date for display (e.g., "Dec 20" or "Today")
   const formatDateLabel = (dateStr: string) => {
     const date = new Date(dateStr + 'T12:00:00');
     const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayString = getYesterdayString();
     
     const isToday = dateStr === today.toISOString().split('T')[0];
-    const isYesterday = dateStr === yesterday.toISOString().split('T')[0];
+    const isYesterday = dateStr === yesterdayString;
     
     if (isToday) return 'Today';
     if (isYesterday) return 'Yesterday';
@@ -140,14 +146,12 @@ export default function FootballPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => {
-                const yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
-                const yesterdayStr = yesterday.toISOString().split('T')[0];
+                const yesterdayStr = getYesterdayString();
                 setShowComingSoon(false);
                 handleDateSelect(yesterdayStr);
               }}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                !showComingSoon && selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0]
+                !showComingSoon && selectedDate === getYesterdayString()
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
