@@ -101,7 +101,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   );
   
   const years = useMemo(() => 
-    Array.from(new Set(playlist.songs.map(s => s.year))).filter(y => y && y !== '-').sort((a, b) => b.localeCompare(a)),
+    Array.from(new Set(playlist.songs.map(s => s.year))).filter((y): y is string => y !== null && y !== undefined && y !== '-').sort((a, b) => b.localeCompare(a)),
     [playlist.songs]
   );
   
@@ -160,8 +160,8 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
         if (playerRef.current && isReady && typeof playerRef.current.loadVideoById === 'function') {
           playerRef.current.loadVideoById({
             videoId: firstSong.videoId,
-            startSeconds: firstSong.startSeconds,
-            endSeconds: firstSong.endSeconds,
+            startSeconds: firstSong.startSeconds ?? undefined,
+            endSeconds: firstSong.endSeconds ?? undefined,
           });
         }
       }
@@ -216,8 +216,8 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
     if (playerRef.current && nextSong && typeof playerRef.current.loadVideoById === 'function') {
       playerRef.current.loadVideoById({
         videoId: nextSong.videoId,
-        startSeconds: nextSong.startSeconds,
-        endSeconds: nextSong.endSeconds,
+        startSeconds: nextSong.startSeconds ?? undefined,
+        endSeconds: nextSong.endSeconds ?? undefined,
       });
     }
   }, []);
@@ -260,8 +260,8 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
             autoplay: 0,
             rel: 0,
             modestbranding: 1,
-            start: firstSong.startSeconds || 0,
-            end: firstSong.endSeconds,
+            start: firstSong.startSeconds ?? undefined,
+            end: firstSong.endSeconds ?? undefined,
             vq: 'hd1080', // Request 1080p quality by default
           },
           events: {
@@ -382,8 +382,8 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
     if (playerRef.current && prevSong && typeof playerRef.current.loadVideoById === 'function') {
       playerRef.current.loadVideoById({
         videoId: prevSong.videoId,
-        startSeconds: prevSong.startSeconds,
-        endSeconds: prevSong.endSeconds,
+        startSeconds: prevSong.startSeconds ?? undefined,
+        endSeconds: prevSong.endSeconds ?? undefined,
       });
     }
   }, [currentIndex]);
@@ -474,8 +474,8 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
     if (playerRef.current && isReady && typeof playerRef.current.loadVideoById === 'function') {
       playerRef.current.loadVideoById({
         videoId: song.videoId,
-        startSeconds: song.startSeconds,
-        endSeconds: song.endSeconds,
+        startSeconds: song.startSeconds ?? undefined,
+        endSeconds: song.endSeconds ?? undefined,
       });
     }
   };
