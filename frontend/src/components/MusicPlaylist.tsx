@@ -170,25 +170,39 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   
   // Auto-scroll playlist to show current song in center
   useEffect(() => {
-    if (playlistRef.current && currentIndex >= 0) {
-      const playlistContainer = playlistRef.current;
-      const songElements = playlistContainer.children;
+    if (playlistRef.current && currentIndex >= 0 && filteredSongs.length > 0) {
+      // Small delay to ensure DOM has updated after filtering
+      const scrollTimer = setTimeout(() => {
+        const playlistContainer = playlistRef.current;
+        if (!playlistContainer) return;
+        
+        const songElements = playlistContainer.children;
+        
+        // Ensure we have the right number of elements matching filtered songs
+        if (songElements.length !== filteredSongs.length) return;
+        
+        if (songElements[currentIndex] && currentIndex < filteredSongs.length) {
+          const songElement = songElements[currentIndex] as HTMLElement;
+          const containerHeight = playlistContainer.clientHeight;
+          const songHeight = songElement.offsetHeight;
+          const songTop = songElement.offsetTop;
+          
+          // Calculate scroll position to center the song with 3 songs below middle
+          // Position the song 3 song heights below the center
+          const songCenter = songTop + (songHeight / 2);
+          const containerCenter = containerHeight / 2;
+          const offsetFromCenter = songHeight * 3; // 3 songs below center
+          const scrollPosition = songCenter - containerCenter - offsetFromCenter;
+          
+          // Smooth scroll to the song
+          playlistContainer.scrollTo({
+            top: Math.max(0, scrollPosition), // Prevent negative scroll
+            behavior: 'smooth'
+          });
+        }
+      }, 100); // Small delay to ensure DOM is ready
       
-      if (songElements[currentIndex]) {
-        const songElement = songElements[currentIndex] as HTMLElement;
-        const containerHeight = playlistContainer.clientHeight;
-        const songHeight = songElement.offsetHeight;
-        const songTop = songElement.offsetTop;
-        
-        // Calculate scroll position to center the song
-        const scrollPosition = songTop - (containerHeight / 2) + (songHeight / 2);
-        
-        // Smooth scroll to the song
-        playlistContainer.scrollTo({
-          top: scrollPosition,
-          behavior: 'smooth'
-        });
-      }
+      return () => clearTimeout(scrollTimer);
     }
   }, [currentIndex, filteredSongs]);
 
