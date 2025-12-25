@@ -80,7 +80,8 @@ export default function FootballPage() {
       setAvailableDates(dates);
       
       // Try to find the most recent date with highlights
-      const today = new Date().toISOString().split('T')[0];
+      const todayObj = new Date();
+      const today = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate()).toISOString().split('T')[0];
       const yesterday = getYesterdayString();
       
       let defaultDate = yesterday; // fallback to yesterday
@@ -103,10 +104,10 @@ export default function FootballPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Helper function to get yesterday's date string consistently
+  // Helper function to get yesterday's date string consistently (local timezone)
   const getYesterdayString = () => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+    const today = new Date();
+    const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
     return yesterday.toISOString().split('T')[0];
   };
 
@@ -114,9 +115,10 @@ export default function FootballPage() {
   const formatDateLabel = (dateStr: string) => {
     const date = new Date(dateStr + 'T12:00:00');
     const today = new Date();
+    const todayString = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
     const yesterdayString = getYesterdayString();
     
-    const isToday = dateStr === today.toISOString().split('T')[0];
+    const isToday = dateStr === todayString;
     const isYesterday = dateStr === yesterdayString;
     
     if (isToday) return 'Today';
