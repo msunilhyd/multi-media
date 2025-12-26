@@ -91,4 +91,9 @@ LEAGUE_MAPPINGS = {
     "MLS": {"slug": "mls", "country": "USA"},
     "World Cup": {"slug": "world-cup", "country": "International"},
     "Euro": {"slug": "euro", "country": "Europe"},
+    "AFCON": {"slug": "afcon", "country": "Africa"},
+    "African Cup of Nations": {"slug": "afcon", "country": "Africa"},
+    "Africa Cup of Nations": {"slug": "afcon", "country": "Africa"},
+    "CAF Africa Cup of Nations": {"slug": "afcon", "country": "Africa"},
+    "CAF African Cup of Nations": {"slug": "afcon", "country": "Africa"},
 }

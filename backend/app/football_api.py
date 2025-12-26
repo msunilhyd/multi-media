@@ -24,6 +24,9 @@ class ESPNFootballAPI:
         # European competitions
         "uefa.champions": "Champions League",
         "uefa.europa": "Europa League",
+        # African competitions
+        "caf.nations": "AFCON",
+        "caf.champions": "CAF Champions League",
         # Domestic cups
         "eng.fa": "FA Cup",
         "eng.league_cup": "League Cup",
