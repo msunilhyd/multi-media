@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -21,6 +21,7 @@ class User(Base):
     favorite_teams = relationship("UserFavoriteTeam", back_populates="user", cascade="all, delete-orphan")
     notification_preferences = relationship("NotificationPreference", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    playlists = relationship("UserPlaylist", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserFavoriteTeam(Base):
@@ -71,4 +72,43 @@ class Notification(Base):
     
     # Relationships
     user = relationship("User", back_populates="notifications")
+
+
+class UserPlaylist(Base):
+    __tablename__ = "user_playlists"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    is_public = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    user = relationship("User", back_populates="playlists")
+    playlist_songs = relationship("UserPlaylistSong", back_populates="playlist", cascade="all, delete-orphan")
+    
+    # Indexes
+    __table_args__ = (Index("idx_user_playlists_user_id", "user_id"),)
+
+
+class UserPlaylistSong(Base):
+    __tablename__ = "user_playlist_songs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    playlist_id = Column(Integer, ForeignKey("user_playlists.id", ondelete="CASCADE"), nullable=False)
+    song_id = Column(Integer, nullable=False)  # References songs table
+    position = Column(Integer, nullable=False)  # Order in playlist
+    added_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    playlist = relationship("UserPlaylist", back_populates="playlist_songs")
+    
+    # Constraints
+    __table_args__ = (
+        UniqueConstraint("playlist_id", "song_id", name="unique_playlist_song"),
+        Index("idx_playlist_songs_playlist_id", "playlist_id"),
+        Index("idx_playlist_songs_position", "playlist_id", "position"),
+    )
     match = relationship("Match")

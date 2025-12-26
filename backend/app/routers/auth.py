@@ -1,12 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 import bcrypt
 from typing import Optional
+import jwt
 
 from ..database import get_db
 from ..models_users import User, NotificationPreference
 from ..schemas_users import UserCreate, UserResponse, UserLogin
+
+# JWT settings
+JWT_SECRET = "your-secret-key-here"  # In production, use environment variable
+JWT_ALGORITHM = "HS256"
+
+security = HTTPBearer()
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
@@ -117,3 +125,50 @@ def google_auth(google_data: dict, db: Session = Depends(get_db)):
         name=user.name,
         created_at=user.created_at
     )
+
+
+def create_access_token(user_id: int) -> str:
+    """Create JWT access token for user"""
+    payload = {"user_id": user_id}
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    """Get current user from JWT token"""
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+    
+    return user
+
+
+# For simple user authentication without JWT (for development)
+def get_user_by_email(email: str, db: Session = Depends(get_db)) -> User:
+    """Get user by email for simple authentication"""
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return user

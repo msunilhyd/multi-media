@@ -2,6 +2,7 @@
 
 import { Play, Pause } from 'lucide-react';
 import type { Song } from '@/lib/api';
+import AddToPlaylistDropdown from './AddToPlaylistDropdown';
 
 interface PlaylistItemProps {
   song: Song;
@@ -9,6 +10,7 @@ interface PlaylistItemProps {
   isActive: boolean;
   isPlaying: boolean;
   onSelect: () => void;
+  showAddToPlaylist?: boolean;
 }
 
 export default function PlaylistItem({
@@ -17,6 +19,7 @@ export default function PlaylistItem({
   isActive,
   isPlaying,
   onSelect,
+  showAddToPlaylist = true,
 }: PlaylistItemProps) {
   return (
     <div
@@ -54,8 +57,8 @@ export default function PlaylistItem({
         </p>
       </div>
       
-      {/* Language Badge */}
-      <div className="flex-shrink-0">
+      {/* Language Badge & Add to Playlist */}
+      <div className="flex items-center gap-2 flex-shrink-0">
         <span className={`text-xs px-2 py-1 rounded ${
           isActive
             ? 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200'
@@ -63,6 +66,10 @@ export default function PlaylistItem({
         }`}>
           {song.language}
         </span>
+        
+        {showAddToPlaylist && (
+          <AddToPlaylistDropdown song={song} />
+        )}
       </div>
     </div>
   );
