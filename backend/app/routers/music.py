@@ -49,7 +49,7 @@ async def get_songs(
     search: Optional[str] = Query(None, description="Search in title, artist, or movie"),
     year: Optional[str] = Query(None, description="Filter by year"),
     artist: Optional[str] = Query(None, description="Filter by artist/composer name"),
-    limit: int = Query(100, ge=1, le=500, description="Number of songs to return"),
+    limit: int = Query(100, ge=1, le=2000, description="Number of songs to return"),
     offset: int = Query(0, ge=0, description="Number of songs to skip"),
     db: Session = Depends(get_db)
 ):
@@ -60,7 +60,7 @@ async def get_songs(
     - **search**: Search in title, artist name, or movie name
     - **year**: Filter by year
     - **artist**: Filter by artist/composer name
-    - **limit**: Maximum number of songs to return (default: 100, max: 500)
+    - **limit**: Maximum number of songs to return (default: 100, max: 2000)
     - **offset**: Number of songs to skip for pagination
     """
     

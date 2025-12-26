@@ -16,8 +16,22 @@ export default function MusicPage() {
     const loadSongs = async () => {
       try {
         setLoading(true);
-        const data = await fetchSongs(undefined, undefined, undefined, undefined, 500);
-        setSongs(data);
+        // Load all songs by making multiple requests
+        const allSongs: Song[] = [];
+        let offset = 0;
+        const limit = 2000; // Updated API maximum
+        let hasMoreSongs = true;
+
+        while (hasMoreSongs) {
+          const data = await fetchSongs(undefined, undefined, undefined, undefined, limit, offset);
+          allSongs.push(...data);
+          
+          // If we get fewer songs than the limit, we've reached the end
+          hasMoreSongs = data.length === limit;
+          offset += limit;
+        }
+
+        setSongs(allSongs);
         setError(null);
       } catch (err) {
         console.error('Error loading songs:', err);
