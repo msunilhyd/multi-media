@@ -147,9 +147,13 @@ export default function UserPlaylists({ onSelectPlaylist }: UserPlaylistsProps) 
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-white font-medium truncate">{playlist.title}</h3>
                         {playlist.is_public ? (
-                          <Globe className="h-4 w-4 text-green-400 flex-shrink-0" title="Public playlist" />
+                          <span title="Public playlist">
+                            <Globe className="h-4 w-4 text-green-400 flex-shrink-0" />
+                          </span>
                         ) : (
-                          <Lock className="h-4 w-4 text-gray-400 flex-shrink-0" title="Private playlist" />
+                          <span title="Private playlist">
+                            <Lock className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          </span>
                         )}
                       </div>
                       
