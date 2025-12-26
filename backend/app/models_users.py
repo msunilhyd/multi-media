@@ -88,9 +88,6 @@ class UserPlaylist(Base):
     # Relationships
     user = relationship("User", back_populates="playlists")
     playlist_songs = relationship("UserPlaylistSong", back_populates="playlist", cascade="all, delete-orphan")
-    
-    # Indexes
-    __table_args__ = (Index("idx_user_playlists_user_id", "user_id"),)
 
 
 class UserPlaylistSong(Base):
@@ -105,10 +102,7 @@ class UserPlaylistSong(Base):
     # Relationships
     playlist = relationship("UserPlaylist", back_populates="playlist_songs")
     
-    # Constraints
+    # Constraints (indexes already exist in database)
     __table_args__ = (
         UniqueConstraint("playlist_id", "song_id", name="unique_playlist_song"),
-        Index("idx_playlist_songs_playlist_id", "playlist_id"),
-        Index("idx_playlist_songs_position", "playlist_id", "position"),
     )
-    match = relationship("Match")
