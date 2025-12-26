@@ -31,7 +31,7 @@ export default function AddToPlaylistDropdown({ song, className = '' }: AddToPla
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists`, {
         headers: {
-          'X-User-Email': session.user?.email || '',
+          'Authorization': `Bearer ${(session as any)?.accessToken}`,
         },
       });
 
@@ -70,7 +70,7 @@ export default function AddToPlaylistDropdown({ song, className = '' }: AddToPla
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Email': session.user?.email || '',
+          'Authorization': `Bearer ${(session as any)?.accessToken}`,
         },
         body: JSON.stringify({
           song_id: song.id,

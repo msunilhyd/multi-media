@@ -31,7 +31,7 @@ export default function UserPlaylists({ onSelectPlaylist }: UserPlaylistsProps) 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists`, {
         headers: {
-          'X-User-Email': session.user?.email || '',
+          'Authorization': `Bearer ${(session as any)?.accessToken}`,
         },
       });
 
@@ -58,7 +58,7 @@ export default function UserPlaylists({ onSelectPlaylist }: UserPlaylistsProps) 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists/${playlistId}`, {
         method: 'DELETE',
         headers: {
-          'X-User-Email': session?.user?.email || '',
+          'Authorization': `Bearer ${(session as any)?.accessToken}`,
         },
       });
 

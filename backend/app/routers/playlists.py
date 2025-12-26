@@ -1,25 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Optional
 from pydantic import BaseModel
 from ..database import get_db
 from ..models_users import User, UserPlaylist, UserPlaylistSong
+from .auth import get_current_user
 
 router = APIRouter(
     prefix="/api/playlists",
     tags=["playlists"]
 )
-
-def get_current_user_by_email(user_email: str = Header(..., alias="x-user-email"), db: Session = Depends(get_db)) -> User:
-    """Get current user by email from header (temporary implementation)"""
-    user = db.query(User).filter(User.email == user_email).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    return user
 
 
 class CreatePlaylistRequest(BaseModel):
@@ -64,7 +55,7 @@ class PlaylistResponse(BaseModel):
 
 @router.get("/", response_model=List[PlaylistResponse])
 async def get_user_playlists(
-    current_user: User = Depends(get_current_user_by_email),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get all playlists for the current user"""
@@ -106,7 +97,7 @@ async def get_user_playlists(
 @router.post("/", response_model=PlaylistResponse)
 async def create_playlist(
     request: CreatePlaylistRequest,
-    current_user: User = Depends(get_current_user_by_email),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Create a new playlist for the current user"""
@@ -137,7 +128,7 @@ async def create_playlist(
 @router.get("/{playlist_id}", response_model=PlaylistResponse)
 async def get_playlist(
     playlist_id: int,
-    current_user: User = Depends(get_current_user_by_email),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get a specific playlist with all its songs"""
@@ -216,7 +207,7 @@ async def get_playlist(
 async def add_song_to_playlist(
     playlist_id: int,
     request: AddSongToPlaylistRequest,
-    current_user: User = Depends(get_current_user_by_email),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Add a song to a playlist"""
@@ -273,7 +264,7 @@ async def add_song_to_playlist(
 async def remove_song_from_playlist(
     playlist_id: int,
     song_id: int,
-    current_user: User = Depends(get_current_user_by_email),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Remove a song from a playlist"""
@@ -315,7 +306,7 @@ async def remove_song_from_playlist(
 @router.delete("/{playlist_id}")
 async def delete_playlist(
     playlist_id: int,
-    current_user: User = Depends(get_current_user_by_email),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Delete a playlist"""

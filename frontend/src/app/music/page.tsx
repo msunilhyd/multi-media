@@ -63,13 +63,13 @@ export default function MusicPage() {
   }, []);
 
   const handleSelectUserPlaylist = async (playlist: UserPlaylist) => {
-    if (!session?.user?.email) return;
+    if (!(session as any)?.accessToken) return;
     
     try {
       // Fetch the full playlist with songs
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists/${playlist.id}`, {
         headers: {
-          'X-User-Email': session.user.email,
+          'Authorization': `Bearer ${(session as any).accessToken}`,
         },
       });
       if (response.ok) {

@@ -120,8 +120,9 @@ export const authOptions: AuthOptions = {
           })
 
           if (response.ok) {
-            const backendUser = await response.json()
-            user.id = backendUser.id.toString()
+            const authData = await response.json()
+            user.id = authData.user.id.toString()
+            user.accessToken = authData.access_token
             return true
           }
         } catch (error) {
@@ -135,6 +136,7 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.sub = user.id
         token.picture = user.image
+        token.accessToken = user.accessToken
       }
       return token
     },
@@ -145,6 +147,9 @@ export const authOptions: AuthOptions = {
       }
       if (token.picture) {
         session.user.image = token.picture
+      }
+      if (token.accessToken) {
+        session.accessToken = token.accessToken
       }
       return session
     },

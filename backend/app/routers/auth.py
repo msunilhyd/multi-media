@@ -5,13 +5,14 @@ from pydantic import BaseModel, EmailStr
 import bcrypt
 from typing import Optional
 import jwt
+from datetime import datetime, timedelta
 
 from ..database import get_db
 from ..models_users import User, NotificationPreference
 from ..schemas_users import UserCreate, UserResponse, UserLogin
 
 # JWT settings
-JWT_SECRET = "your-secret-key-here"  # In production, use environment variable
+JWT_SECRET = "your-secret-key-here-change-in-production"  # In production, use environment variable
 JWT_ALGORITHM = "HS256"
 
 security = HTTPBearer()
@@ -19,7 +20,13 @@ security = HTTPBearer()
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 
-@router.post("/register", response_model=UserResponse)
+class AuthResponse(BaseModel):
+    user: dict
+    access_token: str
+    token_type: str = "bearer"
+
+
+@router.post("/register", response_model=AuthResponse)
 def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user with email and password"""
     
@@ -46,17 +53,21 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     
-    # Create default notification preferences (handled by trigger)
+    # Create JWT token
+    access_token = create_access_token(new_user.id)
     
-    return UserResponse(
-        id=new_user.id,
-        email=new_user.email,
-        name=new_user.name,
-        created_at=new_user.created_at
+    return AuthResponse(
+        user={
+            "id": new_user.id,
+            "email": new_user.email,
+            "name": new_user.name,
+            "created_at": new_user.created_at.isoformat()
+        },
+        access_token=access_token
     )
 
 
-@router.post("/login", response_model=UserResponse)
+@router.post("/login", response_model=AuthResponse)
 def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
     """Login user with email and password"""
     
@@ -74,15 +85,21 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
             detail="Invalid password"
         )
     
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        name=user.name,
-        created_at=user.created_at
+    # Create JWT token
+    access_token = create_access_token(user.id)
+    
+    return AuthResponse(
+        user={
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "created_at": user.created_at.isoformat()
+        },
+        access_token=access_token
     )
 
 
-@router.post("/google", response_model=UserResponse)
+@router.post("/google", response_model=AuthResponse)
 def google_auth(google_data: dict, db: Session = Depends(get_db)):
     """Handle Google OAuth authentication"""
     
@@ -119,17 +136,26 @@ def google_auth(google_data: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
     
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        name=user.name,
-        created_at=user.created_at
+    # Create JWT token
+    access_token = create_access_token(user.id)
+    
+    return AuthResponse(
+        user={
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "created_at": user.created_at.isoformat()
+        },
+        access_token=access_token
     )
 
 
 def create_access_token(user_id: int) -> str:
     """Create JWT access token for user"""
-    payload = {"user_id": user_id}
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.utcnow() + timedelta(hours=24)  # Token expires in 24 hours
+    }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
