@@ -61,7 +61,7 @@ function getDateDisplay(dateLabel: string, dateStr: string): { label: string; ba
   if (diffDays === 0) {
     return {
       label: '🔥 Today',
-      badgeClass: 'bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-orange-500/30',
+      badgeClass: 'bg-gradient-to-r from-yellow-500 to-amber-500 shadow-lg shadow-yellow-500/30',
       textClass: 'text-white font-bold'
     };
   } else if (diffDays === 1) {
@@ -71,57 +71,57 @@ function getDateDisplay(dateLabel: string, dateStr: string): { label: string; ba
       textClass: 'text-white font-bold'
     };
   } else if (diffDays === 2) {
-    // Day after tomorrow - teal gradient
+    // Day after tomorrow - same color as tomorrow
     const dayName = matchDate.toLocaleDateString('en-US', { weekday: 'long' });
     const monthDay = matchDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return {
       label: `📅 ${dayName}, ${monthDay}`,
-      badgeClass: 'bg-gradient-to-r from-teal-500 to-cyan-500 shadow-lg shadow-teal-500/30',
+      badgeClass: 'bg-gradient-to-r from-yellow-500 to-amber-500 shadow-lg shadow-yellow-500/30',
       textClass: 'text-white font-bold'
     };
   } else if (diffDays === 3) {
-    // 3 days out - purple gradient
+    // 3 days out - same color as tomorrow
     const dayName = matchDate.toLocaleDateString('en-US', { weekday: 'long' });
     const monthDay = matchDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return {
       label: `🗓️ ${dayName}, ${monthDay}`,
-      badgeClass: 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30',
+      badgeClass: 'bg-gradient-to-r from-yellow-500 to-amber-500 shadow-lg shadow-yellow-500/30',
       textClass: 'text-white font-bold'
     };
   } else if (diffDays === 4) {
-    // 4 days out - blue gradient
+    // 4 days out - same color as tomorrow
     const dayName = matchDate.toLocaleDateString('en-US', { weekday: 'long' });
     const monthDay = matchDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return {
       label: `✨ ${dayName}, ${monthDay}`,
-      badgeClass: 'bg-gradient-to-r from-blue-500 to-indigo-500 shadow-lg shadow-blue-500/30',
+      badgeClass: 'bg-gradient-to-r from-yellow-500 to-amber-500 shadow-lg shadow-yellow-500/30',
       textClass: 'text-white font-bold'
     };
   } else if (diffDays === 5) {
-    // 5 days out - green gradient
+    // 5 days out - same color as tomorrow
     const dayName = matchDate.toLocaleDateString('en-US', { weekday: 'long' });
     const monthDay = matchDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return {
       label: `🌟 ${dayName}, ${monthDay}`,
-      badgeClass: 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-lg shadow-emerald-500/30',
+      badgeClass: 'bg-gradient-to-r from-yellow-500 to-amber-500 shadow-lg shadow-yellow-500/30',
       textClass: 'text-white font-bold'
     };
   } else if (diffDays === 6) {
-    // 6 days out - rose gradient
+    // 6 days out - same color as tomorrow
     const dayName = matchDate.toLocaleDateString('en-US', { weekday: 'long' });
     const monthDay = matchDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return {
       label: `💫 ${dayName}, ${monthDay}`,
-      badgeClass: 'bg-gradient-to-r from-rose-500 to-red-400 shadow-lg shadow-rose-500/30',
+      badgeClass: 'bg-gradient-to-r from-yellow-500 to-amber-500 shadow-lg shadow-yellow-500/30',
       textClass: 'text-white font-bold'
     };
   } else {
-    // 7+ days out - violet gradient
+    // 7+ days out - same color as tomorrow
     const dayName = matchDate.toLocaleDateString('en-US', { weekday: 'long' });
     const monthDay = matchDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return {
       label: `🎯 ${dayName}, ${monthDay}`,
-      badgeClass: 'bg-gradient-to-r from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/30',
+      badgeClass: 'bg-gradient-to-r from-yellow-500 to-amber-500 shadow-lg shadow-yellow-500/30',
       textClass: 'text-white font-bold'
     };
   }

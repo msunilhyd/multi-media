@@ -180,7 +180,11 @@ export default function FootballPage() {
                   setShowComingSoon(false);
                   handleShowAll();
                 }}
-                className="px-4 py-2 rounded-lg transition-colors font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                  !showComingSoon && selectedDate && availableDates.includes(selectedDate)
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
               >
                 Show All
               </button>
@@ -189,8 +193,8 @@ export default function FootballPage() {
               onClick={() => setShowComingSoon(!showComingSoon)}
               className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 ${
                 showComingSoon
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               <Clock className="w-4 h-4" />

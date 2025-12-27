@@ -76,8 +76,8 @@ async def fetch_matches_for_date(target_date: date, db: Session) -> int:
                     home_score = match.get("home_score")
                     away_score = match.get("away_score")
                     
-                    # Auto-set status to finished if match has scores
-                    if home_score is not None and away_score is not None:
+                    # Only set status to finished if match has scores AND is today or in the past
+                    if home_score is not None and away_score is not None and target_date <= date.today():
                         new_status = "finished"
                     else:
                         new_status = match["status"]
@@ -92,8 +92,8 @@ async def fetch_matches_for_date(target_date: date, db: Session) -> int:
                     home_score = match.get("home_score")
                     away_score = match.get("away_score")
                     
-                    # Auto-set status to finished if match has scores
-                    if home_score is not None and away_score is not None:
+                    # Only set status to finished if match has scores AND is today or in the past
+                    if home_score is not None and away_score is not None and target_date <= date.today():
                         status = "finished"
                     else:
                         status = match["status"]

@@ -24,6 +24,7 @@ const leagueColors: Record<string, string> = {
   'coupe-de-france': 'from-blue-700 to-blue-500',
   'dfb-pokal': 'from-blue-800 to-blue-600',
   'coppa-italia': 'from-blue-700 to-blue-500',
+  'afcon': 'from-green-700 to-green-500',
   'default': 'from-blue-700 to-blue-500',
 };
 
