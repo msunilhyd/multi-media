@@ -31,7 +31,7 @@ export default function UserPlaylists({ onSelectPlaylist, playlistType = 'music'
     if (!session) return;
 
     try {
-      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists`);
+      const url = new URL('/api/playlists', window.location.origin);
       if (playlistType) {
         url.searchParams.append('playlist_type', playlistType);
       }
@@ -62,7 +62,7 @@ export default function UserPlaylists({ onSelectPlaylist, playlistType = 'music'
     if (!confirm('Are you sure you want to delete this playlist?')) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists/${playlistId}`, {
+      const response = await fetch(`/api/playlists/${playlistId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${(session as any)?.accessToken}`,

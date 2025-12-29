@@ -25,7 +25,7 @@ export default function CreatePlaylistModal({ isOpen, onClose, playlistType = 'm
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists`, {
+      const response = await fetch('/api/playlists', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

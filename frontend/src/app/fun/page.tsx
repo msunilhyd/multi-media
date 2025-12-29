@@ -73,7 +73,7 @@ export default function FunPage() {
     if (!session) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists/${playlist.id}`, {
+      const response = await fetch(`/api/playlists/${playlist.id}`, {
         headers: {
           'Authorization': `Bearer ${(session as any)?.accessToken}`,
         },

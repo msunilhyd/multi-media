@@ -33,7 +33,7 @@ export default function AddToPlaylistDropdown({ song, className = '' }: AddToPla
 
     setIsLoading(true);
     try {
-      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists`);
+      const url = new URL('/api/playlists', window.location.origin);
       url.searchParams.append('playlist_type', playlistType);
       
       const response = await fetch(url.toString(), {
@@ -77,7 +77,7 @@ export default function AddToPlaylistDropdown({ song, className = '' }: AddToPla
     const contentType = isEntertainment ? 'entertainment' : 'song';
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists/${playlistId}/songs`, {
+      const response = await fetch(`/api/playlists/${playlistId}/songs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
