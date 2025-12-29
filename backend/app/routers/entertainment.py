@@ -50,22 +50,17 @@ async def get_entertainment(
     - **offset**: Number of items to skip for pagination
     """
     
-    # Build the query
+    # Build the query - using only columns that exist in production
     query = """
         SELECT 
             id,
             title,
             youtube_video_id,
-            description,
             content_type,
             start_seconds,
             end_seconds,
-            duration,
-            thumbnail_url,
-            channel_title,
-            view_count,
-            tags,
-            is_featured
+            created_at,
+            updated_at
         FROM entertainment
         WHERE 1=1
     """
@@ -78,12 +73,13 @@ async def get_entertainment(
         params['content_type'] = content_type.lower()
     
     if search:
-        query += " AND (title ILIKE :search OR description ILIKE :search)"
+        query += " AND title ILIKE :search"
         params['search'] = f"%{search}%"
     
-    if featured is not None:
-        query += " AND is_featured = :featured"
-        params['featured'] = featured
+    # Note: is_featured column doesn't exist in production database
+    # if featured is not None:
+    #     query += " AND is_featured = :featured"
+    #     params['featured'] = featured
     
     # Add ordering and pagination
     query += " ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
@@ -99,16 +95,16 @@ async def get_entertainment(
             id=row.id,
             title=row.title,
             youtube_video_id=row.youtube_video_id,
-            description=row.description,
+            description="",  # Not available in production DB
             content_type=row.content_type,
             start_seconds=row.start_seconds,
             end_seconds=row.end_seconds,
-            duration=row.duration,
-            thumbnail_url=row.thumbnail_url,
-            channel_title=row.channel_title,
-            view_count=row.view_count,
-            tags=row.tags or [],
-            is_featured=row.is_featured
+            duration=0,  # Not available in production DB
+            thumbnail_url="",  # Not available in production DB
+            channel_title="",  # Not available in production DB
+            view_count=0,  # Not available in production DB
+            tags=[],  # Not available in production DB
+            is_featured=False  # Not available in production DB
         ))
     
     return entertainment_items
@@ -140,7 +136,16 @@ async def get_featured_entertainment(
 async def get_entertainment_by_id(entertainment_id: int, db: Session = Depends(get_db)):
     """Get specific entertainment content by ID"""
     result = db.execute(text("""
-        SELECT * FROM entertainment WHERE id = :id
+        SELECT 
+            id,
+            title,
+            youtube_video_id,
+            content_type,
+            start_seconds,
+            end_seconds,
+            created_at,
+            updated_at
+        FROM entertainment WHERE id = :id
     """), {"id": entertainment_id})
     
     row = result.fetchone()
@@ -151,14 +156,14 @@ async def get_entertainment_by_id(entertainment_id: int, db: Session = Depends(g
         id=row.id,
         title=row.title,
         youtube_video_id=row.youtube_video_id,
-        description=row.description,
+        description="",  # Not available in production DB
         content_type=row.content_type,
         start_seconds=row.start_seconds,
         end_seconds=row.end_seconds,
-        duration=row.duration,
-        thumbnail_url=row.thumbnail_url,
-        channel_title=row.channel_title,
-        view_count=row.view_count,
-        tags=row.tags or [],
-        is_featured=row.is_featured
+        duration=0,  # Not available in production DB
+        thumbnail_url="",  # Not available in production DB
+        channel_title="",  # Not available in production DB
+        view_count=0,  # Not available in production DB
+        tags=[],  # Not available in production DB
+        is_featured=False  # Not available in production DB
     )
