@@ -136,12 +136,10 @@ export const authOptions: AuthOptions = {
 
     async jwt({ token, user }: any) {
       if (user) {
-        console.log('JWT callback - User login, storing accessToken:', !!user.accessToken);
         token.sub = user.id
         token.picture = user.image
         token.accessToken = user.accessToken
       }
-      console.log('JWT callback - Token has accessToken:', !!token.accessToken);
       return token
     },
 
@@ -155,7 +153,6 @@ export const authOptions: AuthOptions = {
       if (token.accessToken) {
         session.accessToken = token.accessToken
       }
-      console.log('Session callback - Token has accessToken:', !!token.accessToken, 'Session has accessToken:', !!session.accessToken);
       return session
     },
   },
