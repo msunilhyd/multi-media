@@ -63,15 +63,11 @@ export default function MusicPage() {
   }, []);
 
   const handleSelectUserPlaylist = async (playlist: UserPlaylist) => {
-    if (!(session as any)?.accessToken) return;
+    if (!session) return;
     
     try {
       // Fetch the full playlist with songs
-      const response = await fetch(`/api/playlists/${playlist.id}`, {
-        headers: {
-          'Authorization': `Bearer ${(session as any).accessToken}`,
-        },
-      });
+      const response = await fetch(`/api/playlists/${playlist.id}`);
       if (response.ok) {
         const fullPlaylist = await response.json();
         setSelectedUserPlaylist(fullPlaylist);

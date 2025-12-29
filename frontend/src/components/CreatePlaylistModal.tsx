@@ -29,7 +29,6 @@ export default function CreatePlaylistModal({ isOpen, onClose, playlistType = 'm
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(session as any)?.accessToken}`,
         },
         body: JSON.stringify({
           title: title.trim(),

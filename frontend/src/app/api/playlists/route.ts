@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !(session as any).accessToken) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const playlistType = searchParams.get('playlist_type');
     
@@ -11,16 +22,12 @@ export async function GET(request: NextRequest) {
     if (playlistType) {
       url.searchParams.set('playlist_type', playlistType);
     }
-
-    const authHeader = request.headers.get('authorization');
-    console.log('Playlists GET - Auth header:', authHeader ? 'Present' : 'Missing');
-    console.log('Playlists GET - Backend URL:', url.toString());
     
     const response = await fetch(url.toString(), {
-      headers: authHeader ? { 'Authorization': authHeader } : {},
+      headers: {
+        'Authorization': `Bearer ${(session as any).accessToken}`,
+      },
     });
-
-    console.log('Playlists GET - Backend response status:', response.status);
     
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
@@ -35,14 +42,22 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !(session as any).accessToken) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
-    const authHeader = request.headers.get('authorization');
 
     const response = await fetch(`${BACKEND_URL}/api/playlists`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(authHeader ? { 'Authorization': authHeader } : {}),
+        'Authorization': `Bearer ${(session as any).accessToken}`,
       },
       body: JSON.stringify(body),
     });

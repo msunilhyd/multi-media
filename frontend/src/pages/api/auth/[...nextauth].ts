@@ -33,11 +33,12 @@ export const authOptions: AuthOptions = {
           })
 
           if (response.ok) {
-            const user = await response.json()
+            const data = await response.json()
             return {
-              id: user.id.toString(),
-              email: user.email,
-              name: user.name,
+              id: data.user.id.toString(),
+              email: data.user.email,
+              name: data.user.name,
+              accessToken: data.access_token, // Store the JWT token
             }
           } else if (response.status === 404) {
             // User doesn't exist
@@ -57,11 +58,12 @@ export const authOptions: AuthOptions = {
                 })
 
                 if (registerResponse.ok) {
-                  const newUser = await registerResponse.json()
+                  const data = await registerResponse.json()
                   return {
-                    id: newUser.id.toString(),
-                    email: newUser.email,
-                    name: newUser.name,
+                    id: data.user.id.toString(),
+                    email: data.user.email,
+                    name: data.user.name,
+                    accessToken: data.access_token, // Store the JWT token
                   }
                 } else {
                   const errorData = await registerResponse.json().catch(() => ({}))

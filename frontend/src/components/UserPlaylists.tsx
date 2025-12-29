@@ -36,11 +36,7 @@ export default function UserPlaylists({ onSelectPlaylist, playlistType = 'music'
         url.searchParams.append('playlist_type', playlistType);
       }
       
-      const response = await fetch(url.toString(), {
-        headers: {
-          'Authorization': `Bearer ${(session as any)?.accessToken}`,
-        },
-      });
+      const response = await fetch(url.toString());
 
       if (response.ok) {
         const data = await response.json();
@@ -64,9 +60,6 @@ export default function UserPlaylists({ onSelectPlaylist, playlistType = 'music'
     try {
       const response = await fetch(`/api/playlists/${playlistId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${(session as any)?.accessToken}`,
-        },
       });
 
       if (response.ok) {

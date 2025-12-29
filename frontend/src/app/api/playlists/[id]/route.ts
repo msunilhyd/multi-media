@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -7,10 +9,19 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const authHeader = request.headers.get('authorization');
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !(session as any).accessToken) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
     const response = await fetch(`${BACKEND_URL}/api/playlists/${params.id}`, {
-      headers: authHeader ? { 'Authorization': authHeader } : {},
+      headers: {
+        'Authorization': `Bearer ${(session as any).accessToken}`,
+      },
     });
 
     const data = await response.json();
@@ -29,11 +40,20 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const authHeader = request.headers.get('authorization');
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !(session as any).accessToken) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
     const response = await fetch(`${BACKEND_URL}/api/playlists/${params.id}`, {
       method: 'DELETE',
-      headers: authHeader ? { 'Authorization': authHeader } : {},
+      headers: {
+        'Authorization': `Bearer ${(session as any).accessToken}`,
+      },
     });
 
     if (response.ok) {

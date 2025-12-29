@@ -73,11 +73,7 @@ export default function FunPage() {
     if (!session) return;
 
     try {
-      const response = await fetch(`/api/playlists/${playlist.id}`, {
-        headers: {
-          'Authorization': `Bearer ${(session as any)?.accessToken}`,
-        },
-      });
+      const response = await fetch(`/api/playlists/${playlist.id}`);
 
       if (response.ok) {
         const fullPlaylist = await response.json();

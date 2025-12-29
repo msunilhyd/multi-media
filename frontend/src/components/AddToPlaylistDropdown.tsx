@@ -36,11 +36,7 @@ export default function AddToPlaylistDropdown({ song, className = '' }: AddToPla
       const url = new URL('/api/playlists', window.location.origin);
       url.searchParams.append('playlist_type', playlistType);
       
-      const response = await fetch(url.toString(), {
-        headers: {
-          'Authorization': `Bearer ${(session as any)?.accessToken}`,
-        },
-      });
+      const response = await fetch(url.toString());
 
       if (response.ok) {
         const data = await response.json();
@@ -81,7 +77,6 @@ export default function AddToPlaylistDropdown({ song, className = '' }: AddToPla
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(session as any)?.accessToken}`,
         },
         body: JSON.stringify({
           song_id: song.id,
