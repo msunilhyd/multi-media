@@ -324,3 +324,21 @@ export async function fetchMusicStats(): Promise<MusicStats> {
   if (!response.ok) throw new Error('Failed to fetch music stats');
   return response.json();
 }
+
+// Entertainment types and API
+export interface Entertainment {
+  id: number;
+  title: string;
+  youtube_video_id: string;
+  content_type: string;
+  language: string | null;
+  start_seconds: number | null;
+  end_seconds: number | null;
+  channel_title?: string | null;
+}
+
+export async function fetchEntertainment(): Promise<Entertainment[]> {
+  const response = await fetch(`/api/entertainment`);
+  if (!response.ok) throw new Error('Failed to fetch entertainment');
+  return response.json();
+}

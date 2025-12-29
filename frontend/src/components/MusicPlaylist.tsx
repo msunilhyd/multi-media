@@ -85,6 +85,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playlistRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const nextCallTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Helper to normalize language (trim whitespace and uppercase)
   const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
@@ -127,6 +128,13 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   const isShuffleOnRef = useRef(isShuffleOn);
   const currentIndexRef = useRef(currentIndex);
   const filteredSongsRef = useRef(filteredSongs);
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    isShuffleOnRef.current = isShuffleOn;
+    currentIndexRef.current = currentIndex;
+    filteredSongsRef.current = filteredSongs;
+  }, [isShuffleOn, currentIndex, filteredSongs]);
   
   // Set mounted state on client
   useEffect(() => {
@@ -208,7 +216,20 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
 
   const handleNext = useCallback(() => {
     const songs = filteredSongsRef.current;
+    console.log('HandleNext called - Current songs array:', songs.map(s => s.title));
+    console.log('HandleNext called - Current index:', currentIndexRef.current);
+    
     if (songs.length === 0) return;
+    
+    // Debounce multiple rapid calls
+    if (nextCallTimeoutRef.current) {
+      console.log('Debouncing rapid handleNext call');
+      return;
+    }
+    
+    nextCallTimeoutRef.current = setTimeout(() => {
+      nextCallTimeoutRef.current = null;
+    }, 1000); // Prevent rapid calls within 1 second
     
     const prevIndex = currentIndexRef.current;
     let nextIndex: number;
@@ -221,6 +242,8 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
     } else {
       nextIndex = (prevIndex + 1) % songs.length;
     }
+    
+    console.log(`Moving from index ${prevIndex} to ${nextIndex}, song: ${songs[nextIndex].title}`);
     
     const nextSong = songs[nextIndex];
     
@@ -322,12 +345,13 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
                   setIsPlaying(false);
                   break;
                 case window.YT.PlayerState.ENDED:
+                  console.log('VIDEO ENDED - calling handleNext from onStateChange');
                   handleNext();
                   break;
               }
             },
-            onError: () => {
-              console.log('Video unavailable, skipping...');
+            onError: (event) => {
+              console.log('VIDEO ERROR - calling handleNext from onError, error code:', event.data);
               handleNext();
             },
           },
