@@ -1,1 +1,34 @@
 sync_to_railway.py
+
+# Logs and temp files
+*.log
+*.db
+nohup.out
+*.jsn
+
+# Test and migration scripts
+test_*.py
+*_migration.py
+check_*.py
+fetch_*.py
+add_*.py
+fix_*.py
+cleanup_*.py
+debug_*.py
+sync_*.py
+setup_*.py
+import_*.py
+migrate_*.py
+simple_*.py
+final_*.py
+safe_*.py
+
+# Documentation that's outdated
+*_FIX.md
+*_SUMMARY.md
+FILTER_FIX.md
+MIGRATION_SUMMARY.md
+
+# Misc
+recent_matches.txt
+unavailable_songs.json
