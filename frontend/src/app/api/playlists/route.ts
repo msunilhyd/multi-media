@@ -13,11 +13,15 @@ export async function GET(request: NextRequest) {
     }
 
     const authHeader = request.headers.get('authorization');
+    console.log('Playlists GET - Auth header:', authHeader ? 'Present' : 'Missing');
+    console.log('Playlists GET - Backend URL:', url.toString());
     
     const response = await fetch(url.toString(), {
       headers: authHeader ? { 'Authorization': authHeader } : {},
     });
 
+    console.log('Playlists GET - Backend response status:', response.status);
+    
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
