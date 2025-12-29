@@ -18,7 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchAllHighlightsGrouped, fetchAvailableDates, fetchHighlightsGroupedByDate, fetchHighlightsGroupedWithTeamFilter, HighlightsGroupedByLeague, Match, Highlight } from '../services/api';
+import { fetchAvailableDates, fetchHighlightsGroupedByDate, fetchHighlightsGroupedWithTeamFilter, HighlightsGroupedByLeague, Match, Highlight } from '../services/api';
 import TeamSelector from '../components/TeamSelector';
 
 export default function FootballScreen() {
@@ -36,6 +36,13 @@ export default function FootballScreen() {
   const [showToast, setShowToast] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const toastOpacity = useRef(new Animated.Value(0)).current;
+
+  // Helper function to get yesterday's date string
+  const getYesterdayString = () => {
+    const today = new Date();
+    const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
+  };
 
   const loadFavoriteTeams = async () => {
     try {
@@ -68,12 +75,13 @@ export default function FootballScreen() {
       setError(null);
       setHighlightsData([]);
       
-      console.log('Loading highlights with teams:', teams, 'and date:', date);
+      // Use yesterday as default if no date provided
+      const targetDate = date || getYesterdayString();
+      
+      console.log('Loading highlights with teams:', teams, 'and date:', targetDate);
       const data = teams.length > 0
-        ? await fetchHighlightsGroupedWithTeamFilter(teams, date)
-        : date 
-          ? await fetchHighlightsGroupedByDate(date)
-          : await fetchAllHighlightsGrouped();
+        ? await fetchHighlightsGroupedWithTeamFilter(teams, targetDate)
+        : await fetchHighlightsGroupedByDate(targetDate);
       
       console.log('Loaded highlights:', data.length, 'leagues');
       setHighlightsData(data);

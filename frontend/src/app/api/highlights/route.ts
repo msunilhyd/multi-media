@@ -7,11 +7,19 @@ export async function GET(request: NextRequest) {
   const matchDate = searchParams.get('match_date');
   const teams = searchParams.get('teams');
   
+  // Require match_date parameter - no "show all" functionality
+  if (!matchDate) {
+    return NextResponse.json(
+      { error: 'match_date parameter is required' },
+      { status: 400 }
+    );
+  }
+  
   const params = new URLSearchParams();
-  if (matchDate) params.append('match_date', matchDate);
+  params.append('match_date', matchDate);
   if (teams) params.append('teams', teams);
   
-  const url = `${BACKEND_URL}/api/highlights/all${params.toString() ? `?${params}` : ''}`;
+  const url = `${BACKEND_URL}/api/highlights?${params}`;
   
   try {
     const response = await fetch(url, {

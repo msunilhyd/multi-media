@@ -157,6 +157,7 @@ export const authOptions: AuthOptions = {
 
   pages: {
     signIn: '/auth/signin',
+    error: '/auth/signin', // Redirect errors back to sign in page
   },
 
   session: {

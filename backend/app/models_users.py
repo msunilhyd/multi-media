@@ -82,6 +82,7 @@ class UserPlaylist(Base):
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     is_public = Column(Boolean, default=False)
+    playlist_type = Column(String(20), nullable=False, default='music')  # 'music' or 'entertainment'
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
@@ -95,7 +96,9 @@ class UserPlaylistSong(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     playlist_id = Column(Integer, ForeignKey("user_playlists.id", ondelete="CASCADE"), nullable=False)
-    song_id = Column(Integer, nullable=False)  # References songs table
+    song_id = Column(Integer, nullable=True)  # References songs table (legacy)
+    content_type = Column(String(20), nullable=False, default='song')  # 'song' or 'entertainment'
+    item_id = Column(Integer, nullable=False)  # References songs.id or entertainment.id based on content_type
     position = Column(Integer, nullable=False)  # Order in playlist
     added_at = Column(DateTime(timezone=True), server_default=func.now())
     

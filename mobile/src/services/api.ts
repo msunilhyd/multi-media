@@ -59,11 +59,7 @@ export async function fetchMatches(date?: string, leagueSlug?: string): Promise<
   return response.json();
 }
 
-export async function fetchAllHighlightsGrouped(days: number = 7): Promise<HighlightsGroupedByLeague[]> {
-  const response = await fetch(`${API_BASE_URL}/api/highlights/all`);
-  if (!response.ok) throw new Error('Failed to fetch highlights');
-  return response.json();
-}
+
 
 export async function fetchAvailableDates(): Promise<string[]> {
   const response = await fetch(`${API_BASE_URL}/api/matches/dates`);
@@ -72,7 +68,7 @@ export async function fetchAvailableDates(): Promise<string[]> {
 }
 
 export async function fetchHighlightsGroupedByDate(date: string): Promise<HighlightsGroupedByLeague[]> {
-  const response = await fetch(`${API_BASE_URL}/api/highlights/all?match_date=${date}`);
+  const response = await fetch(`${API_BASE_URL}/api/highlights?match_date=${date}`);
   if (!response.ok) throw new Error('Failed to fetch highlights');
   return response.json();
 }
@@ -95,7 +91,7 @@ export async function fetchHighlightsGroupedWithTeamFilter(teams: string[], date
   if (date) params.append('match_date', date);
   if (teams.length > 0) params.append('teams', teams.join(','));
   
-  const response = await fetch(`${API_BASE_URL}/api/highlights/all${params.toString() ? `?${params}` : ''}`);
+  const response = await fetch(`${API_BASE_URL}/api/highlights${params.toString() ? `?${params}` : ''}`);
   if (!response.ok) throw new Error('Failed to fetch highlights');
   return response.json();
 }

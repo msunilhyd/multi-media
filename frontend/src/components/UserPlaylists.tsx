@@ -10,6 +10,7 @@ interface UserPlaylist {
   title: string;
   description: string | null;
   is_public: boolean;
+  playlist_type: string;
   created_at: string;
   updated_at: string;
   song_count: number;
@@ -17,9 +18,10 @@ interface UserPlaylist {
 
 interface UserPlaylistsProps {
   onSelectPlaylist: (playlist: UserPlaylist) => void;
+  playlistType?: 'music' | 'entertainment';
 }
 
-export default function UserPlaylists({ onSelectPlaylist }: UserPlaylistsProps) {
+export default function UserPlaylists({ onSelectPlaylist, playlistType = 'music' }: UserPlaylistsProps) {
   const [playlists, setPlaylists] = useState<UserPlaylist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -29,7 +31,12 @@ export default function UserPlaylists({ onSelectPlaylist }: UserPlaylistsProps) 
     if (!session) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists`, {
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists`);
+      if (playlistType) {
+        url.searchParams.append('playlist_type', playlistType);
+      }
+      
+      const response = await fetch(url.toString(), {
         headers: {
           'Authorization': `Bearer ${(session as any)?.accessToken}`,
         },
@@ -188,6 +195,7 @@ export default function UserPlaylists({ onSelectPlaylist }: UserPlaylistsProps) 
       <CreatePlaylistModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+        playlistType={playlistType}
         onPlaylistCreated={(newPlaylist) => {
           setPlaylists([newPlaylist, ...playlists]);
         }}

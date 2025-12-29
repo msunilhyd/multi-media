@@ -7,10 +7,11 @@ import { useSession } from 'next-auth/react';
 interface CreatePlaylistModalProps {
   isOpen: boolean;
   onClose: () => void;
+  playlistType?: 'music' | 'entertainment';
   onPlaylistCreated: (playlist: any) => void;
 }
 
-export default function CreatePlaylistModal({ isOpen, onClose, onPlaylistCreated }: CreatePlaylistModalProps) {
+export default function CreatePlaylistModal({ isOpen, onClose, playlistType = 'music', onPlaylistCreated }: CreatePlaylistModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -34,6 +35,7 @@ export default function CreatePlaylistModal({ isOpen, onClose, onPlaylistCreated
           title: title.trim(),
           description: description.trim() || null,
           is_public: isPublic,
+          playlist_type: playlistType,
         }),
       });
 

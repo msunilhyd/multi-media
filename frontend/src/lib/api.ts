@@ -143,12 +143,7 @@ export async function fetchHighlightsGrouped(date?: string): Promise<HighlightsG
   return response.json();
 }
 
-export async function fetchAllHighlightsGrouped(): Promise<HighlightsGroupedByLeague[]> {
-  // Use local API proxy to avoid CORS issues
-  const response = await fetch(`/api/highlights`);
-  if (!response.ok) throw new Error('Failed to fetch highlights');
-  return response.json();
-}
+
 
 export async function fetchHighlightsByLeague(leagueSlug: string, date?: string): Promise<HighlightsGroupedByLeague> {
   const params = date ? `?match_date=${date}` : '';

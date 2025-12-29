@@ -609,24 +609,28 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
             <div className="bg-gradient-to-r from-purple-700 to-purple-600 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-white font-bold text-lg flex items-center gap-2">
-                    <Volume2 className="w-5 h-5" />
-                    {playlist.title}
-                  </h2>
+                  {!isEntertainmentContent && (
+                    <h2 className="text-white font-bold text-lg flex items-center gap-2">
+                      <Volume2 className="w-5 h-5" />
+                      {playlist.title}
+                    </h2>
+                  )}
                   <p className="text-purple-200 text-sm">
                     {hasActiveFilters ? `${filteredSongs.length} of ${playlist.songs.length} songs` : `${playlist.songs.length} songs`}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className={`p-2 rounded-full transition-colors text-white ${
-                      showFilters || hasActiveFilters ? 'bg-white/30' : 'bg-white/20 hover:bg-white/30'
-                    }`}
-                    title="Filter songs"
-                  >
-                    <Filter className="w-5 h-5" />
-                  </button>
+                  {!isEntertainmentContent && (
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={`p-2 rounded-full transition-colors text-white ${
+                        showFilters || hasActiveFilters ? 'bg-white/30' : 'bg-white/20 hover:bg-white/30'
+                      }`}
+                      title="Filter songs"
+                    >
+                      <Filter className="w-5 h-5" />
+                    </button>
+                  )}
                   <button
                     onClick={() => playlistRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
                     className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors text-white"
@@ -638,7 +642,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
               </div>
               
               {/* Filter Panel */}
-              {showFilters && (
+              {!isEntertainmentContent && showFilters && (
                 <div className="mt-3 pt-3 border-t border-white/20">
                   <div className="grid grid-cols-1 gap-2">
                     {/* Language Filter - Hidden for entertainment content */}

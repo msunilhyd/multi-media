@@ -50,49 +50,7 @@ def get_highlights_grouped(
     return result
 
 
-@router.get("/all", response_model=List[schemas.HighlightsGroupedByLeague])
-def get_all_highlights_grouped(
-    match_date: Optional[date] = Query(default=None),
-    teams: Optional[str] = Query(default=None, description="Comma-separated list of team names to filter"),
-    db: Session = Depends(get_db)
-):
-    """Get all highlights grouped by league. If match_date is provided, filter by that date. Only returns matches that have highlights."""
-    
-    # Parse team names if provided
-    team_filter = None
-    if teams:
-        team_filter = set(t.strip() for t in teams.split(",") if t.strip())
-    
-    leagues = db.query(models.League).options(
-        joinedload(models.League.matches).joinedload(models.Match.highlights)
-    ).order_by(models.League.display_order).all()
-    
-    result = []
-    for league in leagues:
-        matches_with_highlights = []
-        for m in league.matches:
-            # Only include matches that have highlights
-            if len(m.highlights) > 0:
-                # Apply date filter if provided
-                if match_date and m.match_date != match_date:
-                    continue
-                # If team filter is provided, only include matches with those teams
-                if team_filter:
-                    if m.home_team in team_filter or m.away_team in team_filter:
-                        matches_with_highlights.append(m)
-                else:
-                    matches_with_highlights.append(m)
-        
-        if matches_with_highlights:
-            matches_with_highlights.sort(key=lambda x: x.match_date, reverse=True)
-            total_highlights = sum(len(m.highlights) for m in matches_with_highlights)
-            result.append(schemas.HighlightsGroupedByLeague(
-                league=league,
-                matches=matches_with_highlights,
-                total_highlights=total_highlights
-            ))
-    
-    return result
+
 
 
 @router.get("/fetch-all", response_model=schemas.YouTubeSearchResponse)

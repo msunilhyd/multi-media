@@ -27,9 +27,16 @@ export default function AddToPlaylistDropdown({ song, className = '' }: AddToPla
   const fetchUserPlaylists = async () => {
     if (!session) return;
 
+    // Detect if this is entertainment content (no language or empty language)
+    const isEntertainment = !song.language || song.language === '';
+    const playlistType = isEntertainment ? 'entertainment' : 'music';
+
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists`, {
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists`);
+      url.searchParams.append('playlist_type', playlistType);
+      
+      const response = await fetch(url.toString(), {
         headers: {
           'Authorization': `Bearer ${(session as any)?.accessToken}`,
         },
@@ -65,6 +72,10 @@ export default function AddToPlaylistDropdown({ song, className = '' }: AddToPla
   const handleAddToPlaylist = async (playlistId: number) => {
     if (!session) return;
 
+    // Detect if this is entertainment content (no language or empty language)
+    const isEntertainment = !song.language || song.language === '';
+    const contentType = isEntertainment ? 'entertainment' : 'song';
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists/${playlistId}/songs`, {
         method: 'POST',
@@ -74,6 +85,7 @@ export default function AddToPlaylistDropdown({ song, className = '' }: AddToPla
         },
         body: JSON.stringify({
           song_id: song.id,
+          content_type: contentType,
         }),
       });
 

@@ -8,7 +8,6 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ComingSoon from '@/components/ComingSoon';
 import {
   HighlightsGroupedByLeague,
-  fetchAllHighlightsGrouped,
   fetchAvailableDates,
   fetchHighlightsGroupedByDate,
 } from '@/lib/api';
@@ -19,6 +18,7 @@ export default function FootballPage() {
   const [error, setError] = useState<string | null>(null);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [calendarDate, setCalendarDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [expandedLeagueIds, setExpandedLeagueIds] = useState<Set<number>>(new Set());
   const [showComingSoon, setShowComingSoon] = useState(false);
 
@@ -31,16 +31,14 @@ export default function FootballPage() {
     }
   };
 
-  const loadHighlights = async (date?: string) => {
+  const loadHighlights = async (date: string) => {
     try {
       setIsLoading(true);
       setError(null);
       // Clear previous data immediately to avoid showing stale data
       setHighlightsData([]);
       
-      const data = date 
-        ? await fetchHighlightsGroupedByDate(date)
-        : await fetchAllHighlightsGrouped();
+      const data = await fetchHighlightsGroupedByDate(date);
       
       setHighlightsData(data);
       // Set the first league as expanded by default
@@ -60,18 +58,11 @@ export default function FootballPage() {
   const handleDateSelect = async (date: string) => {
     console.log('Date selected:', date);
     setSelectedDate(date);
+    setCalendarDate(date);
     await loadHighlights(date);
   };
 
-  const handleShowAll = async () => {
-    setSelectedDate(null);
-    const data = await loadHighlights();
-    // Expand all leagues after loading
-    if (data && data.length > 0) {
-      const allLeagueIds = data.map(item => item.league.id);
-      setExpandedLeagueIds(new Set(allLeagueIds));
-    }
-  };
+
 
   useEffect(() => {
     const initializePage = async () => {
@@ -84,13 +75,13 @@ export default function FootballPage() {
       const today = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate()).toISOString().split('T')[0];
       const yesterday = getYesterdayString();
       
-      let defaultDate = yesterday; // fallback to yesterday
+      let defaultDate = yesterday; // Always default to yesterday
       
-      // Check if today has highlights
-      if (dates.includes(today)) {
-        defaultDate = today;
-      } else if (dates.includes(yesterday)) {
+      // Check if yesterday has highlights, otherwise use today, then most recent
+      if (dates.includes(yesterday)) {
         defaultDate = yesterday;
+      } else if (dates.includes(today)) {
+        defaultDate = today;
       } else if (dates.length > 0) {
         // Use the most recent date with highlights
         defaultDate = dates[0];
@@ -163,9 +154,10 @@ export default function FootballPage() {
             <div className="flex items-center gap-2">
               <input
                 type="date"
-                value={selectedDate || ''}
+                value={calendarDate}
                 onChange={(e) => {
                   if (e.target.value) {
+                    setCalendarDate(e.target.value);
                     setShowComingSoon(false);
                     handleDateSelect(e.target.value);
                   }
@@ -174,21 +166,7 @@ export default function FootballPage() {
                 className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            {selectedDate && (
-              <button
-                onClick={() => {
-                  setShowComingSoon(false);
-                  handleShowAll();
-                }}
-                className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                  !showComingSoon && selectedDate && availableDates.includes(selectedDate)
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                Show All
-              </button>
-            )}
+
             <button
               onClick={() => setShowComingSoon(!showComingSoon)}
               className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 ${
@@ -232,9 +210,7 @@ export default function FootballPage() {
           <div>
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                {selectedDate 
-                  ? `Highlights for ${formatDateLabel(selectedDate)}`
-                  : 'All Highlights'}
+                Highlights for {formatDateLabel(selectedDate || getYesterdayString())}
               </h2>
               <span className="text-gray-500 dark:text-gray-400">
                 {highlightsData.reduce((acc, league) => acc + league.total_highlights, 0)} videos available

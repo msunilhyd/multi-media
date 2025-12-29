@@ -17,10 +17,12 @@ class CreatePlaylistRequest(BaseModel):
     title: str
     description: Optional[str] = None
     is_public: bool = False
+    playlist_type: str = 'music'  # 'music' or 'entertainment'
 
 
 class AddSongToPlaylistRequest(BaseModel):
     song_id: int
+    content_type: str = 'song'  # 'song' or 'entertainment'
 
 
 class PlaylistSong(BaseModel):
@@ -44,6 +46,7 @@ class PlaylistResponse(BaseModel):
     title: str
     description: Optional[str] = None
     is_public: bool
+    playlist_type: str
     created_at: str
     updated_at: str
     song_count: int
@@ -55,10 +58,11 @@ class PlaylistResponse(BaseModel):
 
 @router.get("/", response_model=List[PlaylistResponse])
 async def get_user_playlists(
+    playlist_type: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get all playlists for the current user"""
+    """Get all playlists for the current user, optionally filtered by type"""
     
     query = """
         SELECT 
@@ -66,17 +70,27 @@ async def get_user_playlists(
             p.title,
             p.description,
             p.is_public,
+            p.playlist_type,
             p.created_at,
             p.updated_at,
             COUNT(ps.id) as song_count
         FROM user_playlists p
         LEFT JOIN user_playlist_songs ps ON p.id = ps.playlist_id
         WHERE p.user_id = :user_id
-        GROUP BY p.id, p.title, p.description, p.is_public, p.created_at, p.updated_at
+    """
+    
+    params = {"user_id": current_user.id}
+    
+    if playlist_type:
+        query += " AND p.playlist_type = :playlist_type"
+        params["playlist_type"] = playlist_type
+    
+    query += """
+        GROUP BY p.id, p.title, p.description, p.is_public, p.playlist_type, p.created_at, p.updated_at
         ORDER BY p.updated_at DESC
     """
     
-    result = db.execute(text(query), {"user_id": current_user.id})
+    result = db.execute(text(query), params)
     playlists = []
     
     for row in result:
@@ -85,6 +99,7 @@ async def get_user_playlists(
             title=row.title,
             description=row.description,
             is_public=row.is_public,
+            playlist_type=row.playlist_type,
             created_at=row.created_at.isoformat(),
             updated_at=row.updated_at.isoformat(),
             song_count=row.song_count,
@@ -106,7 +121,8 @@ async def create_playlist(
         user_id=current_user.id,
         title=request.title,
         description=request.description,
-        is_public=request.is_public
+        is_public=request.is_public,
+        playlist_type=request.playlist_type
     )
     
     db.add(playlist)
@@ -118,6 +134,7 @@ async def create_playlist(
         title=playlist.title,
         description=playlist.description,
         is_public=playlist.is_public,
+        playlist_type=playlist.playlist_type,
         created_at=playlist.created_at.isoformat(),
         updated_at=playlist.updated_at.isoformat(),
         song_count=0,
@@ -140,6 +157,7 @@ async def get_playlist(
             p.title,
             p.description,
             p.is_public,
+            p.playlist_type,
             p.created_at,
             p.updated_at
         FROM user_playlists p
@@ -154,48 +172,85 @@ async def get_playlist(
     if not playlist_result:
         raise HTTPException(status_code=404, detail="Playlist not found")
     
-    # Get all songs in the playlist
-    songs_query = """
+    # Get all items in the playlist (both songs and entertainment)
+    items_query = """
         SELECT 
-            s.id,
-            s.title,
-            s.language,
-            s.year,
-            a.name as composer,
-            s.youtube_video_id as "videoId",
-            s.album as movie,
-            s.start_seconds as "startSeconds",
-            s.end_seconds as "endSeconds",
+            ps.item_id,
+            ps.content_type,
             ps.position
         FROM user_playlist_songs ps
-        JOIN songs s ON ps.song_id = s.id
-        LEFT JOIN artists a ON s.artist_id = a.id
         WHERE ps.playlist_id = :playlist_id
         ORDER BY ps.position
     """
     
-    songs_result = db.execute(text(songs_query), {"playlist_id": playlist_id})
+    items_result = db.execute(text(items_query), {"playlist_id": playlist_id})
     songs = []
     
-    for row in songs_result:
-        songs.append(PlaylistSong(
-            id=row.id,
-            title=row.title,
-            language=row.language,
-            year=row.year,
-            composer=row.composer or "Unknown",
-            videoId=row.videoId,
-            movie=row.movie,
-            startSeconds=row.startSeconds,
-            endSeconds=row.endSeconds,
-            position=row.position
-        ))
+    for row in items_result:
+        if row.content_type == 'entertainment':
+            # Fetch from entertainment table
+            ent_query = """
+                SELECT 
+                    e.id,
+                    e.title,
+                    e.youtube_video_id as "videoId",
+                    e.start_seconds as "startSeconds",
+                    e.end_seconds as "endSeconds"
+                FROM entertainment e
+                WHERE e.id = :item_id
+            """
+            ent_result = db.execute(text(ent_query), {"item_id": row.item_id}).fetchone()
+            if ent_result:
+                songs.append(PlaylistSong(
+                    id=ent_result.id,
+                    title=ent_result.title,
+                    language="Entertainment",  # Default for entertainment
+                    year=None,
+                    composer="",
+                    videoId=ent_result.videoId,
+                    movie=None,
+                    startSeconds=ent_result.startSeconds,
+                    endSeconds=ent_result.endSeconds,
+                    position=row.position
+                ))
+        else:
+            # Fetch from songs table
+            song_query = """
+                SELECT 
+                    s.id,
+                    s.title,
+                    s.language,
+                    s.year,
+                    a.name as composer,
+                    s.youtube_video_id as "videoId",
+                    s.album as movie,
+                    s.start_seconds as "startSeconds",
+                    s.end_seconds as "endSeconds"
+                FROM songs s
+                LEFT JOIN artists a ON s.artist_id = a.id
+                WHERE s.id = :item_id
+            """
+            song_result = db.execute(text(song_query), {"item_id": row.item_id}).fetchone()
+            if song_result:
+                songs.append(PlaylistSong(
+                    id=song_result.id,
+                    title=song_result.title,
+                    language=song_result.language,
+                    year=song_result.year,
+                    composer=song_result.composer or "Unknown",
+                    videoId=song_result.videoId,
+                    movie=song_result.movie,
+                    startSeconds=song_result.startSeconds,
+                    endSeconds=song_result.endSeconds,
+                    position=row.position
+                ))
     
     return PlaylistResponse(
         id=playlist_result.id,
         title=playlist_result.title,
         description=playlist_result.description,
         is_public=playlist_result.is_public,
+        playlist_type=playlist_result.playlist_type,
         created_at=playlist_result.created_at.isoformat(),
         updated_at=playlist_result.updated_at.isoformat(),
         song_count=len(songs),
@@ -221,22 +276,28 @@ async def add_song_to_playlist(
     if not playlist_check:
         raise HTTPException(status_code=404, detail="Playlist not found")
     
-    # Check if song exists
-    song_check = db.execute(text("""
-        SELECT id FROM songs WHERE id = :song_id
-    """), {"song_id": request.song_id}).fetchone()
+    # Check if item exists in the appropriate table
+    if request.content_type == 'entertainment':
+        item_check = db.execute(text("""
+            SELECT id FROM entertainment WHERE id = :item_id
+        """), {"item_id": request.song_id}).fetchone()
+        if not item_check:
+            raise HTTPException(status_code=404, detail="Entertainment item not found")
+    else:
+        item_check = db.execute(text("""
+            SELECT id FROM songs WHERE id = :item_id
+        """), {"item_id": request.song_id}).fetchone()
+        if not item_check:
+            raise HTTPException(status_code=404, detail="Song not found")
     
-    if not song_check:
-        raise HTTPException(status_code=404, detail="Song not found")
-    
-    # Check if song is already in playlist
+    # Check if item is already in playlist
     existing = db.execute(text("""
         SELECT id FROM user_playlist_songs 
-        WHERE playlist_id = :playlist_id AND song_id = :song_id
-    """), {"playlist_id": playlist_id, "song_id": request.song_id}).fetchone()
+        WHERE playlist_id = :playlist_id AND item_id = :item_id AND content_type = :content_type
+    """), {"playlist_id": playlist_id, "item_id": request.song_id, "content_type": request.content_type}).fetchone()
     
     if existing:
-        raise HTTPException(status_code=400, detail="Song already in playlist")
+        raise HTTPException(status_code=400, detail="Item already in playlist")
     
     # Get the next position
     max_position = db.execute(text("""
@@ -247,10 +308,12 @@ async def add_song_to_playlist(
     
     next_position = max_position.max_pos + 1
     
-    # Add the song
+    # Add the item
     playlist_song = UserPlaylistSong(
         playlist_id=playlist_id,
         song_id=request.song_id,
+        content_type=request.content_type,
+        item_id=request.song_id,
         position=next_position
     )
     

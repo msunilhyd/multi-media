@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Smile, Heart, Laugh, Sparkles } from 'lucide-react';
+import { Smile, Laugh } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Header from '@/components/Header';
 import MusicPlaylist from '@/components/MusicPlaylist';
@@ -10,13 +10,14 @@ import { fetchEntertainment, type Entertainment } from '@/lib/api';
 
 import type { Song } from '@/lib/api';
 
-type Tab = 'funny' | 'feel-good' | 'party' | 'user-playlists' | 'user-playlist';
+type Tab = 'funny' | 'user-playlists' | 'user-playlist';
 
 interface UserPlaylist {
   id: number;
   title: string;
   description: string | null;
   is_public: boolean;
+  playlist_type: string;
   created_at: string;
   updated_at: string;
   song_count: number;
@@ -37,10 +38,10 @@ export default function FunPage() {
       id: item.id, // Use the entertainment ID to ensure uniqueness
       title: item.title,
       language: '', // Empty language for entertainment content
-      year: '2024', // Default year
-      composer: item.channel_title || 'Entertainment',
+      year: '-', // No year for entertainment
+      composer: item.channel_title || '',
       videoId: item.youtube_video_id,
-      movie: item.content_type,
+      movie: '-', // No movie/content type display
       startSeconds: item.start_seconds,
       endSeconds: item.end_seconds
     }));
@@ -67,9 +68,27 @@ export default function FunPage() {
     loadContent();
   }, []);
 
-  const handleSelectUserPlaylist = (playlist: UserPlaylist) => {
-    setSelectedUserPlaylist(playlist);
-    setActiveTab('user-playlist');
+  const handleSelectUserPlaylist = async (playlist: UserPlaylist) => {
+    // Fetch the full playlist details including songs
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/playlists/${playlist.id}`, {
+        headers: {
+          'Authorization': `Bearer ${(session as any)?.accessToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const fullPlaylist = await response.json();
+        setSelectedUserPlaylist(fullPlaylist);
+        setActiveTab('user-playlist');
+      } else {
+        console.error('Failed to fetch playlist details');
+      }
+    } catch (error) {
+      console.error('Error fetching playlist details:', error);
+    }
   };
 
   // Get content based on fun categories
@@ -84,20 +103,6 @@ export default function FunPage() {
         console.log('Funny category - Entertainment items:', funItems);
         console.log('Funny category - Converted songs:', result);
         return result;
-        
-      case 'feel-good':
-        // All entertainment items should be type 'fun', sort by ID for consistent ordering
-        const feelGoodItems = entertainmentItems
-          .filter(item => item.content_type === 'fun')
-          .sort((a, b) => a.id - b.id);
-        return entertainmentToSongs(feelGoodItems);
-        
-      case 'party':
-        // All entertainment items should be type 'fun', sort by ID for consistent ordering  
-        const partyItems = entertainmentItems
-          .filter(item => item.content_type === 'fun')
-          .sort((a, b) => a.id - b.id);
-        return entertainmentToSongs(partyItems);
         
       default:
         // Return all entertainment content (all should be type 'fun'), sorted by ID
@@ -138,30 +143,8 @@ export default function FunPage() {
           />
         );
       
-      case 'feel-good':
-        return (
-          <MusicPlaylist 
-            playlist={{
-              slug: 'feel-good',
-              title: '😊 Feel Good Vibes',
-              songs: getFunContent('feel-good')
-            }} 
-          />
-        );
-      
-      case 'party':
-        return (
-          <MusicPlaylist 
-            playlist={{
-              slug: 'party',
-              title: '🎉 Party Time',
-              songs: getFunContent('party')
-            }} 
-          />
-        );
-      
       case 'user-playlists':
-        return <UserPlaylists onSelectPlaylist={handleSelectUserPlaylist} />;
+        return <UserPlaylists onSelectPlaylist={handleSelectUserPlaylist} playlistType="entertainment" />;
       
       case 'user-playlist':
         if (!selectedUserPlaylist) {
@@ -199,13 +182,10 @@ export default function FunPage() {
         {/* Page Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4 flex items-center justify-center gap-3">
-            <Sparkles className="w-8 h-8 text-pink-500" />
+            <Laugh className="w-8 h-8 text-pink-500" />
             Fun Zone
-            <Sparkles className="w-8 h-8 text-pink-500" />
+            <Laugh className="w-8 h-8 text-pink-500" />
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Entertainment, comedy, and feel-good content to brighten your day!
-          </p>
         </div>
 
         {/* Tab Navigation */}
@@ -222,28 +202,6 @@ export default function FunPage() {
               >
                 <Laugh className="w-4 h-4" />
                 Funny ({getFunContent('funny').length})
-              </button>
-              <button
-                onClick={() => setActiveTab('feel-good')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                  activeTab === 'feel-good'
-                    ? 'border-pink-500 text-pink-600 dark:text-pink-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
-                }`}
-              >
-                <Heart className="w-4 h-4" />
-                Feel Good ({getFunContent('feel-good').length})
-              </button>
-              <button
-                onClick={() => setActiveTab('party')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                  activeTab === 'party'
-                    ? 'border-pink-500 text-pink-600 dark:text-pink-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
-                }`}
-              >
-                <Sparkles className="w-4 h-4" />
-                Party ({getFunContent('party').length})
               </button>
               <button
                 onClick={() => setActiveTab('user-playlists')}
@@ -266,7 +224,7 @@ export default function FunPage() {
       <footer className="bg-gray-800 text-white py-6 mt-12">
         <div className="container mx-auto px-4 text-center">
           <p className="text-gray-400">
-            Fun Zone • Entertainment & Feel-Good Content • {entertainmentItems.length} entertainment videos
+            Fun Zone
           </p>
         </div>
       </footer>
