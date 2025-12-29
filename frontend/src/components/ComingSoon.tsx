@@ -219,11 +219,9 @@ export default function ComingSoon() {
                         </p>
                       </div>
                       
-                      {/* Time or Finished badge */}
+                      {/* Time display */}
                       <div className="text-right ml-2">
-                        {match.status === 'finished' ? (
-                          <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded">Finished</span>
-                        ) : match.match_time && (
+                        {match.match_time && (
                           <p className="text-yellow-400 font-mono text-xs">{formatMatchTime(match.match_time, match.match_date)}</p>
                         )}
                       </div>
