@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const playlistType = searchParams.get('playlist_type');
     
-    const url = new URL(`${BACKEND_URL}/api/playlists`);
+    const url = new URL(`${BACKEND_URL}/api/playlists/`);
     if (playlistType) {
       url.searchParams.set('playlist_type', playlistType);
     }
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const response = await fetch(`${BACKEND_URL}/api/playlists`, {
+    const response = await fetch(`${BACKEND_URL}/api/playlists/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
