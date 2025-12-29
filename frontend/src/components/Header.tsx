@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useState } from 'react';
-import { Trophy, Music, Home, Sparkles, Disc3, User, LogOut, Settings } from 'lucide-react';
+import { Trophy, Music, Home, Sparkles, Disc3, User, LogOut, Settings, Smile } from 'lucide-react';
 import AuthModal from './AuthModal';
 
 export default function Header() {
@@ -96,6 +96,32 @@ export default function Header() {
                 <span className={`text-xs ${isActive('/music') ? 'text-purple-100' : 'text-gray-400'}`}>Playlist</span>
               </div>
               {isActive('/music') && (
+                <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
+              )}
+            </Link>
+            
+            <Link
+              href="/fun"
+              className={`group relative flex items-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto ${
+                isActive('/fun')
+                  ? 'bg-gradient-to-r from-green-600 via-emerald-500 to-teal-500 text-white shadow-xl shadow-green-500/40 scale-105'
+                  : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/20'
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none ${
+                isActive('/fun')
+                  ? 'bg-white/20'
+                  : 'bg-green-500/20 group-hover:bg-green-500/30'
+              }`}>
+                <Smile className={`w-5 h-5 transition-transform group-hover:scale-110 ${
+                  isActive('/fun') ? 'text-yellow-300' : 'text-green-400'
+                }`} />
+              </div>
+              <div className="flex flex-col items-start pointer-events-none">
+                <span className="text-sm font-bold tracking-wide">Fun</span>
+                <span className={`text-xs ${isActive('/fun') ? 'text-green-100' : 'text-gray-400'}`}>Entertainment</span>
+              </div>
+              {isActive('/fun') && (
                 <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
               )}
             </Link>

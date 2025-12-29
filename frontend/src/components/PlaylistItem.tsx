@@ -11,6 +11,7 @@ interface PlaylistItemProps {
   isPlaying: boolean;
   onSelect: () => void;
   showAddToPlaylist?: boolean;
+  hideLanguage?: boolean;
 }
 
 export default function PlaylistItem({
@@ -20,6 +21,7 @@ export default function PlaylistItem({
   isPlaying,
   onSelect,
   showAddToPlaylist = true,
+  hideLanguage = false,
 }: PlaylistItemProps) {
   return (
     <div
@@ -59,13 +61,15 @@ export default function PlaylistItem({
       
       {/* Language Badge & Add to Playlist */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <span className={`text-xs px-2 py-1 rounded ${
-          isActive
-            ? 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200'
-            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-        }`}>
-          {song.language}
-        </span>
+        {!hideLanguage && song.language && (
+          <span className={`text-xs px-2 py-1 rounded ${
+            isActive
+              ? 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200'
+              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+          }`}>
+            {song.language}
+          </span>
+        )}
         
         {showAddToPlaylist && (
           <AddToPlaylistDropdown song={song} />

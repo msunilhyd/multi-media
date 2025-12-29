@@ -36,7 +36,7 @@ export default function FunPage() {
     return items.map(item => ({
       id: item.id, // Use the entertainment ID to ensure uniqueness
       title: item.title,
-      language: item.language || 'ENGLISH',
+      language: '', // Empty language for entertainment content
       year: '2024', // Default year
       composer: item.channel_title || 'Entertainment',
       videoId: item.youtube_video_id,

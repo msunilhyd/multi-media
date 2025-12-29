@@ -16,12 +16,12 @@ export default function Home() {
             Welcome to <span className="font-[family-name:var(--font-playfair)] italic bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">LinusPlaylists</span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Your one-stop destination for football highlights and music playlists
+            Your one-stop destination for football highlights, music playlists, and fun entertainment
           </p>
         </div>
         
         {/* Cards Section */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {/* Football Card */}
           <Link href="/football" className="group">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
@@ -65,6 +65,28 @@ export default function Home() {
               </div>
             </div>
           </Link>
+          
+          {/* Fun Card */}
+          <Link href="/fun" className="group">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
+              <div className="bg-gradient-to-br from-green-600 to-green-700 p-8">
+                <Play className="w-16 h-16 text-white mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  Fun Videos
+                </h2>
+                <p className="text-green-100">
+                  Enjoy entertaining video segments and funny moments
+                </p>
+              </div>
+              <div className="p-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Play className="w-5 h-5" />
+                  <span>Comedy, Entertainment & More</span>
+                </div>
+                <ChevronRight className="w-6 h-6 text-green-600 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </Link>
         </div>
         
         {/* Features Section */}
@@ -92,6 +114,15 @@ export default function Home() {
               </p>
             </div>
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Play className="w-6 h-6 text-green-600" />
+              </div>
+              <h4 className="font-semibold text-gray-800 dark:text-white mb-2">Fun Entertainment</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Watch entertaining video segments and funny moments
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Play className="w-6 h-6 text-blue-600" />
               </div>
@@ -107,7 +138,7 @@ export default function Home() {
       <footer className="bg-gray-800 text-white py-6 mt-12">
         <div className="container mx-auto px-4 text-center">
           <p className="text-gray-400">
-            LinusPlaylists • Football Highlights & Music Playlists
+            LinusPlaylists • Football Highlights, Music Playlists & Fun Entertainment
           </p>
         </div>
       </footer>

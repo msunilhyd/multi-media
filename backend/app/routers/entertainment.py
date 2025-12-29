@@ -17,7 +17,6 @@ class Entertainment(BaseModel):
     youtube_video_id: str
     description: Optional[str] = None
     content_type: str
-    language: Optional[str] = None
     start_seconds: Optional[int] = None
     end_seconds: Optional[int] = None
     duration: Optional[int] = None
@@ -34,7 +33,6 @@ class Entertainment(BaseModel):
 @router.get("/", response_model=List[Entertainment])
 async def get_entertainment(
     content_type: Optional[str] = Query(None, description="Filter by content type (fun, comedy, viral, meme, etc.)"),
-    language: Optional[str] = Query(None, description="Filter by language"),
     search: Optional[str] = Query(None, description="Search in title or description"),
     featured: Optional[bool] = Query(None, description="Filter featured content"),
     limit: int = Query(100, ge=1, le=1000, description="Number of items to return"),
@@ -60,7 +58,6 @@ async def get_entertainment(
             youtube_video_id,
             description,
             content_type,
-            language,
             start_seconds,
             end_seconds,
             duration,
@@ -79,10 +76,6 @@ async def get_entertainment(
     if content_type:
         query += " AND content_type = :content_type"
         params['content_type'] = content_type.lower()
-    
-    if language:
-        query += " AND language = :language"
-        params['language'] = language.upper()
     
     if search:
         query += " AND (title ILIKE :search OR description ILIKE :search)"
@@ -108,7 +101,6 @@ async def get_entertainment(
             youtube_video_id=row.youtube_video_id,
             description=row.description,
             content_type=row.content_type,
-            language=row.language,
             start_seconds=row.start_seconds,
             end_seconds=row.end_seconds,
             duration=row.duration,
@@ -161,7 +153,6 @@ async def get_entertainment_by_id(entertainment_id: int, db: Session = Depends(g
         youtube_video_id=row.youtube_video_id,
         description=row.description,
         content_type=row.content_type,
-        language=row.language,
         start_seconds=row.start_seconds,
         end_seconds=row.end_seconds,
         duration=row.duration,

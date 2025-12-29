@@ -90,10 +90,13 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   // Helper to normalize language (trim whitespace and uppercase)
   const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
   
-  // Extract unique values for filters (normalized)
+  // Check if this is entertainment content (fun section)
+  const isEntertainmentContent = playlist.slug.includes('funny') || playlist.slug.includes('feel-good') || playlist.slug.includes('party') || playlist.title.toLowerCase().includes('comedy') || playlist.title.toLowerCase().includes('fun');
+  
+  // Extract unique values for filters (normalized), but skip for entertainment content
   const languages = useMemo(() => 
-    Array.from(new Set(playlist.songs.map(s => normalizeLanguage(s.language)))).filter(l => l && l !== '-').sort(),
-    [playlist.songs]
+    isEntertainmentContent ? [] : Array.from(new Set(playlist.songs.map(s => normalizeLanguage(s.language)))).filter(l => l && l !== '-').sort(),
+    [playlist.songs, isEntertainmentContent]
   );
   
   const composers = useMemo(() => 
@@ -106,17 +109,17 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
     [playlist.songs]
   );
   
-  // Filter songs based on selected filters (using normalized language comparison)
+  // Filter songs based on selected filters (using normalized language comparison), skip language for entertainment
   const filteredSongs = useMemo(() => {
     return playlist.songs.filter(song => {
-      if (languageFilter && normalizeLanguage(song.language) !== languageFilter) return false;
+      if (!isEntertainmentContent && languageFilter && normalizeLanguage(song.language) !== languageFilter) return false;
       if (composerFilter && song.composer !== composerFilter) return false;
       if (yearFilter && song.year !== yearFilter) return false;
       return true;
     });
-  }, [playlist.songs, languageFilter, composerFilter, yearFilter]);
+  }, [playlist.songs, languageFilter, composerFilter, yearFilter, isEntertainmentContent]);
   
-  const hasActiveFilters = languageFilter || composerFilter || yearFilter;
+  const hasActiveFilters = (!isEntertainmentContent && languageFilter) || composerFilter || yearFilter;
   
   const clearFilters = () => {
     setLanguageFilter('');
@@ -542,9 +545,11 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
                     </p>
                   </div>
                   <div className="flex items-center gap-1 ml-4">
-                    <span className="px-2 py-1 bg-purple-700 rounded text-xs text-purple-200">
-                      {currentSong.language}
-                    </span>
+                    {!isEntertainmentContent && currentSong.language && (
+                      <span className="px-2 py-1 bg-purple-700 rounded text-xs text-purple-200">
+                        {currentSong.language}
+                      </span>
+                    )}
                     {currentSong.year !== '-' && (
                       <span className="px-2 py-1 bg-purple-700 rounded text-xs text-purple-200">
                         {currentSong.year}
@@ -636,16 +641,19 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
               {showFilters && (
                 <div className="mt-3 pt-3 border-t border-white/20">
                   <div className="grid grid-cols-1 gap-2">
-                    <select
-                      value={languageFilter}
-                      onChange={(e) => setLanguageFilter(e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm bg-white/20 text-white rounded border border-white/30 focus:outline-none focus:border-white/50"
-                    >
-                      <option value="" className="text-gray-900">All Languages</option>
-                      {languages.map(lang => (
-                        <option key={lang} value={lang} className="text-gray-900">{lang}</option>
-                      ))}
-                    </select>
+                    {/* Language Filter - Hidden for entertainment content */}
+                    {!isEntertainmentContent && languages.length > 0 && (
+                      <select
+                        value={languageFilter}
+                        onChange={(e) => setLanguageFilter(e.target.value)}
+                        className="w-full px-3 py-1.5 text-sm bg-white/20 text-white rounded border border-white/30 focus:outline-none focus:border-white/50"
+                      >
+                        <option value="" className="text-gray-900">All Languages</option>
+                        {languages.map(lang => (
+                          <option key={lang} value={lang} className="text-gray-900">{lang}</option>
+                        ))}
+                      </select>
+                    )}
                     
                     <select
                       value={composerFilter}
@@ -704,6 +712,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
                       isActive={index === currentIndex}
                       isPlaying={index === currentIndex && isPlaying}
                       onSelect={() => handleSongSelect(index)}
+                      hideLanguage={isEntertainmentContent}
                     />
                   );
                 })

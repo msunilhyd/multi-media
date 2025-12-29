@@ -331,7 +331,6 @@ export interface Entertainment {
   title: string;
   youtube_video_id: string;
   content_type: string;
-  language: string | null;
   start_seconds: number | null;
   end_seconds: number | null;
   channel_title?: string | null;
