@@ -29,7 +29,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching playlist:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch playlist' },
+      { error: 'Failed to fetch playlist!' },
       { status: 500 }
     );
   }
