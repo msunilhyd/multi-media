@@ -7,6 +7,8 @@ from .. import models, schemas
 from ..football_api import get_football_api
 from ..youtube_service import get_youtube_service, YouTubeQuotaExhaustedError
 from ..config import match_has_team_of_interest
+from ..models_users import User, UserFavoriteTeam
+from .auth import get_current_user
 
 router = APIRouter(prefix="/api/matches", tags=["matches"])
 
@@ -15,8 +17,12 @@ router = APIRouter(prefix="/api/matches", tags=["matches"])
 def get_matches(
     match_date: Optional[date] = Query(default=None),
     league_slug: Optional[str] = Query(default=None),
-    db: Session = Depends(get_db)
+    teams: Optional[str] = Query(default=None, description="Comma-separated list of team names to filter"),
+    favorites_only: bool = Query(default=False, description="Show only matches with user's favorite teams"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = None
 ):
+    """Get matches with optional team filtering"""
     query = db.query(models.Match).options(
         joinedload(models.Match.league),
         joinedload(models.Match.highlights)
@@ -29,6 +35,23 @@ def get_matches(
         query = query.join(models.League).filter(models.League.slug == league_slug)
     
     matches = query.order_by(models.Match.match_date.desc(), models.Match.match_time).all()
+    
+    # Apply team filtering if needed
+    team_filter = None
+    if teams:
+        team_filter = set(t.strip() for t in teams.split(",") if t.strip())
+    elif favorites_only and current_user:
+        favorite_teams = db.query(UserFavoriteTeam.team_name).filter(
+            UserFavoriteTeam.user_id == current_user.id
+        ).all()
+        team_filter = set(t[0] for t in favorite_teams)
+    
+    if team_filter:
+        matches = [
+            m for m in matches
+            if m.home_team in team_filter or m.away_team in team_filter
+        ]
+    
     return matches
 
 
@@ -149,11 +172,17 @@ async def _fetch_and_store_matches_for_date(target_date: date, db: Session) -> L
 @router.get("/upcoming", response_model=List[schemas.UpcomingMatchesByDate])
 async def get_upcoming_matches(
     days: int = Query(default=7, ge=1, le=14),
+    teams: Optional[str] = Query(default=None, description="Comma-separated list of team names to filter"),
     db: Session = Depends(get_db),
 ):
     """Get upcoming matches of interest for the next N days (from DB, fetches from ESPN if needed)"""
     today = date.today()
     result = []
+    
+    # Parse team filter if provided
+    team_filter = None
+    if teams:
+        team_filter = set(t.strip() for t in teams.split(",") if t.strip())
     
     for i in range(days):
         target_date = today + timedelta(days=i)
@@ -172,24 +201,39 @@ async def get_upcoming_matches(
             upcoming_matches = []
             for match in db_matches:
                 league_name = match.league.name if match.league else "Unknown"
-                if match_has_team_of_interest(match.home_team, match.away_team, league_name):
-                    # For today: include all matches (scheduled, live, finished)
-                    # For future dates: only scheduled and live
-                    is_today = target_date == today
-                    if is_today or match.status in ["scheduled", "live"]:
-                        upcoming_matches.append(schemas.UpcomingMatch(
-                            home_team=match.home_team,
-                            away_team=match.away_team,
-                            home_score=match.home_score,
-                            away_score=match.away_score,
-                            match_date=match.match_date,
-                            match_time=match.match_time,
-                            league_name=league_name,
-                            status=match.status
-                        ))
+                
+                # Apply team filter if provided
+                if team_filter and not (match.home_team in team_filter or match.away_team in team_filter):
+                    continue
+                
+                # If no team filter, use existing logic
+                if not team_filter and not match_has_team_of_interest(match.home_team, match.away_team, league_name):
+                    continue
+                
+                # For today: include all matches (scheduled, live, finished)
+                # For future dates: only scheduled and live
+                is_today = target_date == today
+                if is_today or match.status in ["scheduled", "live"]:
+                    upcoming_matches.append(schemas.UpcomingMatch(
+                        home_team=match.home_team,
+                        away_team=match.away_team,
+                        home_score=match.home_score,
+                        away_score=match.away_score,
+                        match_date=match.match_date,
+                        match_time=match.match_time,
+                        league_name=league_name,
+                        status=match.status
+                    ))
         else:
             # Fetch from ESPN API and store in DB
             upcoming_matches = await _fetch_and_store_matches_for_date(target_date, db)
+            
+            # Apply team filter to fetched matches if provided
+            if team_filter:
+                upcoming_matches = [
+                    m for m in upcoming_matches
+                    if m.home_team in team_filter or m.away_team in team_filter
+                ]
         
         if upcoming_matches:
             # Sort by time

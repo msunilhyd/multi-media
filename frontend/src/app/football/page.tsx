@@ -6,13 +6,19 @@ import Header from '@/components/Header';
 import LeagueSection from '@/components/LeagueSection';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ComingSoon from '@/components/ComingSoon';
+import TeamSelector from '@/components/TeamSelector';
+import { useAuth } from '@/components/AuthProvider';
 import {
   HighlightsGroupedByLeague,
   fetchAvailableDates,
   fetchHighlightsGroupedByDate,
+  fetchFavoriteTeams,
+  replaceFavoriteTeams,
+  FavoriteTeamCreate,
 } from '@/lib/api';
 
 export default function FootballPage() {
+  const { user, token } = useAuth();
   const [highlightsData, setHighlightsData] = useState<HighlightsGroupedByLeague[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +27,38 @@ export default function FootballPage() {
   const [calendarDate, setCalendarDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [expandedLeagueIds, setExpandedLeagueIds] = useState<Set<number>>(new Set());
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [isSavingFavorites, setIsSavingFavorites] = useState(false);
+
+  // Load favorite teams from localStorage or user account on mount
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (user && token) {
+        // Load from user account
+        try {
+          const favorites = await fetchFavoriteTeams(token);
+          const teamNames = favorites.map(f => f.team_name);
+          setSelectedTeams(teamNames);
+          localStorage.setItem('favoriteTeams', JSON.stringify(teamNames));
+        } catch (err) {
+          console.error('Failed to load favorite teams:', err);
+          // Fall back to localStorage
+          const stored = localStorage.getItem('favoriteTeams');
+          if (stored) {
+            setSelectedTeams(JSON.parse(stored));
+          }
+        }
+      } else {
+        // Load from localStorage
+        const stored = localStorage.getItem('favoriteTeams');
+        if (stored) {
+          setSelectedTeams(JSON.parse(stored));
+        }
+      }
+    };
+    loadFavorites();
+  }, [user, token]);
 
   const loadAvailableDates = async () => {
     try {
@@ -31,7 +69,7 @@ export default function FootballPage() {
     }
   };
 
-  const loadHighlights = async (date: string) => {
+  const loadHighlights = async (date: string, teams?: string[]) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -40,12 +78,23 @@ export default function FootballPage() {
       
       const data = await fetchHighlightsGroupedByDate(date);
       
-      setHighlightsData(data);
-      // Set the first league as expanded by default
-      if (data.length > 0) {
-        setExpandedLeagueIds(new Set([data[0].league.id]));
+      // Filter by teams if provided
+      let filteredData = data;
+      if (teams && teams.length > 0) {
+        filteredData = data.map(league => ({
+          ...league,
+          matches: league.matches.filter(match => 
+            teams.includes(match.home_team) || teams.includes(match.away_team)
+          )
+        })).filter(league => league.matches.length > 0);
       }
-      return data;
+      
+      setHighlightsData(filteredData);
+      // Set the first league as expanded by default
+      if (filteredData.length > 0) {
+        setExpandedLeagueIds(new Set([filteredData[0].league.id]));
+      }
+      return filteredData;
     } catch (err) {
       setError('Failed to load highlights. Make sure the backend is running.');
       console.error(err);
@@ -59,7 +108,43 @@ export default function FootballPage() {
     console.log('Date selected:', date);
     setSelectedDate(date);
     setCalendarDate(date);
-    await loadHighlights(date);
+    await loadHighlights(date, selectedTeams.length > 0 ? selectedTeams : undefined);
+  };
+
+  const handleTeamsChange = async (teams: string[]) => {
+    setSelectedTeams(teams);
+    localStorage.setItem('favoriteTeams', JSON.stringify(teams));
+    
+    // Reload highlights with new filter
+    if (selectedDate) {
+      await loadHighlights(selectedDate, teams.length > 0 ? teams : undefined);
+    }
+    
+    // Show save dialog if user is logged in and has changed teams
+    if (user && teams.length > 0) {
+      setShowSaveDialog(true);
+    }
+  };
+
+  const handleSaveFavorites = async () => {
+    if (!user || !token) return;
+    
+    try {
+      setIsSavingFavorites(true);
+      const favoritesToSave: FavoriteTeamCreate[] = selectedTeams.map(team => ({
+        team_name: team,
+        league_id: null,
+      }));
+      
+      await replaceFavoriteTeams(token, favoritesToSave);
+      setShowSaveDialog(false);
+      alert('Favorite teams saved successfully!');
+    } catch (err) {
+      console.error('Failed to save favorites:', err);
+      alert('Failed to save favorites. Please try again.');
+    } finally {
+      setIsSavingFavorites(false);
+    }
   };
 
 
@@ -88,12 +173,12 @@ export default function FootballPage() {
       }
       
       setSelectedDate(defaultDate);
-      await loadHighlights(defaultDate);
+      await loadHighlights(defaultDate, selectedTeams.length > 0 ? selectedTeams : undefined);
     };
     
     initializePage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedTeams]);
 
   // Helper function to get yesterday's date string consistently (local timezone)
   const getYesterdayString = () => {
@@ -132,9 +217,12 @@ export default function FootballPage() {
 
         {/* Date Picker Section */}
         <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            <h3 className="font-semibold text-gray-700 dark:text-gray-300">Select Date</h3>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Select Date</h3>
+            </div>
+            <TeamSelector selectedTeams={selectedTeams} onTeamsChange={handleTeamsChange} />
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -184,10 +272,45 @@ export default function FootballPage() {
               </span>
             )}
           </div>
+          {selectedTeams.length > 0 && (
+            <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+              Showing matches for: <span className="font-medium text-blue-600 dark:text-blue-400">{selectedTeams.length} team(s)</span>
+            </div>
+          )}
         </div>
 
+        {/* Save Favorites Dialog */}
+        {showSaveDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
+                Save Favorite Teams?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Would you like to save your selected teams ({selectedTeams.length} team(s)) to your account? 
+                This will sync across all your devices.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSaveDialog(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Not Now
+                </button>
+                <button
+                  onClick={handleSaveFavorites}
+                  disabled={isSavingFavorites}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSavingFavorites ? 'Saving...' : 'Save to Account'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Coming Soon Section - shown when toggled */}
-        {showComingSoon && <ComingSoon />}
+        {showComingSoon && <ComingSoon selectedTeams={selectedTeams} />}
         
         {/* Highlights Section - hidden when Coming Soon is shown */}
         {!showComingSoon && (isLoading ? (

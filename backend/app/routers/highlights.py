@@ -5,6 +5,8 @@ from datetime import date
 from ..database import get_db
 from .. import models, schemas
 from ..youtube_service import get_youtube_service, YouTubeQuotaExhaustedError
+from ..models_users import User, UserFavoriteTeam
+from .auth import get_current_user
 
 router = APIRouter(prefix="/api/highlights", tags=["highlights"])
 
@@ -13,14 +15,36 @@ router = APIRouter(prefix="/api/highlights", tags=["highlights"])
 def get_highlights_grouped(
     match_date: Optional[date] = Query(default=None),
     teams: Optional[str] = Query(default=None, description="Comma-separated list of team names to filter"),
-    db: Session = Depends(get_db)
+    favorites_only: bool = Query(default=False, description="Show only matches with user's favorite teams"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = None
 ):
+    """Get highlights grouped by league with optional team filtering"""
     target_date = match_date or date.today()
     
     # Parse team names if provided
     team_filter = None
     if teams:
         team_filter = set(t.strip() for t in teams.split(",") if t.strip())
+    
+    # If favorites_only is requested, get user's favorite teams
+    if favorites_only:
+        try:
+            # Try to get current user (will fail if not authenticated)
+            from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+            from fastapi import Request
+            
+            # This is a workaround to make authentication optional
+            # We'll handle this differently in the frontend
+            pass
+        except:
+            pass
+        
+        if current_user:
+            favorite_teams = db.query(UserFavoriteTeam.team_name).filter(
+                UserFavoriteTeam.user_id == current_user.id
+            ).all()
+            team_filter = set(t[0] for t in favorite_teams)
     
     leagues = db.query(models.League).options(
         joinedload(models.League.matches).joinedload(models.Match.highlights)

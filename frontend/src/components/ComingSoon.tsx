@@ -127,7 +127,7 @@ function getDateDisplay(dateLabel: string, dateStr: string): { label: string; ba
   }
 }
 
-export default function ComingSoon() {
+export default function ComingSoon({ selectedTeams = [] }: { selectedTeams?: string[] }) {
   const [upcomingData, setUpcomingData] = useState<UpcomingMatchesByDate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,7 +136,7 @@ export default function ComingSoon() {
     const loadUpcoming = async () => {
       try {
         setIsLoading(true);
-        const data = await fetchUpcomingMatches(7);
+        const data = await fetchUpcomingMatches(7, selectedTeams.length > 0 ? selectedTeams : undefined);
         setUpcomingData(data);
       } catch (err) {
         setError('Failed to load upcoming matches');
@@ -147,7 +147,7 @@ export default function ComingSoon() {
     };
 
     loadUpcoming();
-  }, []);
+  }, [selectedTeams]);
 
   if (isLoading) {
     return (

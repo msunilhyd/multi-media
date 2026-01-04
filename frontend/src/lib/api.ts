@@ -136,9 +136,12 @@ export async function fetchYesterdayHighlights(): Promise<YouTubeSearchResponse>
   return response.json();
 }
 
-export async function fetchHighlightsGrouped(date?: string): Promise<HighlightsGroupedByLeague[]> {
-  const params = date ? `?match_date=${date}` : '';
-  const response = await fetch(`${API_BASE_URL}/api/highlights${params}`);
+export async function fetchHighlightsGrouped(date?: string, teams?: string[]): Promise<HighlightsGroupedByLeague[]> {
+  const params = new URLSearchParams();
+  if (date) params.append('match_date', date);
+  if (teams && teams.length > 0) params.append('teams', teams.join(','));
+  
+  const response = await fetch(`${API_BASE_URL}/api/highlights${params.toString() ? `?${params}` : ''}`);
   if (!response.ok) throw new Error('Failed to fetch highlights');
   return response.json();
 }
@@ -205,8 +208,12 @@ export interface UpcomingMatchesByDate {
   matches: UpcomingMatch[];
 }
 
-export async function fetchUpcomingMatches(days: number = 7): Promise<UpcomingMatchesByDate[]> {
-  const response = await fetch(`${API_BASE_URL}/api/matches/upcoming?days=${days}`);
+export async function fetchUpcomingMatches(days: number = 7, teams?: string[]): Promise<UpcomingMatchesByDate[]> {
+  const params = new URLSearchParams();
+  params.append('days', days.toString());
+  if (teams && teams.length > 0) params.append('teams', teams.join(','));
+  
+  const response = await fetch(`${API_BASE_URL}/api/matches/upcoming?${params.toString()}`);
   if (!response.ok) throw new Error('Failed to fetch upcoming matches');
   return response.json();
 }
@@ -335,4 +342,87 @@ export async function fetchEntertainment(): Promise<Entertainment[]> {
   const response = await fetch(`/api/entertainment`);
   if (!response.ok) throw new Error('Failed to fetch entertainment');
   return response.json();
+}
+
+// Favorite Teams types and API
+export interface FavoriteTeam {
+  id: number;
+  user_id: number;
+  team_name: string;
+  league_id: number | null;
+  created_at: string;
+}
+
+export interface FavoriteTeamCreate {
+  team_name: string;
+  league_id?: number | null;
+}
+
+export async function fetchFavoriteTeams(token: string): Promise<FavoriteTeam[]> {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/teams`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) throw new Error('Failed to fetch favorite teams');
+  return response.json();
+}
+
+export async function addFavoriteTeam(token: string, team: FavoriteTeamCreate): Promise<FavoriteTeam> {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/teams`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(team),
+  });
+  if (!response.ok) throw new Error('Failed to add favorite team');
+  return response.json();
+}
+
+export async function addFavoriteTeamsBulk(token: string, teams: FavoriteTeamCreate[]): Promise<FavoriteTeam[]> {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/teams/bulk`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(teams),
+  });
+  if (!response.ok) throw new Error('Failed to add favorite teams');
+  return response.json();
+}
+
+export async function replaceFavoriteTeams(token: string, teams: FavoriteTeamCreate[]): Promise<FavoriteTeam[]> {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/teams/replace`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(teams),
+  });
+  if (!response.ok) throw new Error('Failed to replace favorite teams');
+  return response.json();
+}
+
+export async function removeFavoriteTeam(token: string, teamName: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/teams/${encodeURIComponent(teamName)}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) throw new Error('Failed to remove favorite team');
+}
+
+export async function clearFavoriteTeams(token: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/teams`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) throw new Error('Failed to clear favorite teams');
 }
