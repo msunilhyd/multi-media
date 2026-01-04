@@ -18,9 +18,7 @@ def get_matches(
     match_date: Optional[date] = Query(default=None),
     league_slug: Optional[str] = Query(default=None),
     teams: Optional[str] = Query(default=None, description="Comma-separated list of team names to filter"),
-    favorites_only: bool = Query(default=False, description="Show only matches with user's favorite teams"),
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = None
+    db: Session = Depends(get_db)
 ):
     """Get matches with optional team filtering"""
     query = db.query(models.Match).options(
@@ -37,16 +35,8 @@ def get_matches(
     matches = query.order_by(models.Match.match_date.desc(), models.Match.match_time).all()
     
     # Apply team filtering if needed
-    team_filter = None
     if teams:
         team_filter = set(t.strip() for t in teams.split(",") if t.strip())
-    elif favorites_only and current_user:
-        favorite_teams = db.query(UserFavoriteTeam.team_name).filter(
-            UserFavoriteTeam.user_id == current_user.id
-        ).all()
-        team_filter = set(t[0] for t in favorite_teams)
-    
-    if team_filter:
         matches = [
             m for m in matches
             if m.home_team in team_filter or m.away_team in team_filter
