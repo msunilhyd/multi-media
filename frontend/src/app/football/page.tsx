@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { AlertCircle, Video, Calendar, Trophy, Clock } from 'lucide-react';
 import Header from '@/components/Header';
 import LeagueSection from '@/components/LeagueSection';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ComingSoon from '@/components/ComingSoon';
 import TeamSelector from '@/components/TeamSelector';
-import { useAuth } from '@/components/AuthProvider';
 import {
   HighlightsGroupedByLeague,
   fetchAvailableDates,
@@ -18,7 +18,9 @@ import {
 } from '@/lib/api';
 
 export default function FootballPage() {
-  const { user, token } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
+  const token = (session as any)?.accessToken; // Get token from session if available
   const [highlightsData, setHighlightsData] = useState<HighlightsGroupedByLeague[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
