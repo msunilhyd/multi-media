@@ -6,6 +6,7 @@ import bcrypt
 from typing import Optional
 import jwt
 from datetime import datetime, timedelta
+import httpx
 
 from ..database import get_db
 from ..models_users import User, NotificationPreference
