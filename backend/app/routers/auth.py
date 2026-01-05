@@ -100,37 +100,73 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/google", response_model=AuthResponse)
-def google_auth(google_data: dict, db: Session = Depends(get_db)):
+async def google_auth(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """Handle Google OAuth authentication"""
     
-    email = google_data.get("email")
-    name = google_data.get("name")
-    google_id = google_data.get("google_id")
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid authorization header"
+        )
+    
+    google_token = authorization.replace("Bearer ", "")
+    
+    # Verify Google token and get user info
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                'https://www.googleapis.com/oauth2/v2/userinfo',
+                headers={'Authorization': f'Bearer {google_token}'}
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid Google token"
+                )
+            
+            google_user = response.json()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Failed to verify Google token: {str(e)}"
+        )
+    
+    email = google_user.get("email")
+    name = google_user.get("name")
+    google_id = google_user.get("id")
+    picture_url = google_user.get("picture")
     
     if not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email is required"
+            detail="Email not provided by Google"
         )
     
     # Check if user exists
     user = db.query(User).filter(User.email == email).first()
     
     if user:
-        # Update Google ID if not set
+        # Update Google ID and picture if not set
         if not user.provider_id and google_id:
             user.provider_id = google_id
             user.provider = "google"
-            db.commit()
-            db.refresh(user)
+        if picture_url and not user.picture_url:
+            user.picture_url = picture_url
+        db.commit()
+        db.refresh(user)
     else:
         # Create new user
         user = User(
             email=email,
-            name=name,
+            name=name or email.split('@')[0],
             provider="google",
             provider_id=google_id,
-            email_verified=True
+            email_verified=True,
+            picture_url=picture_url
         )
         db.add(user)
         db.commit()
@@ -144,7 +180,9 @@ def google_auth(google_data: dict, db: Session = Depends(get_db)):
             "id": user.id,
             "email": user.email,
             "name": user.name,
-            "created_at": user.created_at.isoformat()
+            "provider": user.provider,
+            "google_id": user.provider_id if user.provider == "google" else None,
+            "picture_url": user.picture_url,
         },
         access_token=access_token
     )
