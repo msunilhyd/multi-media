@@ -122,14 +122,25 @@ export default function FootballPage() {
       await loadHighlights(selectedDate, teams.length > 0 ? teams : undefined);
     }
     
-    // Show save dialog if user is logged in and has changed teams
-    if (user && teams.length > 0) {
+    // Show save dialog only if user is logged in, has a token, and has selected teams
+    if (user && token && teams.length > 0) {
       setShowSaveDialog(true);
     }
   };
 
   const handleSaveFavorites = async () => {
-    if (!user || !token) return;
+    if (!user) {
+      alert('Please log in to save favorite teams.');
+      setShowSaveDialog(false);
+      return;
+    }
+    
+    if (!token) {
+      console.error('No access token available');
+      alert('Authentication token not found. Please log in again.');
+      setShowSaveDialog(false);
+      return;
+    }
     
     try {
       setIsSavingFavorites(true);
@@ -138,12 +149,14 @@ export default function FootballPage() {
         league_id: null,
       }));
       
+      console.log('Saving favorites with token:', token ? 'Token available' : 'No token');
       await replaceFavoriteTeams(token, favoritesToSave);
       setShowSaveDialog(false);
       alert('Favorite teams saved successfully!');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save favorites:', err);
-      alert('Failed to save favorites. Please try again.');
+      const errorMessage = err?.response?.data?.detail || err?.message || 'Please try again.';
+      alert(`Failed to save favorites: ${errorMessage}`);
     } finally {
       setIsSavingFavorites(false);
     }
@@ -288,16 +301,19 @@ export default function FootballPage() {
               <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
                 Save Favorite Teams?
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-2">
                 Would you like to save your selected teams ({selectedTeams.length} team(s)) to your account? 
                 This will sync across all your devices.
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
+                Your teams are already saved locally on this device. Saving to your account is optional.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowSaveDialog(false)}
                   className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                 >
-                  Not Now
+                  Keep Local Only
                 </button>
                 <button
                   onClick={handleSaveFavorites}
