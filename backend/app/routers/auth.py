@@ -101,22 +101,64 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
 
 
 class GoogleAuthRequest(BaseModel):
-    email: EmailStr
+    code: Optional[str] = None
+    email: Optional[str] = None
     name: Optional[str] = None
     google_id: Optional[str] = None
     picture: Optional[str] = None
 
 
 @router.post("/google", response_model=AuthResponse)
-def google_auth(
+async def google_auth(
     auth_data: GoogleAuthRequest,
     db: Session = Depends(get_db)
 ):
-    """Handle Google OAuth authentication from NextAuth"""
+    """Handle Google OAuth authentication - supports both code flow (mobile) and direct user data (web)"""
     
     email = auth_data.email
     name = auth_data.name
     google_id = auth_data.google_id
+    
+    # If authorization code is provided, exchange it for user info
+    if auth_data.code:
+        try:
+            async with httpx.AsyncClient() as client:
+                # Exchange code for access token
+                token_response = await client.post(
+                    'https://oauth2.googleapis.com/token',
+                    data={
+                        'code': auth_data.code,
+                        'client_id': '472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt.apps.googleusercontent.com',
+                        'redirect_uri': 'com.googleusercontent.apps.472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt:/',
+                        'grant_type': 'authorization_code',
+                    }
+                )
+                token_data = token_response.json()
+                
+                if 'error' in token_data:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Google OAuth error: {token_data.get('error_description', token_data['error'])}"
+                    )
+                
+                access_token = token_data.get('access_token')
+                
+                # Get user info from Google
+                user_response = await client.get(
+                    'https://www.googleapis.com/oauth2/v2/userinfo',
+                    headers={'Authorization': f'Bearer {access_token}'}
+                )
+                user_data = user_response.json()
+                
+                email = user_data.get('email')
+                name = user_data.get('name')
+                google_id = user_data.get('id')
+                
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Failed to exchange authorization code: {str(e)}"
+            )
     
     if not email:
         raise HTTPException(

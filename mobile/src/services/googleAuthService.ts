@@ -5,7 +5,8 @@ import { API_BASE_URL } from './api';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const GOOGLE_CLIENT_ID = '472641857686-ujas001q2e044vtaqfob0lasdpp17kha.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt.apps.googleusercontent.com';
+const IOS_URL_SCHEME = 'com.googleusercontent.apps.472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt';
 
 const discovery = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -29,40 +30,41 @@ class GoogleAuthService {
   private redirectUri: string;
 
   constructor() {
-    // Use Expo's auth proxy for OAuth redirect
-    // Development build uses the slug from app.json
-    this.redirectUri = 'https://auth.expo.io/@anonymous/music-player';
+    // Use Google's iOS URL scheme
+    this.redirectUri = AuthSession.makeRedirectUri({
+      scheme: IOS_URL_SCHEME
+    });
     console.log('📱 Google OAuth Redirect URI:', this.redirectUri);
   }
 
   async signInWithGoogle(): Promise<GoogleAuthResponse> {
     try {
-      // Create auth request
+      // Create auth request with authorization code flow
       const request = new AuthSession.AuthRequest({
         clientId: GOOGLE_CLIENT_ID,
         redirectUri: this.redirectUri,
         scopes: ['openid', 'profile', 'email'],
-        responseType: AuthSession.ResponseType.Token,
-        usePKCE: false,
+        responseType: AuthSession.ResponseType.Code,
+        usePKCE: true,
       });
 
       console.log('🔐 Starting Google OAuth flow...');
       
-      // Use Expo's auth proxy for custom URI schemes
-      const result = await request.promptAsync(discovery, { useProxy: true });
+      // Don't use proxy since we have a custom scheme
+      const result = await request.promptAsync(discovery, { useProxy: false });
 
       if (result.type === 'success') {
-        const { access_token } = result.params;
-        console.log('✅ Google OAuth success, exchanging token with backend...');
+        const { code } = result.params;
+        console.log('✅ Google OAuth success, exchanging code with backend...');
+        console.log('📤 Sending code:', code);
 
-        // Exchange Google token with backend
+        // Exchange authorization code with backend
         const response = await axios.post<GoogleAuthResponse>(
           `${API_BASE_URL}/api/auth/google`,
-          {},
+          { code },
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${access_token}`,
             },
           }
         );
