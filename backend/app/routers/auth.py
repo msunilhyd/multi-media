@@ -129,11 +129,13 @@ async def google_auth(
                     data={
                         'code': auth_data.code,
                         'client_id': '472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt.apps.googleusercontent.com',
-                        'redirect_uri': 'com.googleusercontent.apps.472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt:/',
+                        'redirect_uri': 'com.googleusercontent.apps.472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt:/oauth2redirect',
                         'grant_type': 'authorization_code',
                     }
                 )
                 token_data = token_response.json()
+                
+                print(f"Token response: {token_data}")  # Debug logging
                 
                 if 'error' in token_data:
                     raise HTTPException(
