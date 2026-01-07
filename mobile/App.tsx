@@ -8,6 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import MusicPlayerScreen from './src/screens/MusicPlayerScreen';
 import MusicPlaylistScreen from './src/screens/MusicPlaylistScreen';
 import FootballScreen from './src/screens/FootballScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import AuthScreen from './src/screens/AuthScreen';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { useFonts, PlayfairDisplay_700Bold_Italic } from '@expo-google-fonts/playfair-display';
 
 const Tab = createBottomTabNavigator();
@@ -54,6 +57,16 @@ const CustomHeader = () => {
 };
 
 export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   useEffect(() => {
     // Initialize audio mode for iOS background playback
     const initAudio = async () => {
@@ -101,23 +114,32 @@ export default function App() {
               iconName = focused ? 'football' : 'football-outline';
             } else if (route.name === 'Background Audio') {
               iconName = focused ? 'headset' : 'headset-outline';
+            } else if (route.name === 'Profile') {
+              iconName = focused ? 'person' : 'person-outline';
             } else {
               iconName = focused ? 'musical-notes' : 'musical-notes-outline';
             }
 
             // Set color based on route and focused state
-            const activeColor = route.name === 'Football' ? '#3b82f6' : '#8b5cf6';
+            let activeColor = '#8b5cf6';
+            if (route.name === 'Football') activeColor = '#3b82f6';
+            if (route.name === 'Profile') activeColor = '#ec4899';
+            
             const finalColor = focused ? activeColor : '#9ca3af';
             
             return <Ionicons name={iconName} size={size} color={finalColor} />;
           },
           tabBarActiveTintColor: 'transparent', // Not used since we handle color in tabBarIcon
           tabBarInactiveTintColor: '#9ca3af',
-          tabBarLabelStyle: ({ focused }) => ({
-            color: focused 
-              ? (route.name === 'Football' ? '#3b82f6' : '#8b5cf6')
-              : '#9ca3af'
-          }),
+          tabBarLabelStyle: ({ focused }) => {
+            let color = '#9ca3af';
+            if (focused) {
+              if (route.name === 'Football') color = '#3b82f6';
+              else if (route.name === 'Profile') color = '#ec4899';
+              else color = '#8b5cf6';
+            }
+            return { color };
+          },
           headerStyle: {
             backgroundColor: '#1f2937',
           },
@@ -133,7 +155,7 @@ export default function App() {
           component={FootballScreen}
           options={{
             header: () => <CustomHeader />,
-            tabBarLabel: 'Football Highlights'
+            tabBarLabel: 'Football'
           }}
         />
         <Tab.Screen 
@@ -141,7 +163,7 @@ export default function App() {
           component={MusicPlaylistScreen}
           options={{
             header: () => <CustomHeader />,
-            tabBarLabel: 'Music Playlist'
+            tabBarLabel: 'Music'
           }}
         />
         <Tab.Screen 
@@ -149,7 +171,15 @@ export default function App() {
           component={MusicPlayerScreen}
           options={{
             header: () => <CustomHeader />,
-            tabBarLabel: 'Background Audio'
+            tabBarLabel: 'Audio'
+          }}
+        />
+        <Tab.Screen 
+          name="Profile" 
+          component={isAuthenticated ? ProfileScreen : AuthScreen}
+          options={{
+            header: () => <CustomHeader />,
+            tabBarLabel: isAuthenticated ? 'Profile' : 'Login'
           }}
         />
       </Tab.Navigator>

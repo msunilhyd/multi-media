@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "musicplayer",
+    "scheme": "com.sunil.music-player",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -31,7 +31,7 @@
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.anonymous.music-player"
+      "bundleIdentifier": "com.sunil.music-player"
     },
     "android": {
       "adaptiveIcon": {

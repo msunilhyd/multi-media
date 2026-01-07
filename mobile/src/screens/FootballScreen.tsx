@@ -14,14 +14,40 @@ import {
   SafeAreaView,
   StatusBar,
   Animated,
+  Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import YoutubePlayer from 'react-native-youtube-iframe';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchAvailableDates, fetchHighlightsGroupedByDate, fetchHighlightsGroupedWithTeamFilter, HighlightsGroupedByLeague, Match, Highlight } from '../services/api';
 import TeamSelector from '../components/TeamSelector';
+import { useAuth } from '../contexts/AuthContext';
+import { favoritesService } from '../services/favoritesService';
+
+// League color mappings matching frontend
+const leagueColors: Record<string, { colors: string[]; }> = {
+  'premier-league': { colors: ['#1d4ed8', '#3b82f6'] },
+  'champions-league': { colors: ['#1e40af', '#2563eb'] },
+  'europa-league': { colors: ['#2563eb', '#60a5fa'] },
+  'la-liga': { colors: ['#1d4ed8', '#3b82f6'] },
+  'serie-a': { colors: ['#1d4ed8', '#3b82f6'] },
+  'bundesliga': { colors: ['#1e40af', '#2563eb'] },
+  'ligue-1': { colors: ['#1e3a8a', '#1d4ed8'] },
+  'fa-cup': { colors: ['#2563eb', '#60a5fa'] },
+  'league-cup': { colors: ['#2563eb', '#60a5fa'] },
+  'copa-del-rey': { colors: ['#1d4ed8', '#3b82f6'] },
+  'coupe-de-france': { colors: ['#1d4ed8', '#3b82f6'] },
+  'dfb-pokal': { colors: ['#1e40af', '#2563eb'] },
+  'coppa-italia': { colors: ['#1d4ed8', '#3b82f6'] },
+  'afcon': { colors: ['#15803d', '#22c55e'] },
+  'default': { colors: ['#1d4ed8', '#3b82f6'] },
+};
 
 export default function FootballScreen() {
+  const { isAuthenticated, token } = useAuth();
   const [highlightsData, setHighlightsData] = useState<HighlightsGroupedByLeague[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,6 +61,10 @@ export default function FootballScreen() {
   const [playerReady, setPlayerReady] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [isSavingFavorites, setIsSavingFavorites] = useState(false);
+  const [showComingSoon, setShowComingSoon] = useState(false);
+  const [calendarDate, setCalendarDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
   // Helper function to get yesterday's date string
@@ -46,16 +76,37 @@ export default function FootballScreen() {
 
   const loadFavoriteTeams = async () => {
     try {
-      const saved = await AsyncStorage.getItem('favoriteTeams');
-      if (saved) {
-        const teams = JSON.parse(saved);
-        console.log('Loaded favorite teams:', teams);
+      // If authenticated, load from server
+      if (isAuthenticated && token) {
+        const favorites = await favoritesService.getFavoriteTeams(token);
+        const teams = favorites.map(f => f.team_name);
+        console.log('Loaded favorite teams from server:', teams);
         setSelectedTeams(teams);
+        // Also save to local storage as backup
+        await AsyncStorage.setItem('favoriteTeams', JSON.stringify(teams));
         return teams;
+      } else {
+        // Load from local storage if not authenticated
+        const saved = await AsyncStorage.getItem('favoriteTeams');
+        if (saved) {
+          const teams = JSON.parse(saved);
+          console.log('Loaded favorite teams from storage:', teams);
+          setSelectedTeams(teams);
+          return teams;
+        }
       }
       return [];
     } catch (e) {
       console.error('Failed to load saved teams:', e);
+      // Fallback to local storage
+      try {
+        const saved = await AsyncStorage.getItem('favoriteTeams');
+        if (saved) {
+          return JSON.parse(saved);
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback failed:', fallbackErr);
+      }
       return [];
     }
   };
@@ -106,7 +157,37 @@ export default function FootballScreen() {
 
   const handleTeamsChange = async (teams: string[]) => {
     setSelectedTeams(teams);
+    // Save to local storage
+    await AsyncStorage.setItem('favoriteTeams', JSON.stringify(teams));
     await loadHighlights(selectedDate || undefined);
+  };
+
+  const handleSaveFavorites = async () => {
+    if (!isAuthenticated || !token) {
+      Alert.alert(
+        'Login Required',
+        'Please login to save your favorite teams to your account',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    if (selectedTeams.length === 0) {
+      Alert.alert('No Teams Selected', 'Please select at least one team to save');
+      return;
+    }
+
+    setIsSavingFavorites(true);
+    try {
+      const favoritesToSave = selectedTeams.map(team => ({ team_name: team }));
+      await favoritesService.replaceFavoriteTeams(token, favoritesToSave);
+      Alert.alert('Success', 'Your favorite teams have been saved to your account!');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to save favorites';
+      Alert.alert('Error', `Failed to save favorites: ${errorMessage}`);
+    } finally {
+      setIsSavingFavorites(false);
+    }
   };
 
   const onRefresh = async () => {
@@ -223,33 +304,153 @@ export default function FootballScreen() {
   };
 
   const renderDatePicker = () => (
-    <ScrollView 
-      horizontal 
-      showsHorizontalScrollIndicator={false}
-      style={styles.datePickerContainer}
-    >
-      {selectedTeams.length === 0 && (
+    <View style={styles.datePickerSection}>
+      {/* Section Header */}
+      <View style={styles.datePickerHeader}>
+        <View style={styles.datePickerHeaderLeft}>
+          <Ionicons name="calendar-outline" size={20} color="#94a3b8" />
+          <Text style={styles.datePickerHeaderText}>Select Date</Text>
+        </View>
+      </View>
+      
+      {/* Date Options */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.dateButtonsContainer}
+        contentContainerStyle={styles.dateButtonsContent}
+      >
+        {/* Yesterday Button */}
         <TouchableOpacity
-          style={[styles.dateButton, !selectedDate && styles.dateButtonActive]}
-          onPress={handleShowAll}
+          style={[
+            styles.dateButton,
+            !showComingSoon && selectedDate === getYesterdayString() && styles.dateButtonActive
+          ]}
+          onPress={() => {
+            setShowComingSoon(false);
+            setShowDatePicker(false);
+            handleDateSelect(getYesterdayString());
+            setCalendarDate(getYesterdayString());
+          }}
         >
-          <Text style={[styles.dateButtonText, !selectedDate && styles.dateButtonTextActive]}>
-            All
+          <Text style={[
+            styles.dateButtonText,
+            !showComingSoon && selectedDate === getYesterdayString() && styles.dateButtonTextActive
+          ]}>
+            Yesterday
           </Text>
         </TouchableOpacity>
+
+        {/* Calendar Date Picker */}
+        <TouchableOpacity
+          style={[
+            styles.dateButton,
+            styles.calendarButton,
+            !showComingSoon && selectedDate && selectedDate !== getYesterdayString() && styles.dateButtonActive
+          ]}
+          onPress={() => {
+            setShowComingSoon(false);
+            setShowDatePicker(!showDatePicker);
+          }}
+        >
+          <Ionicons 
+            name="calendar" 
+            size={16} 
+            color={!showComingSoon && selectedDate && selectedDate !== getYesterdayString() ? '#ffffff' : '#94a3b8'} 
+          />
+          <Text style={[
+            styles.dateButtonText,
+            !showComingSoon && selectedDate && selectedDate !== getYesterdayString() && styles.dateButtonTextActive
+          ]}>
+            {selectedDate && selectedDate !== getYesterdayString() ? formatDateLabel(selectedDate) : 'Calendar'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Coming Soon Button */}
+        <TouchableOpacity
+          style={[
+            styles.dateButton,
+            styles.comingSoonButton,
+            showComingSoon && styles.dateButtonActive
+          ]}
+          onPress={() => {
+            console.log('Coming Soon button pressed, current state:', showComingSoon);
+            setShowDatePicker(false);
+            setShowComingSoon(!showComingSoon);
+          }}
+        >
+          <Ionicons 
+            name="time-outline" 
+            size={16} 
+            color={showComingSoon ? '#ffffff' : '#94a3b8'} 
+          />
+          <Text style={[
+            styles.dateButtonText,
+            showComingSoon && styles.dateButtonTextActive
+          ]}>
+            Coming Soon
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={new Date(calendarDate)}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          maximumDate={new Date()}
+          themeVariant="light"
+          textColor="#ffffff"
+          onChange={(event, selectedDate) => {
+            if (selectedDate && event.type !== 'dismissed') {
+              // Format date in local timezone to avoid UTC conversion issues
+              const year = selectedDate.getFullYear();
+              const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+              const day = String(selectedDate.getDate()).padStart(2, '0');
+              const dateString = `${year}-${month}-${day}`;
+              setCalendarDate(dateString);
+              handleDateSelect(dateString);
+              setShowDatePicker(false);
+            } else if (event.type === 'dismissed') {
+              setShowDatePicker(false);
+            }
+          }}
+        />
       )}
-      {availableDates.map((date) => (
-        <TouchableOpacity
-          key={date}
-          style={[styles.dateButton, selectedDate === date && styles.dateButtonActive]}
-          onPress={() => handleDateSelect(date)}
-        >
-          <Text style={[styles.dateButtonText, selectedDate === date && styles.dateButtonTextActive]}>
-            {formatDateLabel(date)}
+
+      {/* Filter Info */}
+      {selectedTeams.length > 0 && !showComingSoon && (
+        <View style={styles.filterInfo}>
+          <Text style={styles.filterInfoText}>
+            Showing matches for: <Text style={styles.filterInfoHighlight}>{selectedTeams.length} team(s)</Text>
           </Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+        </View>
+      )}
+      
+      {/* No highlights warning */}
+      {!showComingSoon && selectedDate && !availableDates.includes(selectedDate) && (
+        <View style={styles.warningBanner}>
+          <Ionicons name="warning-outline" size={16} color="#f59e0b" />
+          <Text style={styles.warningText}>No highlights found for this date</Text>
+        </View>
+      )}
+    </View>
+  );
+
+  const renderComingSoon = () => (
+    <View style={styles.comingSoonContainer}>
+      <Ionicons name="timer-outline" size={64} color="#3b82f6" />
+      <Text style={styles.comingSoonTitle}>Coming Soon!</Text>
+      <Text style={styles.comingSoonText}>
+        Live match tracking and upcoming fixtures will be available soon
+      </Text>
+      {selectedTeams.length > 0 && (
+        <Text style={styles.comingSoonSubtext}>
+          You'll be notified when matches for your {selectedTeams.length} favorite team(s) are scheduled
+        </Text>
+      )}
+    </View>
   );
 
   const renderHighlight = (highlight: Highlight, match: Match) => (
@@ -294,33 +495,44 @@ export default function FootballScreen() {
 
   const renderLeagueSection = ({ item }: { item: HighlightsGroupedByLeague }) => {
     const isExpanded = expandedLeagueIds.has(item.league.id);
+    const gradientColors = leagueColors[item.league.slug]?.colors || leagueColors['default'].colors;
+    
+    // Collect all highlights from all matches
+    const allHighlights = item.matches.flatMap(match => match.highlights);
     
     return (
       <View style={styles.leagueSection}>
-        <TouchableOpacity
-          style={styles.leagueHeader}
-          onPress={() => toggleLeague(item.league.id)}
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.leagueHeaderGradient}
         >
-          <View style={styles.leagueHeaderLeft}>
-            {item.league.logo_url && (
-              <Image
-                source={{ uri: item.league.logo_url }}
-                style={styles.leagueLogo}
-              />
-            )}
-            <View>
-              <Text style={styles.leagueName}>{item.league.name}</Text>
-              <Text style={styles.leagueStats}>
-                {item.matches.length} matches
-              </Text>
+          <TouchableOpacity
+            style={styles.leagueHeaderContent}
+            onPress={() => toggleLeague(item.league.id)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.leagueHeaderLeft}>
+              <View style={styles.leagueIconCircle}>
+                <Text style={styles.leagueIcon}>
+                  {item.league.name.charAt(0)}
+                </Text>
+              </View>
+              <View style={styles.leagueInfo}>
+                <Text style={styles.leagueName}>{item.league.name}</Text>
+                <Text style={styles.leagueStats}>
+                  {item.matches.length} match{item.matches.length !== 1 ? 'es' : ''} • {item.total_highlights} highlight{item.total_highlights !== 1 ? 's' : ''}
+                </Text>
+              </View>
             </View>
-          </View>
-          <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={24}
-            color="#9ca3af"
-          />
-        </TouchableOpacity>
+            <Ionicons
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              color="#ffffff"
+            />
+          </TouchableOpacity>
+        </LinearGradient>
         
         {isExpanded && (
           <View style={styles.matchesList}>
@@ -350,10 +562,30 @@ export default function FootballScreen() {
           selectedTeams={selectedTeams}
           onTeamsChange={handleTeamsChange}
         />
+        {isAuthenticated && selectedTeams.length > 0 && (
+          <TouchableOpacity
+            style={styles.saveFavoritesButton}
+            onPress={handleSaveFavorites}
+            disabled={isSavingFavorites}
+          >
+            <Ionicons 
+              name={isSavingFavorites ? "sync" : "bookmark"} 
+              size={16} 
+              color="white" 
+            />
+            <Text style={styles.saveFavoritesText}>
+              {isSavingFavorites ? 'Saving...' : 'Save to Account'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
       {renderDatePicker()}
       
-      {isLoading ? (
+      {/* Coming Soon Section */}
+      {showComingSoon && renderComingSoon()}
+      
+      {/* Highlights Section */}
+      {!showComingSoon && (isLoading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#3b82f6" />
           <Text style={styles.loadingText}>Loading highlights...</Text>
@@ -362,17 +594,33 @@ export default function FootballScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="videocam-off" size={48} color="#9ca3af" />
           <Text style={styles.emptyText}>No highlights available</Text>
+          <Text style={styles.emptySubtext}>
+            {selectedDate 
+              ? `No highlights found for ${formatDateLabel(selectedDate)}`
+              : 'Select a date to view highlights'}
+          </Text>
         </View>
       ) : (
-        <FlatList
-          data={highlightsData}
-          renderItem={renderLeagueSection}
-          keyExtractor={(item) => item.league.id.toString()}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />
-          }
-        />
-      )}
+        <>
+          {/* Header with count */}
+          <View style={styles.highlightsHeader}>
+            <Text style={styles.highlightsHeaderTitle}>
+              Highlights for {formatDateLabel(selectedDate || getYesterdayString())}
+            </Text>
+            <Text style={styles.highlightsHeaderCount}>
+              {highlightsData.reduce((acc, league) => acc + league.total_highlights, 0)} videos
+            </Text>
+          </View>
+          <FlatList
+            data={highlightsData}
+            renderItem={renderLeagueSection}
+            keyExtractor={(item) => item.league.id.toString()}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />
+            }
+          />
+        </>
+      ))}
 
       <Modal
         visible={videoModalVisible}
@@ -430,104 +678,261 @@ export default function FootballScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: '#0f172a',
   },
   controlsContainer: {
-    backgroundColor: '#1f2937',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    backgroundColor: '#1e293b',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    borderBottomColor: '#334155',
+  },
+  saveFavoritesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3b82f6',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 12,
+    gap: 8,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveFavoritesText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '700',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#0f172a',
   },
-  datePickerContainer: {
-    backgroundColor: '#1f2937',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+  datePickerSection: {
+    backgroundColor: '#1e293b',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    borderBottomColor: '#334155',
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  datePickerHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  datePickerHeaderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#e2e8f0',
+  },
+  dateButtonsContainer: {
+    marginBottom: 0,
+  },
+  dateButtonsContent: {
+    gap: 8,
+    paddingVertical: 4,
   },
   dateButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginHorizontal: 4,
-    borderRadius: 20,
-    backgroundColor: '#374151',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    marginRight: 8,
+    borderRadius: 12,
+    backgroundColor: '#334155',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  calendarButton: {
+    minWidth: 110,
+  },
+  comingSoonButton: {
+    minWidth: 130,
   },
   dateButtonActive: {
     backgroundColor: '#3b82f6',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 3,
   },
   dateButtonText: {
-    color: '#9ca3af',
-    fontSize: 14,
+    color: '#94a3b8',
+    fontSize: 15,
     fontWeight: '600',
   },
   dateButtonTextActive: {
     color: '#ffffff',
+    fontWeight: '700',
   },
-  leagueSection: {
-    marginBottom: 12,
-    backgroundColor: '#1f2937',
-    borderRadius: 8,
-    marginHorizontal: 12,
+  filterInfo: {
     marginTop: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#334155',
   },
-  leagueHeader: {
+  filterInfoText: {
+    fontSize: 14,
+    color: '#94a3b8',
+  },
+  filterInfoHighlight: {
+    color: '#3b82f6',
+    fontWeight: '600',
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    padding: 10,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+  },
+  warningText: {
+    fontSize: 13,
+    color: '#f59e0b',
+    fontWeight: '500',
+  },
+  comingSoonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  comingSoonTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  comingSoonText: {
+    fontSize: 16,
+    color: '#94a3b8',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  comingSoonSubtext: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  highlightsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#1e293b',
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  highlightsHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  highlightsHeaderCount: {
+    fontSize: 14,
+    color: '#94a3b8',
+    fontWeight: '500',
+  },
+  leagueSection: {
+    marginBottom: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#1e293b',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  leagueHeaderGradient: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  leagueHeaderContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 18,
   },
   leagueHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  leagueLogo: {
-    width: 40,
-    height: 40,
-    marginRight: 12,
-    borderRadius: 20,
+  leagueIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
   },
-  leagueName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  leagueIcon: {
+    fontSize: 20,
+    fontWeight: '700',
     color: '#ffffff',
   },
+  leagueInfo: {
+    flex: 1,
+  },
+  leagueLogo: {
+    width: 44,
+    height: 44,
+    marginRight: 14,
+    borderRadius: 22,
+  },
+  leagueName: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 3,
+  },
   leagueStats: {
-    fontSize: 12,
-    color: '#9ca3af',
-    marginTop: 2,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
   },
   matchesList: {
-    borderTopWidth: 1,
-    borderTopColor: '#374151',
+    backgroundColor: '#1e293b',
   },
   matchCard: {
-    padding: 16,
+    padding: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    borderBottomColor: '#334155',
   },
   matchHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   matchTeams: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#ffffff',
     flex: 1,
   },
@@ -538,13 +943,18 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   highlightsList: {
-    gap: 12,
+    gap: 14,
   },
   highlightCard: {
-    backgroundColor: '#374151',
-    borderRadius: 8,
+    backgroundColor: '#334155',
+    borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 12,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   thumbnailContainer: {
     backgroundColor: '#000000',
@@ -558,45 +968,61 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   highlightInfo: {
-    padding: 12,
+    padding: 14,
   },
   highlightTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 4,
+    marginBottom: 6,
+    lineHeight: 20,
   },
   channelTitle: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: 13,
+    color: '#94a3b8',
+    fontWeight: '500',
   },
   loadingText: {
-    marginTop: 12,
-    color: '#9ca3af',
-    fontSize: 16,
+    marginTop: 16,
+    color: '#94a3b8',
+    fontSize: 17,
+    fontWeight: '500',
   },
   errorText: {
-    marginTop: 12,
+    marginTop: 16,
     color: '#ef4444',
-    fontSize: 16,
+    fontSize: 17,
     textAlign: 'center',
+    fontWeight: '600',
   },
   emptyText: {
-    marginTop: 12,
-    color: '#9ca3af',
-    fontSize: 16,
+    marginTop: 16,
+    color: '#94a3b8',
+    fontSize: 19,
+    fontWeight: '600',
+  },
+  emptySubtext: {
+    marginTop: 8,
+    color: '#64748b',
+    fontSize: 15,
+    textAlign: 'center',
   },
   retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    marginTop: 20,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
     backgroundColor: '#3b82f6',
-    borderRadius: 8,
+    borderRadius: 12,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   retryButtonText: {
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   modalContainer: {
     flex: 1,
@@ -622,15 +1048,20 @@ const styles = StyleSheet.create({
   closeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#374151',
-    borderRadius: 8,
-    gap: 8,
+    padding: 14,
+    backgroundColor: '#1e293b',
+    borderRadius: 12,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   closeButtonText: {
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   toastContainer: {
     position: 'absolute',
@@ -638,35 +1069,30 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     backgroundColor: 'rgba(59, 130, 246, 0.95)',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   toastText: {
     color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     flex: 1,
+    lineHeight: 20,
   },
   videoPlayerWrapper: {
     width: Dimensions.get('window').width,
     height: Dimensions.get('window').width * (9 / 16),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000000',
-  },
-  videoContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#000000',
   },
   videoWrapper: {
