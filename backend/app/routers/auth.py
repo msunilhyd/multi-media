@@ -100,63 +100,40 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
     )
 
 
+class GoogleAuthRequest(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+    google_id: Optional[str] = None
+    picture: Optional[str] = None
+
+
 @router.post("/google", response_model=AuthResponse)
-async def google_auth(
-    authorization: str = Header(None),
+def google_auth(
+    auth_data: GoogleAuthRequest,
     db: Session = Depends(get_db)
 ):
-    """Handle Google OAuth authentication"""
+    """Handle Google OAuth authentication from NextAuth"""
     
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid authorization header"
-        )
-    
-    google_token = authorization.replace("Bearer ", "")
-    
-    # Verify Google token and get user info
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                'https://www.googleapis.com/oauth2/v2/userinfo',
-                headers={'Authorization': f'Bearer {google_token}'}
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid Google token"
-                )
-            
-            google_user = response.json()
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Failed to verify Google token: {str(e)}"
-        )
-    
-    email = google_user.get("email")
-    name = google_user.get("name")
-    google_id = google_user.get("id")
-    picture_url = google_user.get("picture")
+    email = auth_data.email
+    name = auth_data.name
+    google_id = auth_data.google_id
     
     if not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email not provided by Google"
+            detail="Email is required"
         )
     
     # Check if user exists
     user = db.query(User).filter(User.email == email).first()
     
     if user:
-        # Update Google ID and picture if not set
+        # Update Google ID if not set
         if not user.provider_id and google_id:
             user.provider_id = google_id
             user.provider = "google"
-        if picture_url and not user.picture_url:
-            user.picture_url = picture_url
+        if name and not user.name:
+            user.name = name
         db.commit()
         db.refresh(user)
     else:
@@ -166,8 +143,7 @@ async def google_auth(
             name=name or email.split('@')[0],
             provider="google",
             provider_id=google_id,
-            email_verified=True,
-            picture_url=picture_url
+            email_verified=True
         )
         db.add(user)
         db.commit()
@@ -183,7 +159,6 @@ async def google_auth(
             "name": user.name,
             "provider": user.provider,
             "google_id": user.provider_id if user.provider == "google" else None,
-            "picture_url": user.picture_url,
         },
         access_token=access_token
     )

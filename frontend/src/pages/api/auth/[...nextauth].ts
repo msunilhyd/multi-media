@@ -105,40 +105,43 @@ export const authOptions: AuthOptions = {
   ],
 
   callbacks: {
-    async signIn({ user, account, profile }: any) {
-      if (account?.provider === 'google') {
-        try {
-          // Register/login Google user with backend
-          const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: user.email,
-              name: user.name,
-              google_id: user.id,
-            }),
-          })
+    async jwt({ token, user, account, profile }: any) {
+      // Initial sign in - fetch access token from backend
+      if (account && user) {
+        if (account.provider === 'google') {
+          try {
+            // Register/login Google user with backend
+            const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: user.email,
+                name: user.name,
+                google_id: user.id,
+                picture: user.image,
+              }),
+            })
 
-          if (response.ok) {
-            const authData = await response.json()
-            user.id = authData.user.id.toString()
-            user.accessToken = authData.access_token
-            return true
+            if (response.ok) {
+              const authData = await response.json()
+              token.sub = authData.user.id.toString()
+              token.accessToken = authData.access_token
+              token.picture = user.image
+            } else {
+              const errorData = await response.json().catch(() => ({}))
+              console.error('Backend Google auth failed:', response.status, errorData)
+            }
+          } catch (error) {
+            console.error('Google auth error:', error)
           }
-        } catch (error) {
-          console.error('Google auth error:', error)
+        } else if (account.provider === 'credentials') {
+          // For credentials provider, user object already has the access token
+          token.sub = user.id
+          token.picture = user.image
+          token.accessToken = user.accessToken
         }
-      }
-      return true
-    },
-
-    async jwt({ token, user }: any) {
-      if (user) {
-        token.sub = user.id
-        token.picture = user.image
-        token.accessToken = user.accessToken
       }
       return token
     },

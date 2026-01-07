@@ -21,10 +21,32 @@ export default function CreatePlaylistModal({ isOpen, onClose, playlistType = 'm
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!session || !title.trim()) return;
+    if (!session) {
+      console.error('No session found. Please log in first.');
+      alert('You must be logged in to create a playlist');
+      return;
+    }
+    
+    // Check if session has access token
+    if (!(session as any).accessToken) {
+      console.error('Session missing access token. User needs to re-login.');
+      alert('Your session is invalid. Please log out and log back in to continue.');
+      return;
+    }
+    
+    if (!title.trim()) {
+      alert('Please enter a playlist name');
+      return;
+    }
 
     setIsLoading(true);
     try {
+      console.log('Creating playlist with session:', { 
+        hasSession: !!session, 
+        sessionUser: session.user,
+        hasAccessToken: !!(session as any).accessToken 
+      });
+      
       const response = await fetch('/api/playlists', {
         method: 'POST',
         headers: {
@@ -47,10 +69,13 @@ export default function CreatePlaylistModal({ isOpen, onClose, playlistType = 'm
         setIsPublic(false);
         onClose();
       } else {
-        console.error('Failed to create playlist');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Failed to create playlist:', response.status, errorData);
+        alert(`Failed to create playlist: ${errorData.error || response.statusText}`);
       }
     } catch (error) {
       console.error('Error creating playlist:', error);
+      alert('An error occurred while creating the playlist');
     }
     setIsLoading(false);
   };
