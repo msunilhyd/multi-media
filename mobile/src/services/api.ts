@@ -102,13 +102,15 @@ export interface Entertainment {
   title: string;
   youtube_video_id: string;
   description: string | null;
+  content_type: string;
+  start_seconds: number | null;
+  end_seconds: number | null;
+  duration: number | null;
   thumbnail_url: string | null;
   channel_title: string | null;
   view_count: number | null;
-  duration: string | null;
-  category: string | null;
-  published_at: string | null;
-  created_at: string;
+  tags: string[] | null;
+  is_featured: boolean;
 }
 
 export async function fetchEntertainment(): Promise<Entertainment[]> {

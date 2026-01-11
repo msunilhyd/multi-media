@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       params.append(key, value);
     });
 
-    const response = await fetch(`${BACKEND_URL}/entertainment/?${params.toString()}`);
+    const response = await fetch(`${BACKEND_URL}/api/entertainment/?${params.toString()}`);
     
     if (!response.ok) {
       throw new Error(`Backend responded with status: ${response.status}`);

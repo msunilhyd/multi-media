@@ -17,6 +17,7 @@ export default function EntertainmentScreen() {
   const { token } = useAuth();
   const playerRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
+  const shouldAutoplayRef = useRef(false);
   const [entertainmentItems, setEntertainmentItems] = useState<Entertainment[]>([]);
   const [currentItem, setCurrentItem] = useState<Entertainment | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -47,14 +48,15 @@ export default function EntertainmentScreen() {
   };
 
   const togglePlayPause = () => {
+    console.log('Toggle play/pause, current state:', isPlaying);
     setIsPlaying(!isPlaying);
   };
 
   const playItem = (item: Entertainment, index: number) => {
     setCurrentItem(item);
     setCurrentIndex(index);
-    setIsPlaying(true);
     setIsReady(false);
+    setIsPlaying(true);
     
     setTimeout(() => {
       flatListRef.current?.scrollToIndex({
@@ -155,11 +157,36 @@ export default function EntertainmentScreen() {
               height={220}
               play={isPlaying}
               videoId={currentItem.youtube_video_id}
-              onReady={() => setIsReady(true)}
+              onReady={() => {
+                console.log('Entertainment player ready for:', currentItem.title);
+                setIsReady(true);
+              }}
               onChangeState={(state: string) => {
+                console.log('Entertainment player state:', state);
                 if (state === 'ended') {
                   playNext();
+                } else if (state === 'playing') {
+                  setIsPlaying(true);
+                } else if (state === 'paused') {
+                  setIsPlaying(false);
                 }
+              }}
+              webViewProps={{
+                androidLayerType: 'hardware',
+              }}
+            />
+              onChangeState={(state: string) => {
+                console.log('Entertainment player state:', state);
+                if (state === 'ended') {
+                  playNext();
+                } else if (state === 'playing') {
+                  setIsPlaying(true);
+                } else if (state === 'paused') {
+                  setIsPlaying(false);
+                }
+              }}
+              webViewProps={{
+                androidLayerType: 'hardware',
               }}
             />
           </View>
