@@ -145,25 +145,35 @@ def replace_favorite_teams(
 ):
     """Replace all favorite teams with new list"""
     
-    # Delete all existing favorites
-    db.query(UserFavoriteTeam).filter(
-        UserFavoriteTeam.user_id == current_user.id
-    ).delete()
-    
-    # Add new favorites
-    new_favorites = []
-    for team_data in teams:
-        favorite = UserFavoriteTeam(
-            user_id=current_user.id,
-            team_name=team_data.team_name,
-            league_id=team_data.league_id
-        )
-        new_favorites.append(favorite)
-    
-    if new_favorites:
-        db.add_all(new_favorites)
+    try:
+        # Delete all existing favorites
+        db.query(UserFavoriteTeam).filter(
+            UserFavoriteTeam.user_id == current_user.id
+        ).delete()
+        
+        # Add new favorites
+        new_favorites = []
+        for team_data in teams:
+            favorite = UserFavoriteTeam(
+                user_id=current_user.id,
+                team_name=team_data.team_name,
+                league_id=team_data.league_id
+            )
+            new_favorites.append(favorite)
+        
+        if new_favorites:
+            db.add_all(new_favorites)
+        
         db.commit()
+        
+        # Refresh all favorites to get IDs
         for fav in new_favorites:
             db.refresh(fav)
-    
-    return new_favorites
+        
+        return new_favorites
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to replace favorite teams: {str(e)}"
+        )

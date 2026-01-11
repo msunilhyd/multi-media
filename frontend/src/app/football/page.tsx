@@ -149,13 +149,18 @@ export default function FootballPage() {
         league_id: null,
       }));
       
-      console.log('Saving favorites with token:', token ? 'Token available' : 'No token');
+      console.log('Saving favorites:', { 
+        teamCount: favoritesToSave.length, 
+        hasToken: !!token,
+        teams: favoritesToSave.map(t => t.team_name)
+      });
+      
       await replaceFavoriteTeams(token, favoritesToSave);
       setShowSaveDialog(false);
       alert('Favorite teams saved successfully!');
     } catch (err: any) {
       console.error('Failed to save favorites:', err);
-      const errorMessage = err?.response?.data?.detail || err?.message || 'Please try again.';
+      const errorMessage = err?.message || 'Unknown error occurred. Please try again.';
       alert(`Failed to save favorites: ${errorMessage}`);
     } finally {
       setIsSavingFavorites(false);

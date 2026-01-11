@@ -404,7 +404,11 @@ export async function replaceFavoriteTeams(token: string, teams: FavoriteTeamCre
     },
     body: JSON.stringify(teams),
   });
-  if (!response.ok) throw new Error('Failed to replace favorite teams');
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.detail || `Failed to replace favorite teams (${response.status})`;
+    throw new Error(errorMessage);
+  }
   return response.json();
 }
 
