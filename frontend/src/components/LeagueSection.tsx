@@ -40,7 +40,9 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
   const allHighlights = matches.flatMap(match => 
     match.highlights.map(highlight => ({
       ...highlight,
-      matchInfo: `${match.home_team} vs ${match.away_team}`
+      matchInfo: `${match.home_team} vs ${match.away_team}`,
+      matchDate: match.match_date,
+      matchTime: match.match_time
     }))
   );
 

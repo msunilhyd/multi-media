@@ -5,7 +5,7 @@ import { Play, Eye, Clock, CheckCircle, X, Calendar } from 'lucide-react';
 import { Highlight } from '@/lib/api';
 
 interface VideoCardProps {
-  highlight: Highlight & { matchInfo?: string };
+  highlight: Highlight & { matchInfo?: string; matchDate?: string; matchTime?: string | null };
   showMatchInfo?: boolean;
 }
 
@@ -15,7 +15,7 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { youtube_video_id, title, thumbnail_url, channel_title, view_count, duration, is_official, matchInfo, published_at } = highlight;
+  const { youtube_video_id, title, thumbnail_url, channel_title, view_count, duration, is_official, matchInfo, matchDate, matchTime } = highlight;
 
   const formatViewCount = (count: number | null) => {
     if (!count) return null;
@@ -24,22 +24,51 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
     return count.toString();
   };
 
-  const formatDateTime = (dateStr: string | null) => {
+  const formatMatchDateTime = (dateStr: string | null, timeStr: string | null) => {
     if (!dateStr) return null;
     try {
-      const date = new Date(dateStr);
+      // Parse the date string (YYYY-MM-DD format)
+      const dateParts = dateStr.split('-');
+      const year = parseInt(dateParts[0]);
+      const month = parseInt(dateParts[1]) - 1; // JS months are 0-indexed
+      const day = parseInt(dateParts[2]);
+      
+      // Create date object
+      let matchDateTime;
+      
+      if (timeStr) {
+        // Parse time (e.g., "14:30" or "14:30:00")
+        const timeParts = timeStr.split(':');
+        const hours = parseInt(timeParts[0]);
+        const minutes = parseInt(timeParts[1]);
+        // Create date in UTC (assuming the match time from API is in UTC)
+        matchDateTime = new Date(Date.UTC(year, month, day, hours, minutes));
+      } else {
+        // If no time provided, just use the date at noon UTC
+        matchDateTime = new Date(Date.UTC(year, month, day, 12, 0));
+      }
+      
+      // Format to user's local timezone
       const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffHours / 24);
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const matchDate = new Date(matchDateTime.getFullYear(), matchDateTime.getMonth(), matchDateTime.getDate());
       
-      // Show relative time if less than 7 days
-      if (diffHours < 1) return 'Just now';
-      if (diffHours < 24) return `${diffHours}h ago`;
-      if (diffDays < 7) return `${diffDays}d ago`;
+      const timeString = matchDateTime.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
       
-      // Show formatted date otherwise
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+      // Show date if not today
+      if (matchDate.getTime() !== today.getTime()) {
+        const dateString = matchDateTime.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric'
+        });
+        return timeStr ? `${dateString}, ${timeString}` : dateString;
+      }
+      
+      return timeStr ? timeString : 'Today';
     } catch {
       return null;
     }
@@ -221,10 +250,10 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
             </span>
           )}
         </div>
-        {published_at && (
+        {(matchDate || matchTime) && (
           <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
             <Calendar className="w-3 h-3" />
-            {formatDateTime(published_at)}
+            {formatMatchDateTime(matchDate || null, matchTime || null)}
           </div>
         )}
       </div>
