@@ -20,6 +20,7 @@ export interface Highlight {
   view_count: number | null;
   duration: string | null;
   is_official: boolean;
+  published_at: string | null;
 }
 
 export interface Match {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Eye, Clock, CheckCircle, X } from 'lucide-react';
+import { Play, Eye, Clock, CheckCircle, X, Calendar } from 'lucide-react';
 import { Highlight } from '@/lib/api';
 
 interface VideoCardProps {
@@ -15,13 +15,34 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { youtube_video_id, title, thumbnail_url, channel_title, view_count, duration, is_official, matchInfo } = highlight;
+  const { youtube_video_id, title, thumbnail_url, channel_title, view_count, duration, is_official, matchInfo, published_at } = highlight;
 
   const formatViewCount = (count: number | null) => {
     if (!count) return null;
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
     if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
     return count.toString();
+  };
+
+  const formatDateTime = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffHours / 24);
+      
+      // Show relative time if less than 7 days
+      if (diffHours < 1) return 'Just now';
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      
+      // Show formatted date otherwise
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+    } catch {
+      return null;
+    }
   };
 
   const thumbnailSrc = thumbnail_url || `https://img.youtube.com/vi/${youtube_video_id}/hqdefault.jpg`;
@@ -191,7 +212,7 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
             {matchInfo}
           </p>
         )}
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
           <span className="truncate">{channel_title}</span>
           {view_count && (
             <span className="flex items-center gap-1">
@@ -200,6 +221,12 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
             </span>
           )}
         </div>
+        {published_at && (
+          <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+            <Calendar className="w-3 h-3" />
+            {formatDateTime(published_at)}
+          </div>
+        )}
       </div>
     </div>
   );
