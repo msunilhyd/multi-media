@@ -71,7 +71,13 @@ export default function CreatePlaylistModal({ isOpen, onClose, playlistType = 'm
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Failed to create playlist:', response.status, errorData);
-        alert(`Failed to create playlist: ${errorData.error || response.statusText}`);
+        
+        // Check if it's a token expiration issue
+        if (response.status === 401 || (errorData.detail && errorData.detail.includes('expired'))) {
+          alert('Your session has expired. Please log out and log back in to continue.');
+        } else {
+          alert(`Failed to create playlist: ${errorData.error || errorData.detail || response.statusText}`);
+        }
       }
     } catch (error) {
       console.error('Error creating playlist:', error);
