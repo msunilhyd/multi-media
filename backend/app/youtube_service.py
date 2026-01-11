@@ -27,6 +27,7 @@ class YouTubeService:
         "AFCON": "UU0YatYmg5JRYzXJPxIdRd8g",               # beIN SPORTS USA (Official AFCON broadcaster)
         "CAF Champions League": "UU0YatYmg5JRYzXJPxIdRd8g", # beIN SPORTS USA
         "Copa del Rey": "UU6c1z7bA__85CIWZ_jpCK-Q",        # ESPN FC
+        "Supercopa de España": "UU6c1z7bA__85CIWZ_jpCK-Q",  # ESPN FC (US broadcaster)
         "Coupe de France": "UU6c1z7bA__85CIWZ_jpCK-Q",     # ESPN FC (US broadcaster)
         "DFB-Pokal": "UU6c1z7bA__85CIWZ_jpCK-Q",           # ESPN FC (US broadcaster)
         "Coppa Italia": "UUET00YnetHT7tOpu12v8jxg",        # CBS Sports Golazo / Paramount+
@@ -84,6 +85,9 @@ class YouTubeService:
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
         "Copa del Rey": [
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
+        ],
+        "Supercopa de España": [
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
         "Coppa Italia": [

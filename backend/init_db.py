@@ -65,6 +65,7 @@ def init_database():
                     League(name='EFL Championship', slug='championship', country='England', display_order=8),
                     League(name='FA Cup', slug='fa-cup', country='England', display_order=9),
                     League(name='EFL Cup', slug='efl-cup', country='England', display_order=10),
+                    League(name='Supercopa de España', slug='supercopa-de-espana', country='Spain', display_order=11),
                 ]
                 session.add_all(default_leagues)
                 session.commit()

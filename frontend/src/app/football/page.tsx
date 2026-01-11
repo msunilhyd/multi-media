@@ -175,13 +175,13 @@ export default function FootballPage() {
       const today = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate()).toISOString().split('T')[0];
       const yesterday = getYesterdayString();
       
-      let defaultDate = yesterday; // Always default to yesterday
+      let defaultDate = today; // Default to today
       
-      // Check if yesterday has highlights, otherwise use today, then most recent
-      if (dates.includes(yesterday)) {
-        defaultDate = yesterday;
-      } else if (dates.includes(today)) {
+      // Check if today has highlights, otherwise use yesterday, then most recent
+      if (dates.includes(today)) {
         defaultDate = today;
+      } else if (dates.includes(yesterday)) {
+        defaultDate = yesterday;
       } else if (dates.length > 0) {
         // Use the most recent date with highlights
         defaultDate = dates[0];
@@ -200,6 +200,12 @@ export default function FootballPage() {
     const today = new Date();
     const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
     return yesterday.toISOString().split('T')[0];
+  };
+
+  // Helper function to get today's date string consistently (local timezone)
+  const getTodayString = () => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
   };
 
   // Format date for display (e.g., "Dec 20" or "Today")
@@ -240,6 +246,20 @@ export default function FootballPage() {
             <TeamSelector selectedTeams={selectedTeams} onTeamsChange={handleTeamsChange} />
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => {
+                const todayStr = getTodayString();
+                setShowComingSoon(false);
+                handleDateSelect(todayStr);
+              }}
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                !showComingSoon && selectedDate === getTodayString()
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              Today
+            </button>
             <button
               onClick={() => {
                 const yesterdayStr = getYesterdayString();
@@ -351,7 +371,7 @@ export default function FootballPage() {
           <div>
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                Highlights for {formatDateLabel(selectedDate || getYesterdayString())}
+                Highlights for {formatDateLabel(selectedDate || getTodayString())}
               </h2>
               <span className="text-gray-500 dark:text-gray-400">
                 {highlightsData.reduce((acc, league) => acc + league.total_highlights, 0)} videos available

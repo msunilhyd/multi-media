@@ -31,6 +31,7 @@ class ESPNFootballAPI:
         "eng.fa": "FA Cup",
         "eng.league_cup": "League Cup",
         "esp.copa_del_rey": "Copa del Rey",
+        "esp.supercopa": "Supercopa de España",
         "fra.coupe_de_france": "Coupe de France",
         "ger.dfb_pokal": "DFB-Pokal",
         "ita.coppa_italia": "Coppa Italia",
