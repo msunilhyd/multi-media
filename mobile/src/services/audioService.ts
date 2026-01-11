@@ -17,6 +17,10 @@ export class AudioService {
   private sound: Audio.Sound | null = null;
   private currentSong: Song | null = null;
   private isPlaying: boolean = false;
+  private onNextCallback: (() => void) | null = null;
+  private onPreviousCallback: (() => void) | null = null;
+  private onPlayCallback: (() => void) | null = null;
+  private onPauseCallback: (() => void) | null = null;
 
   constructor() {
     // Setup background audio with simplified configuration
@@ -35,12 +39,49 @@ export class AudioService {
         staysActiveInBackground: true,
         playsInSilentModeIOS: true,
         shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false
+        playThroughEarpieceAndroid: false,
+        interruptionModeIOS: 0, // Do not mix with others
+        interruptionModeAndroid: 1 // Duck others
       });
       console.log('🎵 Background audio configured successfully');
     } catch (error) {
       console.error('Failed to setup background audio:', error);
     }
+  }
+
+  // Set up media controls for car integration and lock screen
+  private async updateNowPlaying(song: Song, isPlaying: boolean) {
+    if (!this.sound) return;
+
+    try {
+      const status = await this.sound.getStatusAsync();
+      if (!status.isLoaded) return;
+
+      // Update Now Playing info (iOS Control Center / Android lock screen)
+      await this.sound.setStatusAsync({
+        ...status,
+        // This enables iOS Now Playing and Android MediaSession
+        progressUpdateIntervalMillis: 1000,
+      });
+
+      console.log(`🎵 Updated Now Playing: ${song.title} - ${isPlaying ? 'Playing' : 'Paused'}`);
+    } catch (error) {
+      console.error('Error updating Now Playing info:', error);
+    }
+  }
+
+  // Register callbacks for media controls (next, previous, play, pause)
+  public setMediaControlCallbacks(callbacks: {
+    onNext?: () => void;
+    onPrevious?: () => void;
+    onPlay?: () => void;
+    onPause?: () => void;
+  }) {
+    this.onNextCallback = callbacks.onNext || null;
+    this.onPreviousCallback = callbacks.onPrevious || null;
+    this.onPlayCallback = callbacks.onPlay || null;
+    this.onPauseCallback = callbacks.onPause || null;
+    console.log('🎵 Media control callbacks registered');
   }
 
   private handleAppStateChange = async (nextAppState: string) => {
@@ -161,6 +202,9 @@ export class AudioService {
       this.currentSong = song;
       this.isPlaying = true;
 
+      // Update Now Playing info for car/lock screen controls
+      await this.updateNowPlaying(song, true);
+
       console.log('✅ Audio playing with background support');
 
     } catch (error) {
@@ -173,6 +217,10 @@ export class AudioService {
     if (this.sound && this.isPlaying) {
       await this.sound.pauseAsync();
       this.isPlaying = false;
+      if (this.currentSong) {
+        await this.updateNowPlaying(this.currentSong, false);
+      }
+      this.onPauseCallback?.();
     }
   }
 
@@ -180,6 +228,10 @@ export class AudioService {
     if (this.sound && !this.isPlaying) {
       await this.sound.playAsync();
       this.isPlaying = true;
+      if (this.currentSong) {
+        await this.updateNowPlaying(this.currentSong, true);
+      }
+      this.onPlayCallback?.();
     }
   }
 
@@ -187,6 +239,7 @@ export class AudioService {
     if (this.sound) {
       await this.sound.stopAsync();
       this.isPlaying = false;
+      this.onPauseCallback?.();
     }
   }
 

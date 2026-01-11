@@ -74,6 +74,12 @@ export default function FootballScreen() {
     return yesterday.toISOString().split('T')[0];
   };
 
+  // Helper function to get today's date string
+  const getTodayString = () => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
+  };
+
   const loadFavoriteTeams = async () => {
     try {
       // If authenticated, load from server
@@ -157,9 +163,30 @@ export default function FootballScreen() {
 
   const handleTeamsChange = async (teams: string[]) => {
     setSelectedTeams(teams);
+  };
+
+  const handleTeamsDone = async () => {
     // Save to local storage
-    await AsyncStorage.setItem('favoriteTeams', JSON.stringify(teams));
+    await AsyncStorage.setItem('favoriteTeams', JSON.stringify(selectedTeams));
     await loadHighlights(selectedDate || undefined);
+    
+    // Show save dialog if authenticated and has teams selected
+    if (isAuthenticated && token && selectedTeams.length > 0) {
+      Alert.alert(
+        'Save Favorite Teams?',
+        `Would you like to save your selected teams (${selectedTeams.length} team(s)) to your account? This will sync across all your devices.`,
+        [
+          {
+            text: 'Keep Local Only',
+            style: 'cancel',
+          },
+          {
+            text: 'Save to Account',
+            onPress: handleSaveFavorites,
+          },
+        ]
+      );
+    }
   };
 
   const handleSaveFavorites = async () => {
@@ -180,11 +207,21 @@ export default function FootballScreen() {
     setIsSavingFavorites(true);
     try {
       const favoritesToSave = selectedTeams.map(team => ({ team_name: team }));
+      console.log('Saving favorites:', { teamCount: favoritesToSave.length, hasToken: !!token });
       await favoritesService.replaceFavoriteTeams(token, favoritesToSave);
       Alert.alert('Success', 'Your favorite teams have been saved to your account!');
     } catch (error: any) {
+      console.error('Failed to save favorites:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to save favorites';
-      Alert.alert('Error', `Failed to save favorites: ${errorMessage}`);
+      
+      // Check for token expiration
+      if (errorMessage.includes('expired') || errorMessage.includes('Token has expired')) {
+        Alert.alert('Session Expired', 'Your session has expired. Please log out and log in again to save favorites.');
+      } else if (errorMessage.includes('Invalid token')) {
+        Alert.alert('Invalid Session', 'Your session is invalid. Please log out and log in again to save favorites.');
+      } else {
+        Alert.alert('Error', `Failed to save favorites: ${errorMessage}`);
+      }
     } finally {
       setIsSavingFavorites(false);
     }
@@ -227,7 +264,7 @@ export default function FootballScreen() {
       
       const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
       
-      let defaultDate = yesterday;
+      let defaultDate = today; // Default to today instead of yesterday
       
       if (filteredDates.includes(today)) {
         defaultDate = today;
@@ -259,6 +296,54 @@ export default function FootballScreen() {
     if (date.getTime() === yesterday.getTime()) return 'Yesterday';
     
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const formatMatchDateTime = (dateStr: string, timeStr: string | null) => {
+    if (!dateStr) return null;
+    try {
+      // Parse the date string (YYYY-MM-DD format)
+      const dateParts = dateStr.split('-');
+      const year = parseInt(dateParts[0]);
+      const month = parseInt(dateParts[1]) - 1;
+      const day = parseInt(dateParts[2]);
+      
+      let matchDateTime;
+      
+      if (timeStr) {
+        // Parse time (e.g., "14:30" or "14:30:00")
+        const timeParts = timeStr.split(':');
+        const hours = parseInt(timeParts[0]);
+        const minutes = parseInt(timeParts[1]);
+        // Create date in UTC (assuming the match time from API is in UTC)
+        matchDateTime = new Date(Date.UTC(year, month, day, hours, minutes));
+      } else {
+        matchDateTime = new Date(Date.UTC(year, month, day, 12, 0));
+      }
+      
+      // Format to user's local timezone
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const matchDate = new Date(matchDateTime.getFullYear(), matchDateTime.getMonth(), matchDateTime.getDate());
+      
+      const timeString = matchDateTime.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      
+      // Show date if not today
+      if (matchDate.getTime() !== today.getTime()) {
+        const dateString = matchDateTime.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric'
+        });
+        return timeStr ? `${dateString}, ${timeString}` : dateString;
+      }
+      
+      return timeStr ? timeString : 'Today';
+    } catch {
+      return null;
+    }
   };
 
   const playVideo = (videoId: string) => {
@@ -320,6 +405,27 @@ export default function FootballScreen() {
         style={styles.dateButtonsContainer}
         contentContainerStyle={styles.dateButtonsContent}
       >
+        {/* Today Button */}
+        <TouchableOpacity
+          style={[
+            styles.dateButton,
+            !showComingSoon && selectedDate === getTodayString() && styles.dateButtonActive
+          ]}
+          onPress={() => {
+            setShowComingSoon(false);
+            setShowDatePicker(false);
+            handleDateSelect(getTodayString());
+            setCalendarDate(getTodayString());
+          }}
+        >
+          <Text style={[
+            styles.dateButtonText,
+            !showComingSoon && selectedDate === getTodayString() && styles.dateButtonTextActive
+          ]}>
+            Today
+          </Text>
+        </TouchableOpacity>
+
         {/* Yesterday Button */}
         <TouchableOpacity
           style={[
@@ -346,7 +452,7 @@ export default function FootballScreen() {
           style={[
             styles.dateButton,
             styles.calendarButton,
-            !showComingSoon && selectedDate && selectedDate !== getYesterdayString() && styles.dateButtonActive
+            !showComingSoon && selectedDate && selectedDate !== getTodayString() && selectedDate !== getYesterdayString() && styles.dateButtonActive
           ]}
           onPress={() => {
             setShowComingSoon(false);
@@ -356,13 +462,13 @@ export default function FootballScreen() {
           <Ionicons 
             name="calendar" 
             size={16} 
-            color={!showComingSoon && selectedDate && selectedDate !== getYesterdayString() ? '#ffffff' : '#94a3b8'} 
+            color={!showComingSoon && selectedDate && selectedDate !== getTodayString() && selectedDate !== getYesterdayString() ? '#ffffff' : '#94a3b8'} 
           />
           <Text style={[
             styles.dateButtonText,
-            !showComingSoon && selectedDate && selectedDate !== getYesterdayString() && styles.dateButtonTextActive
+            !showComingSoon && selectedDate && selectedDate !== getTodayString() && selectedDate !== getYesterdayString() && styles.dateButtonTextActive
           ]}>
-            {selectedDate && selectedDate !== getYesterdayString() ? formatDateLabel(selectedDate) : 'Calendar'}
+            {selectedDate && selectedDate !== getTodayString() && selectedDate !== getYesterdayString() ? formatDateLabel(selectedDate) : 'Calendar'}
           </Text>
         </TouchableOpacity>
 
@@ -476,6 +582,14 @@ export default function FootballScreen() {
         {highlight.channel_title && (
           <Text style={styles.channelTitle}>{highlight.channel_title}</Text>
         )}
+        {(match.match_date || match.match_time) && (
+          <View style={styles.matchTimeContainer}>
+            <Ionicons name="calendar-outline" size={12} color="#9ca3af" />
+            <Text style={styles.matchTime}>
+              {formatMatchDateTime(match.match_date, match.match_time)}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -561,6 +675,7 @@ export default function FootballScreen() {
         <TeamSelector
           selectedTeams={selectedTeams}
           onTeamsChange={handleTeamsChange}
+          onDone={handleTeamsDone}
         />
         {isAuthenticated && selectedTeams.length > 0 && (
           <TouchableOpacity
@@ -980,6 +1095,17 @@ const styles = StyleSheet.create({
   channelTitle: {
     fontSize: 13,
     color: '#94a3b8',
+    fontWeight: '500',
+  },
+  matchTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  matchTime: {
+    fontSize: 12,
+    color: '#9ca3af',
     fontWeight: '500',
   },
   loadingText: {

@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MusicPlayerScreen from './src/screens/MusicPlayerScreen';
 import MusicPlaylistScreen from './src/screens/MusicPlaylistScreen';
 import FootballScreen from './src/screens/FootballScreen';
+import EntertainmentScreen from './src/screens/EntertainmentScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import AuthScreen from './src/screens/AuthScreen';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
@@ -114,6 +115,8 @@ function AppContent() {
               iconName = focused ? 'football' : 'football-outline';
             } else if (route.name === 'Background Audio') {
               iconName = focused ? 'headset' : 'headset-outline';
+            } else if (route.name === 'Entertainment') {
+              iconName = focused ? 'videocam' : 'videocam-outline';
             } else if (route.name === 'Profile') {
               iconName = focused ? 'person' : 'person-outline';
             } else {
@@ -123,6 +126,7 @@ function AppContent() {
             // Set color based on route and focused state
             let activeColor = '#8b5cf6';
             if (route.name === 'Football') activeColor = '#3b82f6';
+            if (route.name === 'Entertainment') activeColor = '#ec4899';
             if (route.name === 'Profile') activeColor = '#ec4899';
             
             const finalColor = focused ? activeColor : '#9ca3af';
@@ -135,6 +139,7 @@ function AppContent() {
             let color = '#9ca3af';
             if (focused) {
               if (route.name === 'Football') color = '#3b82f6';
+              else if (route.name === 'Entertainment') color = '#ec4899';
               else if (route.name === 'Profile') color = '#ec4899';
               else color = '#8b5cf6';
             }
@@ -164,6 +169,14 @@ function AppContent() {
           options={{
             header: () => <CustomHeader />,
             tabBarLabel: 'Music'
+          }}
+        />
+        <Tab.Screen 
+          name="Entertainment" 
+          component={EntertainmentScreen}
+          options={{
+            header: () => <CustomHeader />,
+            tabBarLabel: 'Fun'
           }}
         />
         <Tab.Screen 

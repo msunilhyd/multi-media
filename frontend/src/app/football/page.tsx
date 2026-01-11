@@ -167,7 +167,15 @@ export default function FootballPage() {
     } catch (err: any) {
       console.error('Failed to save favorites:', err);
       const errorMessage = err?.message || 'Unknown error occurred. Please try again.';
-      alert(`Failed to save favorites: ${errorMessage}`);
+      
+      // Check if it's a token expiration error
+      if (errorMessage.includes('expired') || errorMessage.includes('Token has expired')) {
+        alert('Your session has expired. Please log out and log in again to save favorites.');
+      } else if (errorMessage.includes('Invalid token')) {
+        alert('Your session is invalid. Please log out and log in again to save favorites.');
+      } else {
+        alert(`Failed to save favorites: ${errorMessage}`);
+      }
     } finally {
       setIsSavingFavorites(false);
     }

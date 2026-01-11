@@ -16,9 +16,10 @@ import { TeamsByLeague, fetchAllTeams } from '../services/api';
 interface TeamSelectorProps {
   selectedTeams: string[];
   onTeamsChange: (teams: string[]) => void;
+  onDone?: () => void;
 }
 
-export default function TeamSelector({ selectedTeams, onTeamsChange }: TeamSelectorProps) {
+export default function TeamSelector({ selectedTeams, onTeamsChange, onDone }: TeamSelectorProps) {
   console.log('TeamSelector rendered');
   const [isOpen, setIsOpen] = useState(false);
   const [teamsByLeague, setTeamsByLeague] = useState<TeamsByLeague[]>([]);
@@ -231,7 +232,10 @@ export default function TeamSelector({ selectedTeams, onTeamsChange }: TeamSelec
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.doneButton}
-                onPress={() => setIsOpen(false)}
+                onPress={() => {
+                  setIsOpen(false);
+                  onDone?.();
+                }}
               >
                 <Text style={styles.doneButtonText}>Done</Text>
               </TouchableOpacity>

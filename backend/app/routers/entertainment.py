@@ -6,7 +6,7 @@ from ..database import get_db
 from pydantic import BaseModel
 
 router = APIRouter(
-    prefix="/entertainment",
+    prefix="/api/entertainment",
     tags=["entertainment"]
 )
 

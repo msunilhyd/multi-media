@@ -11,8 +11,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { defaultPlaylist, Song } from '../data/playlists';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function MusicPlaylistScreen() {
+  const { token } = useAuth();
   const playerRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
   const [currentSong, setCurrentSong] = useState<Song | null>(defaultPlaylist[0] || null);
@@ -24,6 +26,7 @@ export default function MusicPlaylistScreen() {
   const [languageFilter, setLanguageFilter] = useState<string>('');
   const [composerFilter, setComposerFilter] = useState<string>('');
   const [yearFilter, setYearFilter] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'default' | 'user-playlists'>('default');
 
   // Helper to normalize language
   const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
@@ -166,24 +169,56 @@ export default function MusicPlaylistScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>
-            {hasActiveFilters ? `${filteredSongs.length} of ${defaultPlaylist.length}` : `${defaultPlaylist.length} songs`}
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'default' && styles.activeTab]}
+          onPress={() => setActiveTab('default')}
+        >
+          <Text style={[styles.tabText, activeTab === 'default' && styles.activeTabText]}>
+            All Songs ({defaultPlaylist.length})
+          </Text>
+        </TouchableOpacity>
+        {token && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'user-playlists' && styles.activeTab]}
+            onPress={() => setActiveTab('user-playlists')}
+          >
+            <Text style={[styles.tabText, activeTab === 'user-playlists' && styles.activeTabText]}>
+              My Playlists
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {activeTab === 'user-playlists' ? (
+        <View style={styles.comingSoonContainer}>
+          <Ionicons name="list" size={48} color="#64748b" />
+          <Text style={styles.comingSoonTitle}>User Playlists</Text>
+          <Text style={styles.comingSoonText}>
+            Create and manage your music playlists
           </Text>
         </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity 
-            style={[styles.headerButton, (showFilters || hasActiveFilters) && styles.headerButtonActive]} 
-            onPress={() => setShowFilters(!showFilters)}
-          >
-            <Ionicons name="filter" size={20} color="#ffffff" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={scrollToTop}>
-            <Ionicons name="arrow-up" size={20} color="#ffffff" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      ) : (
+        <>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.headerTitle}>
+                {hasActiveFilters ? `${filteredSongs.length} of ${defaultPlaylist.length}` : `${defaultPlaylist.length} songs`}
+              </Text>
+            </View>
+            <View style={styles.headerRight}>
+              <TouchableOpacity 
+                style={[styles.headerButton, (showFilters || hasActiveFilters) && styles.headerButtonActive]} 
+                onPress={() => setShowFilters(!showFilters)}
+              >
+                <Ionicons name="filter" size={20} color="#ffffff" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.headerButton} onPress={scrollToTop}>
+                <Ionicons name="arrow-up" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </View>
 
       {/* Player at the top */}
       <View style={styles.playerContainer}>
@@ -316,6 +351,8 @@ export default function MusicPlaylistScreen() {
           }}
         />
       )}
+        </>
+      )}
     </View>
   );
 }
@@ -324,6 +361,48 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111827',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#1e293b',
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: '#8b5cf6',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#94a3b8',
+  },
+  activeTabText: {
+    color: '#8b5cf6',
+  },
+  comingSoonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  comingSoonTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginTop: 16,
+  },
+  comingSoonText: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 8,
   },
   header: {
     flexDirection: 'row',

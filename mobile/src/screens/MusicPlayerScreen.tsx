@@ -14,7 +14,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { audioService } from '../services/audioService';
+import { trackPlayerService } from '../services/trackPlayerService';
 import { defaultPlaylist, Song } from '../data/playlists';
+
+// Flag to switch between audio services
+const USE_TRACK_PLAYER = true; // Set to true to enable car controls
 
 export default function MusicPlayerScreen() {
   const flatListRef = useRef<FlatList>(null);
@@ -69,9 +73,23 @@ export default function MusicPlayerScreen() {
   };
 
   useEffect(() => {
-    // No need for status updates with expo-audio - it handles background automatically
+    // Setup track player and register callbacks for car controls
+    if (USE_TRACK_PLAYER) {
+      trackPlayerService.setup().then(() => {
+        // Register next/previous callbacks for car steering wheel controls
+        trackPlayerService.setNavigationCallbacks(playNext, playPrevious);
+        console.log('🎵 TrackPlayer ready with car controls');
+      }).catch(error => {
+        console.error('Failed to setup TrackPlayer:', error);
+      });
+    }
+    
     return () => {
-      audioService.unloadAsync();
+      if (USE_TRACK_PLAYER) {
+        trackPlayerService.stop().catch(console.error);
+      } else {
+        audioService.unloadAsync();
+      }
     };
   }, []);
 
@@ -107,7 +125,13 @@ export default function MusicPlayerScreen() {
     try {
       console.log(`🎵 Playing song: ${song.title} (${song.videoId})`);
       setIsLoading(true);
-      await audioService.playSong(song);
+      
+      if (USE_TRACK_PLAYER) {
+        await trackPlayerService.playSong(song);
+      } else {
+        await audioService.playSong(song);
+      }
+      
       setCurrentSong(song);
       // Find the index in the full playlist
       const fullIndex = defaultPlaylist.findIndex(s => s.id === song.id);
@@ -148,10 +172,18 @@ export default function MusicPlayerScreen() {
   const togglePlayPause = async () => {
     try {
       if (isPlaying) {
-        await audioService.pauseAsync();
+        if (USE_TRACK_PLAYER) {
+          await trackPlayerService.pause();
+        } else {
+          await audioService.pauseAsync();
+        }
         setIsPlaying(false);
       } else {
-        await audioService.resumeAsync();
+        if (USE_TRACK_PLAYER) {
+          await trackPlayerService.play();
+        } else {
+          await audioService.resumeAsync();
+        }
         setIsPlaying(true);
       }
     } catch (error) {

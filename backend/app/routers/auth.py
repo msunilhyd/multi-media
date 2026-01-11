@@ -102,6 +102,8 @@ def login_user(login_data: UserLogin, db: Session = Depends(get_db)):
 
 class GoogleAuthRequest(BaseModel):
     code: Optional[str] = None
+    code_verifier: Optional[str] = None
+    redirect_uri: Optional[str] = None
     email: Optional[str] = None
     name: Optional[str] = None
     google_id: Optional[str] = None
@@ -124,14 +126,23 @@ async def google_auth(
         try:
             async with httpx.AsyncClient() as client:
                 # Exchange code for access token
+                # Use iOS client for mobile PKCE flow (no client_secret needed)
+                redirect_uri = auth_data.redirect_uri or 'com.googleusercontent.apps.472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt:/oauth2redirect'
+                
+                token_data_payload = {
+                    'code': auth_data.code,
+                    'client_id': '472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt.apps.googleusercontent.com',  # iOS client
+                    'redirect_uri': redirect_uri,
+                    'grant_type': 'authorization_code',
+                }
+                
+                # Add code_verifier if provided (PKCE flow for mobile)
+                if auth_data.code_verifier:
+                    token_data_payload['code_verifier'] = auth_data.code_verifier
+                
                 token_response = await client.post(
                     'https://oauth2.googleapis.com/token',
-                    data={
-                        'code': auth_data.code,
-                        'client_id': '472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt.apps.googleusercontent.com',
-                        'redirect_uri': 'com.googleusercontent.apps.472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt:/oauth2redirect',
-                        'grant_type': 'authorization_code',
-                    }
+                    data=token_data_payload
                 )
                 token_data = token_response.json()
                 
@@ -212,7 +223,7 @@ def create_access_token(user_id: int) -> str:
     """Create JWT access token for user"""
     payload = {
         "user_id": user_id,
-        "exp": datetime.utcnow() + timedelta(hours=24)  # Token expires in 24 hours
+        "exp": datetime.utcnow() + timedelta(days=7)  # Token expires in 7 days
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 

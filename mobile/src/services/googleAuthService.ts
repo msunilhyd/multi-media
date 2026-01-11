@@ -55,13 +55,19 @@ class GoogleAuthService {
 
       if (result.type === 'success') {
         const { code } = result.params;
+        const codeVerifier = request.codeVerifier;
         console.log('✅ Google OAuth success, exchanging code with backend...');
         console.log('📤 Sending code:', code);
+        console.log('📤 Using redirect URI:', this.redirectUri);
 
         // Exchange authorization code with backend
         const response = await axios.post<GoogleAuthResponse>(
           `${API_BASE_URL}/api/auth/google`,
-          { code },
+          { 
+            code, 
+            code_verifier: codeVerifier,
+            redirect_uri: this.redirectUri 
+          },
           {
             headers: {
               'Content-Type': 'application/json',

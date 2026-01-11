@@ -1,3 +1,4 @@
+// Production backend
 export const API_BASE_URL = 'https://multi-media-production.up.railway.app';
 
 export interface League {
@@ -93,5 +94,25 @@ export async function fetchHighlightsGroupedWithTeamFilter(teams: string[], date
   
   const response = await fetch(`${API_BASE_URL}/api/highlights${params.toString() ? `?${params}` : ''}`);
   if (!response.ok) throw new Error('Failed to fetch highlights');
+  return response.json();
+}
+
+export interface Entertainment {
+  id: number;
+  title: string;
+  youtube_video_id: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  channel_title: string | null;
+  view_count: number | null;
+  duration: string | null;
+  category: string | null;
+  published_at: string | null;
+  created_at: string;
+}
+
+export async function fetchEntertainment(): Promise<Entertainment[]> {
+  const response = await fetch(`${API_BASE_URL}/api/entertainment`);
+  if (!response.ok) throw new Error('Failed to fetch entertainment');
   return response.json();
 }
