@@ -20,7 +20,7 @@ import {
 export default function FootballPage() {
   const { data: session } = useSession();
   const user = session?.user;
-  const token = (session as any)?.accessToken; // Get token from session if available
+  const token = (session as any)?.accessToken || (session as any)?.access_token; // Get token from session if available
   const [highlightsData, setHighlightsData] = useState<HighlightsGroupedByLeague[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,15 +115,19 @@ export default function FootballPage() {
 
   const handleTeamsChange = async (teams: string[]) => {
     setSelectedTeams(teams);
-    localStorage.setItem('favoriteTeams', JSON.stringify(teams));
+  };
+
+  const handleTeamSelectionDone = async () => {
+    // Save to localStorage
+    localStorage.setItem('favoriteTeams', JSON.stringify(selectedTeams));
     
     // Reload highlights with new filter
     if (selectedDate) {
-      await loadHighlights(selectedDate, teams.length > 0 ? teams : undefined);
+      await loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined);
     }
     
     // Show save dialog only if user is logged in, has a token, and has selected teams
-    if (user && token && teams.length > 0) {
+    if (user && token && selectedTeams.length > 0) {
       setShowSaveDialog(true);
     }
   };
@@ -137,7 +141,8 @@ export default function FootballPage() {
     
     if (!token) {
       console.error('No access token available');
-      alert('Authentication token not found. Please log in again.');
+      console.log('Session structure:', JSON.stringify(session, null, 2));
+      alert('Authentication token not found. Please log out and log in again.');
       setShowSaveDialog(false);
       return;
     }
@@ -152,6 +157,7 @@ export default function FootballPage() {
       console.log('Saving favorites:', { 
         teamCount: favoritesToSave.length, 
         hasToken: !!token,
+        tokenPreview: token ? `${token.substring(0, 10)}...` : 'none',
         teams: favoritesToSave.map(t => t.team_name)
       });
       
@@ -248,7 +254,7 @@ export default function FootballPage() {
               <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <h3 className="font-semibold text-gray-700 dark:text-gray-300">Select Date</h3>
             </div>
-            <TeamSelector selectedTeams={selectedTeams} onTeamsChange={handleTeamsChange} />
+            <TeamSelector selectedTeams={selectedTeams} onTeamsChange={handleTeamsChange} onDone={handleTeamSelectionDone} />
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button

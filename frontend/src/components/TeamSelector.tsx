@@ -7,9 +7,10 @@ import { TeamsByLeague, fetchAllTeams } from '@/lib/api';
 interface TeamSelectorProps {
   selectedTeams: string[];
   onTeamsChange: (teams: string[]) => void;
+  onDone?: () => void;
 }
 
-export default function TeamSelector({ selectedTeams, onTeamsChange }: TeamSelectorProps) {
+export default function TeamSelector({ selectedTeams, onTeamsChange, onDone }: TeamSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [teamsByLeague, setTeamsByLeague] = useState<TeamsByLeague[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,25 +51,20 @@ export default function TeamSelector({ selectedTeams, onTeamsChange }: TeamSelec
       ? selectedTeams.filter(t => t !== teamName)
       : [...selectedTeams, teamName];
     onTeamsChange(newTeams);
-    // Save to localStorage
-    localStorage.setItem('favoriteTeams', JSON.stringify(newTeams));
   };
 
   const selectAllTeamsInLeague = (leagueTeams: string[]) => {
     const newTeams = Array.from(new Set([...selectedTeams, ...leagueTeams]));
     onTeamsChange(newTeams);
-    localStorage.setItem('favoriteTeams', JSON.stringify(newTeams));
   };
 
   const deselectAllTeamsInLeague = (leagueTeams: string[]) => {
     const newTeams = selectedTeams.filter(t => !leagueTeams.includes(t));
     onTeamsChange(newTeams);
-    localStorage.setItem('favoriteTeams', JSON.stringify(newTeams));
   };
 
   const clearAllTeams = () => {
     onTeamsChange([]);
-    localStorage.setItem('favoriteTeams', JSON.stringify([]));
   };
 
   if (!isOpen) {
@@ -186,7 +182,10 @@ export default function TeamSelector({ selectedTeams, onTeamsChange }: TeamSelec
             Clear All
           </button>
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              setIsOpen(false);
+              onDone?.();
+            }}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
             Done
