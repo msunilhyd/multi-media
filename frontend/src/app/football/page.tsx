@@ -17,6 +17,18 @@ import {
   FavoriteTeamCreate,
 } from '@/lib/api';
 
+// Helper functions to get dates in local timezone
+const getTodayString = () => {
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
+};
+
+const getYesterdayString = () => {
+  const today = new Date();
+  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+  return yesterday.toISOString().split('T')[0];
+};
+
 export default function FootballPage() {
   const { data: session } = useSession();
   const user = session?.user;
@@ -26,7 +38,7 @@ export default function FootballPage() {
   const [error, setError] = useState<string | null>(null);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [calendarDate, setCalendarDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [calendarDate, setCalendarDate] = useState<string>(getTodayString());
   const [expandedLeagueIds, setExpandedLeagueIds] = useState<Set<number>>(new Set());
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
@@ -213,19 +225,6 @@ export default function FootballPage() {
     initializePage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTeams]);
-
-  // Helper function to get yesterday's date string consistently (local timezone)
-  const getYesterdayString = () => {
-    const today = new Date();
-    const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
-  };
-
-  // Helper function to get today's date string consistently (local timezone)
-  const getTodayString = () => {
-    const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
-  };
 
   // Format date for display (e.g., "Dec 20" or "Today")
   const formatDateLabel = (dateStr: string) => {

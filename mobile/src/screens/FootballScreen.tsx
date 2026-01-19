@@ -63,10 +63,7 @@ export default function FootballScreen() {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [isSavingFavorites, setIsSavingFavorites] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
-  const [calendarDate, setCalendarDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const toastOpacity = useRef(new Animated.Value(0)).current;
-
+  
   // Helper function to get yesterday's date string
   const getYesterdayString = () => {
     const today = new Date();
@@ -79,6 +76,10 @@ export default function FootballScreen() {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
   };
+
+  const [calendarDate, setCalendarDate] = useState<string>(getTodayString());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
 
   const loadFavoriteTeams = async () => {
     try {
@@ -257,12 +258,13 @@ export default function FootballScreen() {
       const allDates = await fetchAvailableDates();
       
       // Filter out future dates - only show today and past dates
-      const today = new Date().toISOString().split('T')[0];
+      // Use local timezone to match getTodayString() and getYesterdayString()
+      const today = getTodayString();
       const filteredDates = allDates.filter(date => date <= today);
       
       setAvailableDates(filteredDates);
       
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const yesterday = getYesterdayString();
       
       let defaultDate = today; // Default to today instead of yesterday
       
