@@ -219,6 +219,23 @@ async def google_auth(
     )
 
 
+@router.post("/refresh", response_model=AuthResponse)
+def refresh_token(current_user: User = Depends(get_current_user)):
+    """Refresh JWT access token for current user"""
+    # Create new JWT token
+    access_token = create_access_token(current_user.id)
+    
+    return AuthResponse(
+        user={
+            "id": current_user.id,
+            "email": current_user.email,
+            "name": current_user.name,
+            "provider": current_user.provider,
+        },
+        access_token=access_token
+    )
+
+
 def create_access_token(user_id: int) -> str:
     """Create JWT access token for user"""
     payload = {

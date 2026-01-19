@@ -18,16 +18,27 @@ export default function EntertainmentScreen() {
   const playerRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
   const shouldAutoplayRef = useRef(false);
+  const playbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [entertainmentItems, setEntertainmentItems] = useState<Entertainment[]>([]);
   const [currentItem, setCurrentItem] = useState<Entertainment | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'default' | 'user-playlists'>('default');
 
   useEffect(() => {
     loadEntertainment();
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (playbackTimeoutRef.current) {
+        clearTimeout(playbackTimeoutRef.current);
+      }
+    };
   }, []);
 
   const loadEntertainment = async () => {
@@ -57,6 +68,18 @@ export default function EntertainmentScreen() {
     setCurrentIndex(index);
     setIsReady(false);
     setIsPlaying(true);
+    setHasStartedPlaying(false);
+    
+    // Clear any existing timeout
+    if (playbackTimeoutRef.current) {
+      clearTimeout(playbackTimeoutRef.current);
+    }
+    
+    // Set timeout to skip to next video if it doesn't start playing within 10 seconds
+    playbackTimeoutRef.current = setTimeout(() => {
+      console.log('⏱️ Video timeout - skipping to next video');
+      playNext();
+    }, 10000);
     
     setTimeout(() => {
       flatListRef.current?.scrollToIndex({
@@ -167,9 +190,20 @@ export default function EntertainmentScreen() {
                   playNext();
                 } else if (state === 'playing') {
                   setIsPlaying(true);
+                  setHasStartedPlaying(true);
+                  // Video started playing successfully - clear timeout
+                  if (playbackTimeoutRef.current) {
+                    clearTimeout(playbackTimeoutRef.current);
+                    playbackTimeoutRef.current = null;
+                  }
                 } else if (state === 'paused') {
                   setIsPlaying(false);
                 }
+              }}
+              onError={(error: string) => {
+                console.log('Entertainment player error:', error);
+                // Skip to next video if playback is disabled or any error occurs
+                playNext();
               }}
               webViewProps={{
                 androidLayerType: 'hardware',

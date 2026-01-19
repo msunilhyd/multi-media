@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,10 +17,13 @@ export default function MusicPlaylistScreen() {
   const { token } = useAuth();
   const playerRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
+  const playbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastVideoIdRef = useRef<string>('');
   const [currentSong, setCurrentSong] = useState<Song | null>(defaultPlaylist[0] || null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [isShuffleOn, setIsShuffleOn] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [languageFilter, setLanguageFilter] = useState<string>('');
@@ -77,6 +80,18 @@ export default function MusicPlaylistScreen() {
     setCurrentSong(song);
     setCurrentIndex(index);
     setIsPlaying(true);
+    setHasStartedPlaying(false);
+    
+    // Clear any existing timeout
+    if (playbackTimeoutRef.current) {
+      clearTimeout(playbackTimeoutRef.current);
+    }
+    
+    // Set timeout to skip to next song if video doesn't start playing within 10 seconds
+    playbackTimeoutRef.current = setTimeout(() => {
+      console.log('⏱️ Video timeout - skipping to next song');
+      playNext();
+    }, 10000);
     
     // Scroll to show the song in the filtered list
     setTimeout(() => {
@@ -104,6 +119,18 @@ export default function MusicPlaylistScreen() {
     setCurrentIndex(nextIndex);
     setCurrentSong(nextSong);
     setIsPlaying(true);
+    setHasStartedPlaying(false);
+    
+    // Clear any existing timeout
+    if (playbackTimeoutRef.current) {
+      clearTimeout(playbackTimeoutRef.current);
+    }
+    
+    // Set timeout for next song
+    playbackTimeoutRef.current = setTimeout(() => {
+      console.log('⏱️ Video timeout - skipping to next song');
+      playNext();
+    }, 10000);
     
     // Scroll to show the song
     setTimeout(() => {
@@ -122,6 +149,18 @@ export default function MusicPlaylistScreen() {
     setCurrentIndex(prevIndex);
     setCurrentSong(prevSong);
     setIsPlaying(true);
+    setHasStartedPlaying(false);
+    
+    // Clear any existing timeout
+    if (playbackTimeoutRef.current) {
+      clearTimeout(playbackTimeoutRef.current);
+    }
+    
+    // Set timeout for previous song
+    playbackTimeoutRef.current = setTimeout(() => {
+      console.log('⏱️ Video timeout - skipping to next song');
+      playNext();
+    }, 10000);
     
     // Scroll to show the song
     setTimeout(() => {
@@ -132,6 +171,15 @@ export default function MusicPlaylistScreen() {
       });
     }, 100);
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (playbackTimeoutRef.current) {
+        clearTimeout(playbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const renderSongItem = ({ item, index }: { item: Song; index: number }) => {
     const isActive = currentSong?.id === item.id;
@@ -236,11 +284,26 @@ export default function MusicPlaylistScreen() {
               console.log('Player state:', state);
               if (state === 'ended') {
                 playNext();
+              } else if (state === 'playing') {
+                // Video started playing successfully - clear timeout
+                setHasStartedPlaying(true);
+                if (playbackTimeoutRef.current) {
+                  clearTimeout(playbackTimeoutRef.current);
+                  playbackTimeoutRef.current = null;
+                }
+              } else if (state === 'buffering' && hasStartedPlaying) {
+                // Video is buffering after it started playing - this is normal
+                // Don't reset timeout
               }
             }}
             onReady={() => {
               console.log('Player ready');
               setIsReady(true);
+            }}
+            onError={(error: string) => {
+              console.log('Player error:', error);
+              // Skip to next song if playback is disabled or any error occurs
+              playNext();
             }}
             webViewProps={{
               allowsInlineMediaPlayback: true,

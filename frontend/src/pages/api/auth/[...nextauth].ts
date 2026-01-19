@@ -4,6 +4,37 @@ import GoogleProvider from 'next-auth/providers/google'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+async function refreshAccessToken(token: any) {
+  try {
+    // Call backend to refresh the token
+    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token.accessToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error('Token refresh failed')
+    }
+
+    const refreshedTokens = await response.json()
+
+    return {
+      ...token,
+      accessToken: refreshedTokens.access_token,
+      accessTokenExpires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days from now
+    }
+  } catch (error) {
+    console.error('Error refreshing access token:', error)
+    return {
+      ...token,
+      error: 'RefreshAccessTokenError',
+    }
+  }
+}
+
 export const authOptions: AuthOptions = {
   providers: [
     // Email/Password authentication
@@ -128,6 +159,7 @@ export const authOptions: AuthOptions = {
               const authData = await response.json()
               token.sub = authData.user.id.toString()
               token.accessToken = authData.access_token
+              token.accessTokenExpires = Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days from now
               token.picture = user.image
             } else {
               const errorData = await response.json().catch(() => ({}))
@@ -141,9 +173,17 @@ export const authOptions: AuthOptions = {
           token.sub = user.id
           token.picture = user.image
           token.accessToken = user.accessToken
+          token.accessTokenExpires = Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days from now
         }
       }
-      return token
+
+      // Return previous token if the access token has not expired yet
+      if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
+        return token
+      }
+
+      // Access token has expired, try to refresh it
+      return refreshAccessToken(token)
     },
 
     async session({ session, token }: any) {
