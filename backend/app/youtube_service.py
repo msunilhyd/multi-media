@@ -229,10 +229,11 @@ class YouTubeService:
                 if days_since_match <= 2:
                     earliest_date = match_date - timedelta(days=1)
                     latest_date = match_date + timedelta(days=2)
-                # For older matches: wider 7-day window to catch late uploads
+                # For older matches: wider 30-day window to catch late uploads
+                # This ensures we get the most recent upload of that match
                 else:
                     earliest_date = match_date - timedelta(days=2)
-                    latest_date = match_date + timedelta(days=7)
+                    latest_date = match_date + timedelta(days=30)
                 
                 print(f"[YouTube] Searching {playlist_id} for videos between {earliest_date} and {latest_date}")
             
@@ -305,6 +306,10 @@ class YouTubeService:
                 next_page_token = response.get('nextPageToken')
                 if not next_page_token:
                     break
+            
+            # Sort videos by publish date (newest first) to prefer recent uploads
+            if videos:
+                videos.sort(key=lambda v: v.get('published_at', ''), reverse=True)
             
             return videos[:max_results]
         except HttpError as e:
