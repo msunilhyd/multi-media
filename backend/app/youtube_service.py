@@ -395,6 +395,16 @@ class YouTubeService:
             'besiktas': ['besiktas', 'beşiktaş', 'bjk'],
             'fenerbahce': ['fenerbahce', 'fenerbahçe', 'fener', 'fb'],
             'galatasaray': ['galatasaray', 'gala', 'gs'],
+            # Italian teams - handle "Inter Milan" vs "Inter"
+            'inter milan': ['inter', 'inter milan', 'internazionale'],
+            'ac milan': ['milan', 'ac milan'],
+            # English teams
+            'manchester united': ['man united', 'man utd', 'manchester united'],
+            'manchester city': ['man city', 'manchester city'],
+            'tottenham hotspur': ['tottenham', 'spurs'],
+            'newcastle united': ['newcastle'],
+            'west ham united': ['west ham'],
+            'aston villa': ['villa', 'aston villa'],
         }
         
         # Best case: full team name appears (normalized)
