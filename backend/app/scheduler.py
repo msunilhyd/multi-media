@@ -548,7 +548,7 @@ def start_scheduler():
         # Matches happen at various times globally, highlights typically uploaded within 1-3 hours after match ends
         scheduler.add_job(
             fetch_highlights_for_today,
-            CronTrigger(hour='12-23', minute=0),  # Every hour from 12 PM to 11 PM
+            CronTrigger(hour='8-23', minute=0),  # Every hour from 8 AM to 11 PM
             id="fetch_today_highlights",
             name="Today's Highlights Fetch",
             replace_existing=True
@@ -559,7 +559,7 @@ def start_scheduler():
         print("  - Daily prefetch at 6:00 AM")
         print("  - Score status refresh every 2 hours")
         print("  - Highlights fetch at 8 AM and 2 PM (yesterday's matches)")
-        print("  - Today's highlights fetch every hour (12 PM - 11 PM)")
+        print("  - Today's highlights fetch every hour (8 AM - 11 PM)")
     except Exception as e:
         print(f"[Scheduler] Warning: Failed to start scheduler: {e}")
         print("[Scheduler] Application will continue without scheduled jobs")
