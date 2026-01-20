@@ -184,3 +184,95 @@ async def manual_fetch_today_highlights() -> Dict[str, Any]:
             "success": False,
             "message": f"Error fetching today's highlights: {str(e)}"
         }
+
+
+@router.post("/add-highlight-by-video-id")
+def add_highlight_by_video_id(
+    home_team: str,
+    away_team: str,
+    video_id: str,
+    match_date: str,
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """Manually add a highlight by YouTube video ID to a specific match"""
+    try:
+        from datetime import datetime
+        match_date_obj = datetime.strptime(match_date, "%Y-%m-%d").date()
+        
+        # Find the match
+        match = db.query(models.Match).filter(
+            models.Match.match_date == match_date_obj
+        ).filter(
+            (models.Match.home_team.ilike(f"%{home_team}%")) |
+            (models.Match.away_team.ilike(f"%{home_team}%"))
+        ).filter(
+            (models.Match.home_team.ilike(f"%{away_team}%")) |
+            (models.Match.away_team.ilike(f"%{away_team}%"))
+        ).first()
+        
+        if not match:
+            # Create the match if it doesn't exist
+            champions_league = db.query(models.League).filter(
+                models.League.slug == "champions-league"
+            ).first()
+            
+            if not champions_league:
+                return {
+                    "success": False,
+                    "message": "Champions League not found in database"
+                }
+            
+            match = models.Match(
+                league_id=champions_league.id,
+                home_team=home_team,
+                away_team=away_team,
+                home_score=0,
+                away_score=0,
+                match_date=match_date_obj,
+                match_time="20:00",
+                status="finished"
+            )
+            db.add(match)
+            db.commit()
+            db.refresh(match)
+        
+        # Check if match already has this highlight
+        existing = db.query(models.Highlight).filter(
+            models.Highlight.match_id == match.id,
+            models.Highlight.youtube_video_id == video_id
+        ).first()
+        
+        if existing:
+            return {
+                "success": False,
+                "message": "Highlight already exists for this match"
+            }
+        
+        # Add the highlight
+        highlight = models.Highlight(
+            match_id=match.id,
+            youtube_video_id=video_id,
+            title=f"{match.home_team} vs {match.away_team} Highlights",
+            description="",
+            thumbnail_url=f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
+            channel_title="YouTube",
+            view_count=0,
+            duration=""
+        )
+        db.add(highlight)
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Highlight added successfully to {match.home_team} vs {match.away_team}",
+            "match_id": match.id,
+            "highlight_id": highlight.id,
+            "video_url": f"https://www.youtube.com/watch?v={video_id}"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        return {
+            "success": False,
+            "message": f"Error adding highlight: {str(e)}"
+        }
