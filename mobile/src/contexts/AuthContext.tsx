@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService, User } from '../services/authService';
 import { googleAuthService } from '../services/googleAuthService';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 interface AuthContextType {
   user: User | null;
@@ -11,6 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithApple: (credential: AppleAuthentication.AppleAuthenticationCredential) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -88,6 +90,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithApple = async (credential: AppleAuthentication.AppleAuthenticationCredential) => {
+    try {
+      const response = await authService.loginWithApple({
+        identityToken: credential.identityToken,
+        user: credential.user,
+        email: credential.email,
+        fullName: credential.fullName,
+      });
+      
+      // Store auth data
+      await AsyncStorage.setItem('auth_token', response.access_token);
+      await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
+      
+      setToken(response.access_token);
+      setUser(response.user);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || error.message || 'Apple sign-in failed');
+    }
+  };
+
   const logout = async () => {
     try {
       // Clear stored data
@@ -123,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         signup,
         loginWithGoogle,
+        loginWithApple,
         logout,
         refreshUser,
       }}

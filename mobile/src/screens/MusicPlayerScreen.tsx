@@ -110,12 +110,18 @@ export default function MusicPlayerScreen() {
   useFocusEffect(
     useCallback(() => {
       // Screen is focused - do nothing, let user control playback
+      console.log('🎵 Audio tab focused');
       return () => {
         // Screen is unfocused - pause the audio
+        console.log('🎵 Audio tab unfocused - pausing audio');
         if (isPlaying) {
-          audioService.pauseAsync();
+          if (USE_TRACK_PLAYER) {
+            trackPlayerService.pause();
+          } else {
+            audioService.pauseAsync();
+          }
           setIsPlaying(false);
-          console.log('🎵 Paused audio - navigated away from Background Audio');
+          console.log('🎵 Audio paused - navigated away from Background Audio');
         }
       };
     }, [isPlaying])

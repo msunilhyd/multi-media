@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Music Player",
+    "name": "LinusPlaylists",
     "slug": "music-player",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,6 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "usesAppleSignIn": true,
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AuthScreen() {
@@ -23,7 +24,7 @@ export default function AuthScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login, signup, loginWithGoogle } = useAuth();
+  const { login, signup, loginWithGoogle, loginWithApple } = useAuth();
 
   const handleSubmit = async () => {
     // Validation
@@ -75,6 +76,30 @@ export default function AuthScreen() {
         'Google Sign-In Failed',
         error.message || 'Unable to sign in with Google. Please try again.'
       );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      
+      // Send credential to backend
+      await loginWithApple(credential);
+    } catch (error: any) {
+      if (error.code !== 'ERR_CANCELED') {
+        Alert.alert(
+          'Apple Sign-In Failed',
+          error.message || 'Unable to sign in with Apple. Please try again.'
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -215,6 +240,17 @@ export default function AuthScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
+
+            {/* Apple Sign In */}
+            {Platform.OS === 'ios' && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={12}
+                style={styles.appleButton}
+                onPress={handleAppleSignIn}
+              />
+            )}
 
             {/* Switch Mode */}
             <TouchableOpacity onPress={switchMode} disabled={isLoading}>
@@ -365,5 +401,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  appleButton: {
+    width: '100%',
+    height: 56,
+    marginBottom: 24,
   },
 });

@@ -6,12 +6,17 @@ import {
   FlatList,
   TouchableOpacity,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { defaultPlaylist, Song } from '../data/playlists';
 import { useAuth } from '../contexts/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const PLAYER_HEIGHT = SCREEN_WIDTH * 9 / 16; // 16:9 aspect ratio
 
 export default function MusicPlaylistScreen() {
   const { token } = useAuth();
@@ -71,6 +76,44 @@ export default function MusicPlaylistScreen() {
   const scrollToTop = () => {
     flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
+
+  // Pause YouTube when navigating away from Music tab
+  useFocusEffect(
+    React.useCallback(() => {
+      // Screen is focused
+      console.log('🎵 Music tab focused');
+      return () => {
+        // Screen is unfocused - stop playback completely
+        console.log('🎵 Music tab unfocused - stopping YouTube playback');
+        
+        // Stop playing immediately
+        setIsPlaying(false);
+        
+        // Clear any pending timeouts
+        if (playbackTimeoutRef.current) {
+          clearTimeout(playbackTimeoutRef.current);
+          playbackTimeoutRef.current = null;
+        }
+        
+        // Force pause the player through ref
+        setTimeout(() => {
+          if (playerRef.current) {
+            try {
+              console.log('🎵 Calling pauseVideo on player ref');
+              if (typeof playerRef.current.pauseVideo === 'function') {
+                playerRef.current.pauseVideo();
+              }
+              if (typeof playerRef.current.stopVideo === 'function') {
+                playerRef.current.stopVideo();
+              }
+            } catch (error) {
+              console.log('Error stopping video:', error);
+            }
+          }
+        }, 100);
+      };
+    }, [])
+  );
 
   const togglePlayPause = () => {
     setIsPlaying(!isPlaying);
@@ -270,12 +313,11 @@ export default function MusicPlaylistScreen() {
 
       {/* Player at the top */}
       <View style={styles.playerContainer}>
-        <View style={styles.playerWrapper}>
-          <YoutubePlayer
-            ref={playerRef}
-            height={200}
-            play={isPlaying}
-            videoId={currentSong?.videoId || defaultPlaylist[0]?.videoId}
+        <YoutubePlayer
+          ref={playerRef}
+          height={PLAYER_HEIGHT}
+          play={isPlaying}
+          videoId={currentSong?.videoId || defaultPlaylist[0]?.videoId}
             initialPlayerParams={{
               controls: true,
               modestbranding: false,
@@ -283,7 +325,11 @@ export default function MusicPlaylistScreen() {
             onChangeState={(state) => {
               console.log('Player state:', state);
               if (state === 'ended') {
-                playNext();
+                console.log('🎵 Song ended - auto-playing next song');
+                // Auto-play next song after a short delay
+                setTimeout(() => {
+                  playNext();
+                }, 500);
               } else if (state === 'playing') {
                 // Video started playing successfully - clear timeout
                 setHasStartedPlaying(true);
@@ -310,7 +356,6 @@ export default function MusicPlaylistScreen() {
               mediaPlaybackRequiresUserAction: false,
             }}
           />
-        </View>
 
         <View style={styles.controls}>
           <TouchableOpacity 
@@ -335,6 +380,8 @@ export default function MusicPlaylistScreen() {
           <View style={styles.spacer} />
         </View>
       </View>
+    </>
+  )}
 
       {showFilters && (
         <View style={styles.filterPanel}>
@@ -413,8 +460,6 @@ export default function MusicPlaylistScreen() {
             }, 500);
           }}
         />
-      )}
-        </>
       )}
     </View>
   );
@@ -602,10 +647,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1f2937',
     borderBottomWidth: 1,
     borderBottomColor: '#374151',
-  },
-  playerWrapper: {
     width: '100%',
-    backgroundColor: '#000000',
   },
   controls: {
     flexDirection: 'row',

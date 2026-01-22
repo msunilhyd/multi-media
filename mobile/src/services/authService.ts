@@ -29,6 +29,16 @@ export interface SignupRequest {
   password: string;
 }
 
+export interface AppleAuthRequest {
+  identityToken: string | null;
+  user: string | null;
+  email: string | null;
+  fullName: {
+    givenName: string | null;
+    familyName: string | null;
+  } | null;
+}
+
 class AuthService {
   async login(email: string, password: string): Promise<AuthResponse> {
     const response = await axios.post<AuthResponse>(
@@ -67,6 +77,14 @@ class AuthService {
           Authorization: `Bearer ${token}`,
         },
       }
+    );
+    return response.data;
+  }
+
+  async loginWithApple(appleData: AppleAuthRequest): Promise<AuthResponse> {
+    const response = await axios.post<AuthResponse>(
+      `${API_BASE_URL}/api/auth/apple`,
+      appleData
     );
     return response.data;
   }

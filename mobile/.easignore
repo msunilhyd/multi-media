@@ -1,0 +1,64 @@
+# EAS Build Ignore
+# Exclude large iOS build artifacts
+
+# The Pods folder contains all CocoaPods dependencies (very large)
+ios/Pods/
+
+# iOS build output
+ios/build/
+
+# Xcode user data
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# Derived data
+ios/DerivedData/
+
+# iOS logs
+ios/*.log
+
+# Node modules (already handled by EAS)
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+
+# Build artifacts
+dist/
+web-build/
+
+# Debug and logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Documentation
+*.md
+!README.md
+
+# Environment files
+.env*
+!.env.example
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
