@@ -7,22 +7,29 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { fetchEntertainment, type Entertainment } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const PLAYER_HEIGHT = SCREEN_WIDTH * 9 / 16; // 16:9 aspect ratio
 
 export default function EntertainmentScreen() {
   const { token } = useAuth();
   const playerRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
-  const shouldAutoplayRef = useRef(false);
+  const isFocusedRef = useRef(true);
   const playbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isManualPauseRef = useRef(false);
   const [entertainmentItems, setEntertainmentItems] = useState<Entertainment[]>([]);
   const [currentItem, setCurrentItem] = useState<Entertainment | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true); // Start as true to autoplay
   const [isReady, setIsReady] = useState(false);
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -38,8 +45,56 @@ export default function EntertainmentScreen() {
       if (playbackTimeoutRef.current) {
         clearTimeout(playbackTimeoutRef.current);
       }
+      if (timeCheckIntervalRef.current) {
+        clearInterval(timeCheckIntervalRef.current);
+      }
     };
   }, []);
+
+  // Pause YouTube when navigating away from Fun tab
+  useFocusEffect(
+    React.useCallback(() => {
+      // Screen is focused
+      console.log('🎬 Fun tab focused');
+      isFocusedRef.current = true;
+      return () => {
+        // Screen is unfocused - stop playback completely
+        console.log('🎬 Fun tab unfocused - stopping YouTube playback');
+        isFocusedRef.current = false;
+        
+        // Stop playing immediately
+        setIsPlaying(false);
+        setIsReady(false);
+        
+        // Clear any pending timeouts
+        if (playbackTimeoutRef.current) {
+          clearTimeout(playbackTimeoutRef.current);
+          playbackTimeoutRef.current = null;
+        }
+        
+        // Force pause the player through ref
+        setTimeout(() => {
+          if (playerRef.current) {
+            try {
+              console.log('🎬 Calling pauseVideo on player ref');
+              // Try multiple methods to stop the video
+              if (typeof playerRef.current.pauseVideo === 'function') {
+                playerRef.current.pauseVideo();
+              }
+              if (typeof playerRef.current.stopVideo === 'function') {
+                playerRef.current.stopVideo();
+              }
+              if (typeof playerRef.current.seekTo === 'function') {
+                playerRef.current.seekTo(0);
+              }
+            } catch (error) {
+              console.log('Error stopping video:', error);
+            }
+          }
+        }, 100);
+      };
+    }, [])
+  );
 
   const loadEntertainment = async () => {
     try {
@@ -60,6 +115,7 @@ export default function EntertainmentScreen() {
 
   const togglePlayPause = () => {
     console.log('Toggle play/pause, current state:', isPlaying);
+    isManualPauseRef.current = !isPlaying; // Set to true if pausing
     setIsPlaying(!isPlaying);
   };
 
@@ -81,21 +137,35 @@ export default function EntertainmentScreen() {
       playNext();
     }, 10000);
     
+    // Safely scroll to index with error handling
     setTimeout(() => {
-      flatListRef.current?.scrollToIndex({
-        index,
-        animated: true,
-        viewPosition: 0.5,
-      });
+      try {
+        if (flatListRef.current && entertainmentItems.length > 0 && index < entertainmentItems.length) {
+          flatListRef.current.scrollToIndex({
+            index,
+            animated: true,
+            viewPosition: 0.5,
+          });
+        }
+      } catch (error) {
+        console.log('Scroll to index failed, using scrollToOffset instead');
+        // Fallback to scrollToOffset if scrollToIndex fails
+        flatListRef.current?.scrollToOffset({
+          offset: index * 100,
+          animated: true,
+        });
+      }
     }, 100);
   };
 
   const playNext = () => {
+    if (entertainmentItems.length === 0) return;
     const nextIndex = (currentIndex + 1) % entertainmentItems.length;
     playItem(entertainmentItems[nextIndex], nextIndex);
   };
 
   const playPrevious = () => {
+    if (entertainmentItems.length === 0) return;
     const prevIndex = currentIndex === 0 ? entertainmentItems.length - 1 : currentIndex - 1;
     playItem(entertainmentItems[prevIndex], prevIndex);
   };
@@ -172,58 +242,74 @@ export default function EntertainmentScreen() {
       {renderTabNavigation()}
       
       {/* Video Player */}
-      {currentItem && (
-        <View style={styles.playerSection}>
-          <View style={styles.playerContainer}>
-            <YoutubePlayer
-              ref={playerRef}
-              height={220}
-              play={isPlaying}
-              videoId={currentItem.youtube_video_id}
-              onReady={() => {
-                console.log('Entertainment player ready for:', currentItem.title);
-                setIsReady(true);
-              }}
-              onChangeState={(state: string) => {
-                console.log('Entertainment player state:', state);
-                if (state === 'ended') {
+      {currentItem && currentItem.youtube_video_id && (
+        <>
+          <YoutubePlayer
+            key={currentItem.youtube_video_id}
+            ref={playerRef}
+            height={PLAYER_HEIGHT}
+            play={isPlaying}
+            videoId={currentItem.youtube_video_id}
+            initialPlayerParams={{
+              start: currentItem.start_seconds || undefined,
+              end: currentItem.end_seconds || undefined,
+              controls: true,
+              modestbranding: false,
+            }}
+            onChangeState={(state: string) => {
+              console.log('Entertainment player state:', state);
+              console.log('Current item:', currentItem.title);
+              console.log('Has end_seconds:', currentItem.end_seconds);
+              console.log('Has started playing:', hasStartedPlaying);
+              
+              if (state === 'ended') {
+                console.log('🎬 Video ended - auto-playing next video');
+                setTimeout(() => {
                   playNext();
-                } else if (state === 'playing') {
-                  setIsPlaying(true);
-                  setHasStartedPlaying(true);
-                  // Video started playing successfully - clear timeout
-                  if (playbackTimeoutRef.current) {
-                    clearTimeout(playbackTimeoutRef.current);
-                    playbackTimeoutRef.current = null;
-                  }
-                } else if (state === 'paused') {
-                  setIsPlaying(false);
+                }, 500);
+              } else if (state === 'paused' && hasStartedPlaying && currentItem.end_seconds) {
+                // When video has end_seconds, YouTube pauses at that time instead of firing 'ended'
+                console.log('🎬 Video paused at end_seconds - auto-playing next video');
+                setTimeout(() => {
+                  playNext();
+                }, 500);
+              } else if (state === 'playing') {
+                setIsPlaying(true);
+                setHasStartedPlaying(true);
+                if (playbackTimeoutRef.current) {
+                  clearTimeout(playbackTimeoutRef.current);
+                  playbackTimeoutRef.current = null;
                 }
-              }}
-              onError={(error: string) => {
-                console.log('Entertainment player error:', error);
-                // Skip to next video if playback is disabled or any error occurs
+              }
+            }}
+            onReady={() => {
+              console.log('Entertainment player ready for:', currentItem.title);
+              setIsReady(true);
+              // Seek to start time if specified, or seek to 0 to trigger playback
+              setTimeout(() => {
+                try {
+                  const startTime = currentItem.start_seconds || 0;
+                  console.log('Seeking to:', startTime);
+                  playerRef.current?.seekTo(startTime);
+                } catch (error) {
+                  console.log('Error seeking:', error);
+                }
+              }, 100);
+            }}
+            onError={(error: string) => {
+              console.log('❌ Entertainment player error for:', currentItem.title);
+              console.log('Error details:', error);
+              console.log('Video ID:', currentItem.youtube_video_id);
+              // Skip to next video if playback is disabled or any error occurs
+              setTimeout(() => {
                 playNext();
-              }}
-              webViewProps={{
-                androidLayerType: 'hardware',
-              }}
-            />
-              onChangeState={(state: string) => {
-                console.log('Entertainment player state:', state);
-                if (state === 'ended') {
-                  playNext();
-                } else if (state === 'playing') {
-                  setIsPlaying(true);
-                } else if (state === 'paused') {
-                  setIsPlaying(false);
-                }
-              }}
-              webViewProps={{
-                androidLayerType: 'hardware',
-              }}
-            />
-          </View>
+              }, 1000);
+            }}
+            webViewProps={{
+              allowsInlineMediaPlayback: true,
+              mediaPlaybackRequiresUserAction: false,
+            }}
+          />
 
           <View style={styles.nowPlaying}>
             <Text style={styles.nowPlayingLabel}>NOW PLAYING</Text>
@@ -251,7 +337,7 @@ export default function EntertainmentScreen() {
               <Ionicons name="play-skip-forward" size={32} color="#e2e8f0" />
             </TouchableOpacity>
           </View>
-        </View>
+        </>
       )}
 
       {/* Playlist */}
@@ -267,6 +353,16 @@ export default function EntertainmentScreen() {
           data={entertainmentItems}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
+          onScrollToIndexFailed={(info) => {
+            console.log('Scroll to index failed:', info);
+            // Wait a bit and try scrolling to the offset instead
+            setTimeout(() => {
+              flatListRef.current?.scrollToOffset({
+                offset: info.averageItemLength * info.index,
+                animated: true,
+              });
+            }, 100);
+          }}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
@@ -318,6 +414,7 @@ const styles = StyleSheet.create({
   playerSection: {
     backgroundColor: '#1e293b',
     paddingBottom: 20,
+    width: '100%',
   },
   playerContainer: {
     width: '100%',
@@ -327,6 +424,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#334155',
+    backgroundColor: '#1e293b',
+    width: '100%',
   },
   nowPlayingLabel: {
     fontSize: 11,
@@ -347,7 +446,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
+    paddingBottom: 20,
     gap: 32,
+    backgroundColor: '#1e293b',
+    width: '100%',
   },
   controlButton: {
     padding: 12,
