@@ -78,6 +78,38 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleNotificationPreferences = () => {
+    Alert.alert(
+      'Notification Preferences',
+      'Manage your notification settings to control how you receive updates.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleChangePassword = () => {
+    if (user?.provider !== 'email') {
+      Alert.alert(
+        'Not Available',
+        `You signed in with ${user?.provider === 'google' ? 'Google' : user?.provider === 'apple' ? 'Apple' : user?.provider}. Password changes are managed through your ${user?.provider === 'google' ? 'Google' : user?.provider === 'apple' ? 'Apple' : 'provider'} account.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    Alert.alert(
+      'Change Password',
+      'Password change functionality will be available soon.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleHelpSupport = () => {
+    Alert.alert(
+      'Help & Support',
+      'Need assistance?\n\n• Email: support@linusplaylists.com\n• Response time: 24-48 hours\n\nWe\'re here to help!',
+      [{ text: 'OK' }]
+    );
+  };
+
   if (!user) {
     return (
       <LinearGradient colors={['#1f2937', '#111827']} style={styles.container}>
@@ -194,7 +226,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Actions</Text>
           
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleNotificationPreferences}>
             <View style={styles.actionContent}>
               <Ionicons name="notifications-outline" size={24} color="#60a5fa" />
               <Text style={styles.actionText}>Notification Preferences</Text>
@@ -202,7 +234,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleChangePassword}>
             <View style={styles.actionContent}>
               <Ionicons name="lock-closed-outline" size={24} color="#60a5fa" />
               <Text style={styles.actionText}>Change Password</Text>
@@ -210,7 +242,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleHelpSupport}>
             <View style={styles.actionContent}>
               <Ionicons name="help-circle-outline" size={24} color="#60a5fa" />
               <Text style={styles.actionText}>Help & Support</Text>
