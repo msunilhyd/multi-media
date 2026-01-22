@@ -100,14 +100,27 @@ export default function EntertainmentScreen() {
     try {
       setLoading(true);
       const data = await fetchEntertainment();
+      console.log('Loaded entertainment items:', data?.length || 0);
+      
+      if (!data || !Array.isArray(data)) {
+        console.error('Invalid data format from API');
+        setEntertainmentItems([]);
+        setCurrentItem(null);
+        return;
+      }
+      
       setEntertainmentItems(data);
       if (data.length > 0) {
         setCurrentItem(data[0]);
         setCurrentIndex(0);
+      } else {
+        setCurrentItem(null);
       }
     } catch (error) {
       console.error('Failed to load entertainment:', error);
-      Alert.alert('Error', 'Failed to load entertainment content');
+      setEntertainmentItems([]);
+      setCurrentItem(null);
+      Alert.alert('Error', 'Failed to load entertainment content. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -237,6 +250,29 @@ export default function EntertainmentScreen() {
     );
   }
 
+  // Show empty state if no entertainment items
+  if (entertainmentItems.length === 0) {
+    return (
+      <View style={styles.container}>
+        {renderTabNavigation()}
+        <View style={styles.centerContainer}>
+          <Ionicons name="videocam-off" size={64} color="#64748b" />
+          <Text style={styles.comingSoonText}>No Videos Available</Text>
+          <Text style={styles.comingSoonSubtext}>
+            Entertainment videos will appear here when available
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={loadEntertainment}
+          >
+            <Ionicons name="refresh" size={20} color="#ffffff" />
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {renderTabNavigation()}
@@ -258,6 +294,10 @@ export default function EntertainmentScreen() {
             }}
             onChangeState={(state: string) => {
               console.log('Entertainment player state:', state);
+              if (!currentItem) {
+                console.log('No current item, skipping state change');
+                return;
+              }
               console.log('Current item:', currentItem.title);
               console.log('Has end_seconds:', currentItem.end_seconds);
               console.log('Has started playing:', hasStartedPlaying);
@@ -283,6 +323,10 @@ export default function EntertainmentScreen() {
               }
             }}
             onReady={() => {
+              if (!currentItem) {
+                console.log('No current item on ready');
+                return;
+              }
               console.log('Entertainment player ready for:', currentItem.title);
               setIsReady(true);
               // Seek to start time if specified, or seek to 0 to trigger playback
@@ -297,9 +341,12 @@ export default function EntertainmentScreen() {
               }, 100);
             }}
             onError={(error: string) => {
-              console.log('❌ Entertainment player error for:', currentItem.title);
+              console.log('❌ Entertainment player error');
               console.log('Error details:', error);
-              console.log('Video ID:', currentItem.youtube_video_id);
+              if (currentItem) {
+                console.log('Current item:', currentItem.title);
+                console.log('Video ID:', currentItem.youtube_video_id);
+              }
               // Skip to next video if playback is disabled or any error occurs
               setTimeout(() => {
                 playNext();
@@ -514,5 +561,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
     textAlign: 'center',
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#3b82f6',
+    borderRadius: 24,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });
