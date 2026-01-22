@@ -11,6 +11,7 @@ import httpx
 from ..database import get_db
 from ..models_users import User, NotificationPreference
 from ..schemas_users import UserCreate, UserResponse, UserLogin
+from ..models import Favorite, UserPlaylist
 
 # JWT settings
 JWT_SECRET = "your-secret-key-here-change-in-production"  # In production, use environment variable
@@ -25,6 +26,11 @@ class AuthResponse(BaseModel):
     user: dict
     access_token: str
     token_type: str = "bearer"
+
+
+class DeleteAccountResponse(BaseModel):
+    message: str
+    deleted_user_id: int
 
 
 @router.post("/register", response_model=AuthResponse)
@@ -376,3 +382,40 @@ def get_user_by_email(email: str, db: Session = Depends(get_db)) -> User:
             detail="User not found"
         )
     return user
+
+
+@router.delete("/me", response_model=DeleteAccountResponse)
+def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete user account and all associated data.
+    This action is permanent and cannot be undone.
+    """
+    user_id = current_user.id
+    
+    try:
+        # Delete user's favorites
+        db.query(Favorite).filter(Favorite.user_id == user_id).delete()
+        
+        # Delete user's playlists
+        db.query(UserPlaylist).filter(UserPlaylist.user_id == user_id).delete()
+        
+        # Delete notification preferences
+        db.query(NotificationPreference).filter(NotificationPreference.user_id == user_id).delete()
+        
+        # Delete the user account
+        db.delete(current_user)
+        db.commit()
+        
+        return DeleteAccountResponse(
+            message="Account successfully deleted",
+            deleted_user_id=user_id
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete account: {str(e)}"
+        )

@@ -15,6 +15,7 @@ interface AuthContextType {
   loginWithApple: (credential: AppleAuthentication.AppleAuthenticationCredential) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -135,6 +136,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteAccount = async () => {
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+    
+    try:
+      await authService.deleteAccount(token);
+      // Clear all stored data after successful deletion
+      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('user_data');
+      setToken(null);
+      setUser(null);
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -148,6 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithApple,
         logout,
         refreshUser,
+        deleteAccount,
       }}
     >
       {children}

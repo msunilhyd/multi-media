@@ -88,6 +88,18 @@ class AuthService {
     );
     return response.data;
   }
+
+  async deleteAccount(token: string): Promise<{ message: string; deleted_user_id: number }> {
+    const response = await axios.delete(
+      `${API_BASE_URL}/api/auth/me`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  }
 }
 
 export const authService = new AuthService();

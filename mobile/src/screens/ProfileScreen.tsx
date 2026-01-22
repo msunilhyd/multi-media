@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function ProfileScreen() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, deleteAccount } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
 
@@ -31,6 +31,31 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await logout();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your account? This action cannot be undone and will remove all your data including:\n\n• Your profile\n• Saved favorites\n• Playlists\n• Notification preferences',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccount();
+              Alert.alert('Success', 'Your account has been permanently deleted.');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete account. Please try again.');
+            }
           },
         },
       ]
@@ -203,6 +228,14 @@ export default function ProfileScreen() {
             <Ionicons name="log-out-outline" size={24} color="white" />
             <Text style={styles.logoutText}>Logout</Text>
           </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Delete Account Button */}
+        <TouchableOpacity onPress={handleDeleteAccount} style={styles.deleteButton}>
+          <View style={styles.deleteContent}>
+            <Ionicons name="trash-outline" size={20} color="#dc2626" />
+            <Text style={styles.deleteText}>Delete Account</Text>
+          </View>
         </TouchableOpacity>
       </ScrollView>
     </LinearGradient>
@@ -384,7 +417,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginTop: 12,
-    marginBottom: 30,
+    marginBottom: 12,
   },
   logoutGradient: {
     flexDirection: 'row',
@@ -397,5 +430,24 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  deleteButton: {
+    backgroundColor: '#1f2937',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#374151',
+    paddingVertical: 16,
+    marginBottom: 30,
+  },
+  deleteContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  deleteText: {
+    color: '#dc2626',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
