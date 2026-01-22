@@ -1,0 +1,12 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^eas build --platform ios --profile production$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /Users/s0m13i5/linus/multi-media/mobile && eas build --platform ios --profile production --non-interactive$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
