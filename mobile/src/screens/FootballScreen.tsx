@@ -775,6 +775,21 @@ export default function FootballScreen() {
                 onReady={() => {
                   console.log('Player ready');
                 }}
+                onError={(error: string) => {
+                  console.log('❌ Football highlight player error:', error);
+                  console.log('Video ID:', selectedVideoId);
+                  // Close modal and show error message
+                  Alert.alert(
+                    'Video Unavailable',
+                    'This video is no longer available or has been removed from YouTube.',
+                    [
+                      {
+                        text: 'OK',
+                        onPress: () => closeVideo(),
+                      },
+                    ]
+                  );
+                }}
                 webViewProps={{
                   allowsInlineMediaPlayback: true,
                   mediaPlaybackRequiresUserAction: false,

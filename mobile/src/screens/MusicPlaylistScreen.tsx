@@ -347,8 +347,18 @@ export default function MusicPlaylistScreen() {
               setIsReady(true);
             }}
             onError={(error: string) => {
-              console.log('Player error:', error);
-              // Skip to next song if playback is disabled or any error occurs
+              console.log('❌ Music player error:', error);
+              if (currentSong) {
+                console.log('Failed to play:', currentSong.title);
+                console.log('Video ID:', currentSong.youtube_video_id);
+              }
+              // Clear any existing timeout
+              if (playbackTimeoutRef.current) {
+                clearTimeout(playbackTimeoutRef.current);
+                playbackTimeoutRef.current = null;
+              }
+              // Skip to next song immediately if video is unavailable or any error occurs
+              console.log('⏭️ Skipping to next song due to error');
               playNext();
             }}
             webViewProps={{

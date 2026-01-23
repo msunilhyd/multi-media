@@ -347,10 +347,14 @@ export default function EntertainmentScreen() {
                 console.log('Current item:', currentItem.title);
                 console.log('Video ID:', currentItem.youtube_video_id);
               }
-              // Skip to next video if playback is disabled or any error occurs
-              setTimeout(() => {
-                playNext();
-              }, 1000);
+              // Clear any existing timeout
+              if (playbackTimeoutRef.current) {
+                clearTimeout(playbackTimeoutRef.current);
+                playbackTimeoutRef.current = null;
+              }
+              // Skip to next video immediately if video is unavailable or any error occurs
+              console.log('⏭️ Skipping to next video due to error');
+              playNext();
             }}
             webViewProps={{
               allowsInlineMediaPlayback: true,
