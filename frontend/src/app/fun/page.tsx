@@ -91,10 +91,9 @@ export default function FunPage() {
   const getFunContent = (category: string): Song[] => {
     switch (category) {
       case 'funny':
-        // All entertainment items should be type 'fun', sort by ID for consistent ordering
+        // All entertainment items are already sorted by created_at DESC from backend
         const funItems = entertainmentItems
-          .filter(item => item.content_type === 'fun')
-          .sort((a, b) => a.id - b.id); // Sort by ID to ensure consistent ordering
+          .filter(item => item.content_type === 'fun');
         const result = entertainmentToSongs(funItems);
         console.log('Funny category - Entertainment items:', funItems);
         console.log('Funny category - Converted songs:', result);
