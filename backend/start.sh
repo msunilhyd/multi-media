@@ -1,10 +1,14 @@
 #!/bin/bash
 set -e
 
+# Activate virtual environment
+export PATH="/opt/venv/bin:$PATH"
+
 echo "🚀 Starting application deployment..."
 echo "📍 Environment: ${RAILWAY_ENVIRONMENT:-unknown}"
 echo "📍 Port: ${PORT:-8000}"
 echo "📍 Database URL: ${DATABASE_URL:0:30}..." # Show only first 30 chars for security
+echo "📍 Python: $(which python)"
 
 # Run database initialization
 echo "📊 Initializing database..."
