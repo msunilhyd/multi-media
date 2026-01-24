@@ -24,7 +24,20 @@ export default function MusicPlaylistScreen() {
   const flatListRef = useRef<FlatList>(null);
   const playbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastVideoIdRef = useRef<string>('');
-  const [currentSong, setCurrentSong] = useState<Song | null>(defaultPlaylist[0] || null);
+  
+  // Helper function to shuffle array
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+  
+  // Initialize with shuffled playlist
+  const [shuffledPlaylist] = useState<Song[]>(() => shuffleArray(defaultPlaylist));
+  const [currentSong, setCurrentSong] = useState<Song | null>(shuffledPlaylist[0] || null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -41,29 +54,29 @@ export default function MusicPlaylistScreen() {
 
   // Extract unique values for filters
   const languages = useMemo(() => 
-    Array.from(new Set(defaultPlaylist.map(s => normalizeLanguage(s.language)))).filter(l => l && l !== '-').sort(),
+    Array.from(new Set(shuffledPlaylist.map(s => normalizeLanguage(s.language)))).filter(l => l && l !== '-').sort(),
     []
   );
 
   const composers = useMemo(() => 
-    Array.from(new Set(defaultPlaylist.map(s => s.composer))).filter(c => c && c !== '-').sort(),
+    Array.from(new Set(shuffledPlaylist.map(s => s.composer))).filter(c => c && c !== '-').sort(),
     []
   );
 
   const years = useMemo(() => 
-    Array.from(new Set(defaultPlaylist.map(s => s.year))).filter(y => y && y !== '-').sort((a, b) => b.localeCompare(a)),
+    Array.from(new Set(shuffledPlaylist.map(s => s.year))).filter(y => y && y !== '-').sort((a, b) => b.localeCompare(a)),
     []
   );
 
   // Filter songs
   const filteredSongs = useMemo(() => {
-    return defaultPlaylist.filter(song => {
+    return shuffledPlaylist.filter(song => {
       if (languageFilter && normalizeLanguage(song.language) !== languageFilter) return false;
       if (composerFilter && song.composer !== composerFilter) return false;
       if (yearFilter && song.year !== yearFilter) return false;
       return true;
     });
-  }, [languageFilter, composerFilter, yearFilter]);
+  }, [languageFilter, composerFilter, yearFilter, shuffledPlaylist]);
 
   const hasActiveFilters = languageFilter || composerFilter || yearFilter;
 
@@ -147,7 +160,7 @@ export default function MusicPlaylistScreen() {
   };
 
   const playNext = useCallback(() => {
-    const playlist = hasActiveFilters ? filteredSongs : defaultPlaylist;
+    const playlist = hasActiveFilters ? filteredSongs : shuffledPlaylist;
     let nextIndex: number;
     
     if (isShuffleOn) {
@@ -267,7 +280,7 @@ export default function MusicPlaylistScreen() {
           onPress={() => setActiveTab('default')}
         >
           <Text style={[styles.tabText, activeTab === 'default' && styles.activeTabText]}>
-            All Songs ({defaultPlaylist.length})
+            All Songs ({shuffledPlaylist.length})
           </Text>
         </TouchableOpacity>
         {token && (
@@ -295,7 +308,7 @@ export default function MusicPlaylistScreen() {
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={styles.headerTitle}>
-                {hasActiveFilters ? `${filteredSongs.length} of ${defaultPlaylist.length}` : `${defaultPlaylist.length} songs`}
+                {hasActiveFilters ? `${filteredSongs.length} of ${shuffledPlaylist.length}` : `${shuffledPlaylist.length} songs`}
               </Text>
             </View>
             <View style={styles.headerRight}>
@@ -314,14 +327,14 @@ export default function MusicPlaylistScreen() {
       {/* Player at the top */}
       <View style={styles.playerContainer}>
         <YoutubePlayer
-          key={currentSong?.id || defaultPlaylist[0]?.id}
+          key={currentSong?.id || shuffledPlaylist[0]?.id}
           ref={playerRef}
           height={PLAYER_HEIGHT}
           play={isPlaying}
-          videoId={currentSong?.videoId || defaultPlaylist[0]?.videoId}
+          videoId={currentSong?.videoId || shuffledPlaylist[0]?.videoId}
             initialPlayerParams={{
-              start: currentSong?.startSeconds || defaultPlaylist[0]?.startSeconds,
-              end: currentSong?.endSeconds || defaultPlaylist[0]?.endSeconds,
+              start: currentSong?.startSeconds || shuffledPlaylist[0]?.startSeconds,
+              end: currentSong?.endSeconds || shuffledPlaylist[0]?.endSeconds,
               controls: true,
               modestbranding: false,
             }}
