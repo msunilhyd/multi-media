@@ -338,9 +338,9 @@ async def apple_auth(
             # Create default notification preferences
             notification_pref = NotificationPreference(
                 user_id=user.id,
-                match_reminders=True,
-                favorite_team_highlights=True,
-                new_content=False
+                email_match_reminders=True,
+                email_highlights=True,
+                push_notifications=False
             )
             db.add(notification_pref)
             db.commit()
