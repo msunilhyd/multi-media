@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const GA_MEASUREMENT_ID = 'G-XTKRGES7D8';
-const GA_API_SECRET = 'YOUR_API_SECRET'; // Get this from Google Analytics Admin -> Data Streams -> Measurement Protocol API secrets
+const GA_API_SECRET ='P2Ksy9UJRNyZ1HaD1mZg2Q'; // Get this from Google Analytics Admin -> Data Streams -> Measurement Protocol API secrets
 
 interface AnalyticsEvent {
   name: string;
@@ -60,12 +60,10 @@ class AnalyticsService {
       }
 
       // Uncomment when you have the API_SECRET
-      /*
       await axios.post(
         `https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`,
         payload
       );
-      */
     } catch (error) {
       console.error('Analytics error:', error);
     }
