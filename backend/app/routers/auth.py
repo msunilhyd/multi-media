@@ -330,7 +330,6 @@ async def apple_auth(
                 name=name or "Apple User",
                 provider="apple",
                 provider_id=apple_user_id,
-                is_active=True,
             )
             db.add(user)
             db.commit()
