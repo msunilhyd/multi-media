@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AppState, View, Text } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import AuthScreen from './src/screens/AuthScreen';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { useFonts, PlayfairDisplay_700Bold_Italic } from '@expo-google-fonts/playfair-display';
+import Analytics from './src/services/analytics';
 
 const Tab = createBottomTabNavigator();
 
@@ -67,8 +68,13 @@ export default function App() {
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
+  const routeNameRef = useRef<string>();
+  const navigationRef = useRef<any>();
 
   useEffect(() => {
+    // Initialize analytics
+    Analytics.initialize();
+    
     // Initialize audio mode for iOS background playback
     const initAudio = async () => {
       try {
@@ -105,7 +111,24 @@ function AppContent() {
   }, []);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        routeNameRef.current = navigationRef.current?.getCurrentRoute()?.name;
+      }}
+      onStateChange={async () => {
+        const previousRouteName = routeNameRef.current;
+        const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
+
+        if (previousRouteName !== currentRouteName) {
+          // Track screen view
+          await Analytics.logScreenView(currentRouteName || 'Unknown');
+        }
+
+        // Save the current route name for next comparison
+        routeNameRef.current = currentRouteName;
+      }}
+    >
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {

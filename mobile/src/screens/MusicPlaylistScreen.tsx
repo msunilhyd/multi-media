@@ -14,6 +14,7 @@ import YoutubePlayer from 'react-native-youtube-iframe';
 import { defaultPlaylist, Song } from '../data/playlists';
 import { useAuth } from '../contexts/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
+import Analytics from '../services/analytics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PLAYER_HEIGHT = SCREEN_WIDTH * 9 / 16; // 16:9 aspect ratio
@@ -132,8 +133,9 @@ export default function MusicPlaylistScreen() {
     setIsPlaying(!isPlaying);
   };
 
-  const playSong = (song: Song, index: number) => {
-    setCurrentSong(song);
+  const playSong = (song: Song, index: number) => {    // Track song play event
+    Analytics.logSongPlay(song.id, song.title, song.composer);
+        setCurrentSong(song);
     setCurrentIndex(index);
     setIsPlaying(true);
     setHasStartedPlaying(false);
