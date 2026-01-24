@@ -226,7 +226,12 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Actions</Text>
           
-          <TouchableOpacity style={styles.actionButton} onPress={handleNotificationPreferences}>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={handleNotificationPreferences}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <View style={styles.actionContent}>
               <Ionicons name="notifications-outline" size={24} color="#60a5fa" />
               <Text style={styles.actionText}>Notification Preferences</Text>
@@ -234,7 +239,12 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={handleChangePassword}>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={handleChangePassword}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <View style={styles.actionContent}>
               <Ionicons name="lock-closed-outline" size={24} color="#60a5fa" />
               <Text style={styles.actionText}>Change Password</Text>
@@ -242,7 +252,12 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={handleHelpSupport}>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={handleHelpSupport}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <View style={styles.actionContent}>
               <Ionicons name="help-circle-outline" size={24} color="#60a5fa" />
               <Text style={styles.actionText}>Help & Support</Text>

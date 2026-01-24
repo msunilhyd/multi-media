@@ -109,9 +109,17 @@ export default function EntertainmentScreen() {
         return;
       }
       
-      setEntertainmentItems(data);
-      if (data.length > 0) {
-        setCurrentItem(data[0]);
+      // Filter out any invalid items
+      const validData = data.filter(item => 
+        item && 
+        item.id && 
+        item.youtube_video_id && 
+        typeof item.youtube_video_id === 'string'
+      );
+      
+      setEntertainmentItems(validData);
+      if (validData.length > 0) {
+        setCurrentItem(validData[0]);
         setCurrentIndex(0);
       } else {
         setCurrentItem(null);
@@ -150,10 +158,11 @@ export default function EntertainmentScreen() {
       playNext();
     }, 10000);
     
-    // Safely scroll to index with error handling
+    // Safely scroll to index with error handling for iPad
     setTimeout(() => {
       try {
-        if (flatListRef.current && entertainmentItems.length > 0 && index < entertainmentItems.length) {
+        if (flatListRef.current && entertainmentItems.length > 0 && index >= 0 && index < entertainmentItems.length) {
+          // Ensure layout is calculated before scrolling
           flatListRef.current.scrollToIndex({
             index,
             animated: true,
@@ -161,14 +170,20 @@ export default function EntertainmentScreen() {
           });
         }
       } catch (error) {
-        console.log('Scroll to index failed, using scrollToOffset instead');
-        // Fallback to scrollToOffset if scrollToIndex fails
-        flatListRef.current?.scrollToOffset({
-          offset: index * 100,
-          animated: true,
-        });
+        console.log('Scroll to index failed:', error);
+        // Fallback to scrollToOffset - safer for varying screen sizes
+        try {
+          if (flatListRef.current) {
+            flatListRef.current.scrollToOffset({
+              offset: index * 88, // Approximate item height
+              animated: true,
+            });
+          }
+        } catch (fallbackError) {
+          console.log('Scroll fallback also failed, ignoring');
+        }
       }
-    }, 100);
+    }, 200);
   };
 
   const playNext = () => {
