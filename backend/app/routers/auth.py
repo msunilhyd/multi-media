@@ -9,9 +9,8 @@ from datetime import datetime, timedelta
 import httpx
 
 from ..database import get_db
-from ..models_users import User, NotificationPreference
+from ..models_users import User, NotificationPreference, UserFavoriteTeam, UserPlaylist
 from ..schemas_users import UserCreate, UserResponse, UserLogin
-from ..models import Favorite, UserPlaylist
 
 # JWT settings
 JWT_SECRET = "your-secret-key-here-change-in-production"  # In production, use environment variable
@@ -396,8 +395,8 @@ def delete_account(
     user_id = current_user.id
     
     try:
-        # Delete user's favorites
-        db.query(Favorite).filter(Favorite.user_id == user_id).delete()
+        # Delete user's favorite teams
+        db.query(UserFavoriteTeam).filter(UserFavoriteTeam.user_id == user_id).delete()
         
         # Delete user's playlists
         db.query(UserPlaylist).filter(UserPlaylist.user_id == user_id).delete()
