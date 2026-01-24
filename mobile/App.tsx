@@ -6,7 +6,6 @@ import { AppState, View, Text } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import MusicPlayerScreen from './src/screens/MusicPlayerScreen';
-import MusicPlaylistScreen from './src/screens/MusicPlaylistScreen';
 import FootballScreen from './src/screens/FootballScreen';
 import EntertainmentScreen from './src/screens/EntertainmentScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
@@ -184,14 +183,6 @@ function AppContent() {
           options={{
             header: () => <CustomHeader />,
             tabBarLabel: 'Football'
-          }}
-        />
-        <Tab.Screen 
-          name="Playlist" 
-          component={MusicPlaylistScreen}
-          options={{
-            header: () => <CustomHeader />,
-            tabBarLabel: 'Music'
           }}
         />
         <Tab.Screen 

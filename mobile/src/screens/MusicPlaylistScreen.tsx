@@ -49,6 +49,7 @@ export default function MusicPlaylistScreen() {
   const [composerFilter, setComposerFilter] = useState<string>('');
   const [yearFilter, setYearFilter] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'default' | 'user-playlists'>('default');
+  const [isScreenFocused, setIsScreenFocused] = useState(true);
 
   // Helper to normalize language
   const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
@@ -96,9 +97,11 @@ export default function MusicPlaylistScreen() {
     React.useCallback(() => {
       // Screen is focused
       console.log('🎵 Music tab focused');
+      setIsScreenFocused(true);
       return () => {
         // Screen is unfocused - stop playback completely
         console.log('🎵 Music tab unfocused - stopping YouTube playback');
+        setIsScreenFocused(false);
         
         // Stop playing immediately
         setIsPlaying(false);
@@ -326,7 +329,8 @@ export default function MusicPlaylistScreen() {
             </View>
           </View>
 
-      {/* Player at the top */}
+      {/* Player at the top - only mount when screen is focused */}
+      {isScreenFocused && (
       <View style={styles.playerContainer}>
         <YoutubePlayer
           key={currentSong?.id || shuffledPlaylist[0]?.id}
@@ -419,8 +423,7 @@ export default function MusicPlaylistScreen() {
           <View style={styles.spacer} />
         </View>
       </View>
-    </>
-  )}
+      )}
 
       {showFilters && (
         <View style={styles.filterPanel}>

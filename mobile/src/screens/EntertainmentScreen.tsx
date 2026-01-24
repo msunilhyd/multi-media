@@ -34,6 +34,7 @@ export default function EntertainmentScreen() {
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'default' | 'user-playlists'>('default');
+  const [isScreenFocused, setIsScreenFocused] = useState(true);
 
   useEffect(() => {
     loadEntertainment();
@@ -57,10 +58,12 @@ export default function EntertainmentScreen() {
       // Screen is focused
       console.log('🎬 Fun tab focused');
       isFocusedRef.current = true;
+      setIsScreenFocused(true);
       return () => {
         // Screen is unfocused - stop playback completely
         console.log('🎬 Fun tab unfocused - stopping YouTube playback');
         isFocusedRef.current = false;
+        setIsScreenFocused(false);
         
         // Stop playing immediately
         setIsPlaying(false);
@@ -292,8 +295,8 @@ export default function EntertainmentScreen() {
     <View style={styles.container}>
       {renderTabNavigation()}
       
-      {/* Video Player */}
-      {currentItem && currentItem.youtube_video_id && (
+      {/* Video Player - only mount when screen is focused */}
+      {isScreenFocused && currentItem && currentItem.youtube_video_id && (
         <>
           <YoutubePlayer
             key={currentItem.id}

@@ -283,77 +283,87 @@ async def apple_auth(
 ):
     """Handle Apple Sign In authentication"""
     
-    # Extract user info from the request
-    apple_user_id = auth_data.user
-    email = auth_data.email
+    print(f"🍎 Apple auth endpoint called")
+    print(f"🍎 Received data: user={auth_data.user}, email={auth_data.email}, has_token={bool(auth_data.identityToken)}")
     
-    # Construct name from fullName if provided
-    name = None
-    if auth_data.fullName:
-        given_name = auth_data.fullName.get('givenName', '')
-        family_name = auth_data.fullName.get('familyName', '')
-        if given_name or family_name:
-            name = f"{given_name} {family_name}".strip()
-    
-    # Check if user exists by Apple ID or email
-    user = None
-    if apple_user_id:
-        user = db.query(User).filter(
-            User.provider_id == apple_user_id,
-            User.provider == "apple"
-        ).first()
-    
-    if not user and email:
-        user = db.query(User).filter(User.email == email).first()
-    
-    if user:
-        # Update Apple ID if not set
-        if not user.provider_id and apple_user_id:
-            user.provider_id = apple_user_id
-            user.provider = "apple"
-        if name and not user.name:
-            user.name = name
-        db.commit()
-        db.refresh(user)
-    else:
-        # Create new user
-        # If no email provided (user chose to hide), generate a private email
-        if not email:
-            email = f"{apple_user_id}@privaterelay.appleid.com"
+    try:
+        # Extract user info from the request
+        apple_user_id = auth_data.user
+        email = auth_data.email
         
-        user = User(
-            email=email,
-            name=name or "Apple User",
-            provider="apple",
-            provider_id=apple_user_id,
-            is_active=True,
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+        # Construct name from fullName if provided
+        name = None
+        if auth_data.fullName:
+            given_name = auth_data.fullName.get('givenName', '')
+            family_name = auth_data.fullName.get('familyName', '')
+            if given_name or family_name:
+                name = f"{given_name} {family_name}".strip()
         
-        # Create default notification preferences
-        notification_pref = NotificationPreference(
-            user_id=user.id,
-            match_reminders=True,
-            favorite_team_highlights=True,
-            new_content=False
+        # Check if user exists by Apple ID or email
+        user = None
+        if apple_user_id:
+            user = db.query(User).filter(
+                User.provider_id == apple_user_id,
+                User.provider == "apple"
+            ).first()
+        
+        if not user and email:
+            user = db.query(User).filter(User.email == email).first()
+        
+        if user:
+            # Update Apple ID if not set
+            if not user.provider_id and apple_user_id:
+                user.provider_id = apple_user_id
+                user.provider = "apple"
+            if name and not user.name:
+                user.name = name
+            db.commit()
+            db.refresh(user)
+        else:
+            # Create new user
+            # If no email provided (user chose to hide), generate a private email
+            if not email:
+                email = f"{apple_user_id}@privaterelay.appleid.com"
+            
+            user = User(
+                email=email,
+                name=name or "Apple User",
+                provider="apple",
+                provider_id=apple_user_id,
+                is_active=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            
+            # Create default notification preferences
+            notification_pref = NotificationPreference(
+                user_id=user.id,
+                match_reminders=True,
+                favorite_team_highlights=True,
+                new_content=False
+            )
+            db.add(notification_pref)
+            db.commit()
+        
+        # Create JWT token
+        access_token = create_access_token(user.id)
+        
+        return AuthResponse(
+            user={
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "provider": user.provider,
+            },
+            access_token=access_token
         )
-        db.add(notification_pref)
-        db.commit()
-    
-    # Create JWT token
-    access_token = create_access_token(user.id)
-    
-    return AuthResponse(
-        user={
-            "id": user.id,
-            "email": user.email,
-            "name": user.name,
-            "provider": user.provider,
-        },
-        access_token=access_token
-    )
+    except Exception as e:
+        import traceback
+        print(f"❌ Apple auth error: {str(e)}")
+        print(traceback.format_exc())
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Apple authentication failed: {str(e)}")
 
 
 @router.post("/refresh", response_model=AuthResponse)

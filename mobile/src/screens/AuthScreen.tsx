@@ -84,6 +84,7 @@ export default function AuthScreen() {
   const handleAppleSignIn = async () => {
     setIsLoading(true);
     try {
+      console.log('🍎 Starting Apple Sign In...');
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -91,9 +92,12 @@ export default function AuthScreen() {
         ],
       });
       
+      console.log('🍎 Apple credential obtained, sending to backend...');
       // Send credential to backend
       await loginWithApple(credential);
+      console.log('🍎 Apple Sign In completed successfully');
     } catch (error: any) {
+      console.log('🍎 Apple Sign In error:', error.code, error.message);
       if (error.code !== 'ERR_CANCELED') {
         Alert.alert(
           'Apple Sign-In Failed',

@@ -93,12 +93,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithApple = async (credential: AppleAuthentication.AppleAuthenticationCredential) => {
     try {
+      console.log('🍎 Apple credential received:', {
+        user: credential.user,
+        email: credential.email,
+        hasToken: !!credential.identityToken,
+      });
+      
       const response = await authService.loginWithApple({
         identityToken: credential.identityToken,
         user: credential.user,
         email: credential.email,
         fullName: credential.fullName,
       });
+      
+      console.log('🍎 Apple login successful:', response.user);
       
       // Store auth data
       await AsyncStorage.setItem('auth_token', response.access_token);
@@ -107,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(response.access_token);
       setUser(response.user);
     } catch (error: any) {
+      console.error('🍎 Apple login error:', error.response?.data || error.message);
       throw new Error(error.response?.data?.detail || error.message || 'Apple sign-in failed');
     }
   };
@@ -141,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('No authentication token available');
     }
     
-    try:
+    try {
       await authService.deleteAccount(token);
       // Clear all stored data after successful deletion
       await AsyncStorage.removeItem('auth_token');
