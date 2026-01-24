@@ -314,11 +314,14 @@ export default function MusicPlaylistScreen() {
       {/* Player at the top */}
       <View style={styles.playerContainer}>
         <YoutubePlayer
+          key={currentSong?.id || defaultPlaylist[0]?.id}
           ref={playerRef}
           height={PLAYER_HEIGHT}
           play={isPlaying}
           videoId={currentSong?.videoId || defaultPlaylist[0]?.videoId}
             initialPlayerParams={{
+              start: currentSong?.startSeconds || defaultPlaylist[0]?.startSeconds,
+              end: currentSong?.endSeconds || defaultPlaylist[0]?.endSeconds,
               controls: true,
               modestbranding: false,
             }}
@@ -345,6 +348,17 @@ export default function MusicPlaylistScreen() {
             onReady={() => {
               console.log('Player ready');
               setIsReady(true);
+              // Seek to start time if specified
+              if (currentSong?.startSeconds !== undefined) {
+                setTimeout(() => {
+                  try {
+                    console.log('Seeking to start:', currentSong.startSeconds);
+                    playerRef.current?.seekTo(currentSong.startSeconds);
+                  } catch (error) {
+                    console.log('Error seeking:', error);
+                  }
+                }, 100);
+              }
             }}
             onError={(error: string) => {
               console.log('❌ Music player error:', error);

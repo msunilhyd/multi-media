@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+echo "🚀 Starting application deployment..."
+
+# Run database initialization
+echo "📊 Initializing database..."
+if python init_db.py; then
+    echo "✅ Database initialization successful"
+else
+    echo "❌ Database initialization failed"
+    exit 1
+fi
+
+# Start the uvicorn server
+echo "🌐 Starting uvicorn server..."
+echo "📍 Port: ${PORT:-8000}"
+echo "📍 Host: 0.0.0.0"
+
+exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --log-level info

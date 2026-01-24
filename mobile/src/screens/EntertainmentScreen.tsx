@@ -281,7 +281,7 @@ export default function EntertainmentScreen() {
       {currentItem && currentItem.youtube_video_id && (
         <>
           <YoutubePlayer
-            key={currentItem.youtube_video_id}
+            key={currentItem.id}
             ref={playerRef}
             height={PLAYER_HEIGHT}
             play={isPlaying}
