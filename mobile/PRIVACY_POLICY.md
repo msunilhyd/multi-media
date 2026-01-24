@@ -43,11 +43,27 @@ We use the collected information for:
 - We use secure connections (HTTPS) for data transmission
 - We implement reasonable security measures to protect your information
 
-## Third-Party Services
+## Content Attribution & Streaming
+
+### Music and Audio Content
+- All music and audio content in the LinusPlaylists app is **streamed from YouTube**
+- We do **not store, download, or host** any copyrighted music on our servers
+- Audio is accessed via the YouTube API and extracted on-demand for playback
+- All copyrighted content remains the property of the original creators
+- Your listening activity is subject to YouTube's Terms of Service
+
+### Video Content
+- Entertainment and sports highlights are sourced from YouTube
+- Content is streamed directly from YouTube servers
+- No copyrighted video content is stored locally or on our servers
+- We provide proper attribution and links to source videos
+
+### Third-Party Services
 
 Our App may use third-party services that may collect information:
 - **Authentication Services:** For secure login
 - **Analytics Services:** To understand app usage
+- **YouTube API:** For streaming audio and video content
 - **Content Delivery Networks:** For streaming media
 - **Cloud Storage Providers:** For data storage
 

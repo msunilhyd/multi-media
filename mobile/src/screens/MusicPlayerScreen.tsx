@@ -9,18 +9,30 @@ import {
   ActivityIndicator,
   ScrollView,
   Animated,
+  Modal,
+  TextInput,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { audioService } from '../services/audioService';
 import { trackPlayerService } from '../services/trackPlayerService';
 import { defaultPlaylist, Song } from '../data/playlists';
+import { useAuth } from '../contexts/AuthContext';
 
 // Flag to switch between audio services
 const USE_TRACK_PLAYER = true; // Set to true to enable car controls
 
+interface Playlist {
+  id: number;
+  title: string;
+  description?: string;
+  song_count: number;
+}
+
 export default function MusicPlayerScreen() {
+  const navigation = useNavigation<any>();
+  const { token } = useAuth();
   const flatListRef = useRef<FlatList>(null);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -34,6 +46,13 @@ export default function MusicPlayerScreen() {
   const [composerFilter, setComposerFilter] = useState<string>('');
   const [yearFilter, setYearFilter] = useState<string>('');
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  
+  // Playlist state
+  const [activeTab, setActiveTab] = useState<'songs' | 'playlists'>('songs');
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
 
   // Helper to normalize language
   const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
@@ -70,6 +89,139 @@ export default function MusicPlayerScreen() {
     setLanguageFilter('');
     setComposerFilter('');
     setYearFilter('');
+  };
+
+  // Fetch user's playlists
+  const fetchPlaylists = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`http://localhost:8000/api/playlists/?playlist_type=music`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPlaylists(data);
+      } else {
+        console.error('Failed to fetch playlists:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Failed to fetch playlists:', error);
+    }
+  };
+
+  // Create new playlist
+  const createPlaylist = async () => {
+    if (!token || !newPlaylistName.trim()) return;
+    
+    setIsCreatingPlaylist(true);
+    try {
+      const response = await fetch(`http://localhost:8000/api/playlists/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newPlaylistName.trim(),
+          playlist_type: 'music',
+        }),
+      });
+      
+      if (response.ok) {
+        const newPlaylist = await response.json();
+        setPlaylists([newPlaylist, ...playlists]);
+        setNewPlaylistName('');
+        Alert.alert('Success', `Playlist "${newPlaylist.title}" created!`);
+      }
+    } catch (error) {
+      console.error('Failed to create playlist:', error);
+      Alert.alert('Error', 'Failed to create playlist');
+    } finally {
+      setIsCreatingPlaylist(false);
+    }
+  };
+
+  // Add current song to selected playlist
+  const addToPlaylist = async (playlistId: number) => {
+    if (!token || !currentSong) return;
+    
+    try {
+      const response = await fetch(`http://localhost:8000/api/playlists/${playlistId}/songs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          song_id: currentSong.id,
+          content_type: 'song',
+        }),
+      });
+      
+      if (response.ok) {
+        const playlist = playlists.find(p => p.id === playlistId);
+        Alert.alert('Success', `Added "${currentSong.title}" to "${playlist?.title}"!`);
+        setShowPlaylistModal(false);
+        fetchPlaylists(); // Refresh to update song counts
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.detail || 'Failed to add song to playlist');
+      }
+    } catch (error) {
+      console.error('Failed to add to playlist:', error);
+      Alert.alert('Error', 'Failed to add song to playlist');
+    }
+  };
+
+  const openPlaylistModal = () => {
+    if (!token) {
+      Alert.alert('Login Required', 'Please login to create playlists');
+      return;
+    }
+    fetchPlaylists();
+    setShowPlaylistModal(true);
+  };
+
+  // Delete a playlist
+  const deletePlaylist = async (playlistId: number, playlistTitle: string) => {
+    if (!token) return;
+    
+    Alert.alert(
+      'Delete Playlist',
+      `Are you sure you want to delete "${playlistTitle}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(`http://localhost:8000/api/playlists/${playlistId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              });
+              
+              if (response.ok) {
+                Alert.alert('Success', 'Playlist deleted');
+                fetchPlaylists(); // Refresh the list
+              } else {
+                const error = await response.json();
+                Alert.alert('Error', error.detail || 'Failed to delete playlist');
+              }
+            } catch (error) {
+              console.error('Failed to delete playlist:', error);
+              Alert.alert('Error', 'Failed to delete playlist');
+            }
+          },
+        },
+      ]
+    );
   };
 
   useEffect(() => {
@@ -131,6 +283,13 @@ export default function MusicPlayerScreen() {
     try {
       console.log(`🎵 Playing song: ${song.title} (${song.videoId})`);
       setIsLoading(true);
+      
+      // Stop any previous playback before starting new song
+      try {
+        await audioService.pauseAsync();
+      } catch (e) {
+        // Ignore error if no song was playing
+      }
       
       if (USE_TRACK_PLAYER) {
         await trackPlayerService.playSong(song);
@@ -259,6 +418,19 @@ export default function MusicPlayerScreen() {
             size={24} 
             color="#8B5CF6" 
           />
+          {token && (
+            <TouchableOpacity
+              style={styles.addToPlaylistButton}
+              onPress={() => openPlaylistModal()}
+              disabled={!currentSong}
+            >
+              <Ionicons
+                name="add-circle"
+                size={24}
+                color={currentSong ? "#8B5CF6" : "#666"}
+              />
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </TouchableOpacity>
@@ -266,6 +438,33 @@ export default function MusicPlayerScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'songs' && styles.activeTab]}
+          onPress={() => setActiveTab('songs')}
+        >
+          <Text style={[styles.tabText, activeTab === 'songs' && styles.activeTabText]}>
+            All Songs
+          </Text>
+        </TouchableOpacity>
+        {token && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'playlists' && styles.activeTab]}
+            onPress={() => {
+              setActiveTab('playlists');
+              fetchPlaylists();
+            }}
+          >
+            <Text style={[styles.tabText, activeTab === 'playlists' && styles.activeTabText]}>
+              My Playlists
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {activeTab === 'songs' ? (
+        <>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -386,6 +585,12 @@ export default function MusicPlayerScreen() {
       {/* Bottom Player */}
       {currentSong && (
         <View style={styles.bottomPlayer}>
+          {/* YouTube Attribution */}
+          <View style={styles.youtubeAttributionBadge}>
+            <Ionicons name="logo-youtube" size={14} color="#ef4444" />
+            <Text style={styles.youtubeAttributionText}>Powered by YouTube</Text>
+          </View>
+          
           <View style={styles.bottomControls}>
             <TouchableOpacity 
               onPress={toggleShuffle} 
@@ -430,6 +635,172 @@ export default function MusicPlayerScreen() {
           </View>
         </View>
       )}
+        </>
+      ) : (
+        /* My Playlists Tab */
+        <View style={styles.playlistsTab}>
+          {!token ? (
+            <View style={styles.centerContainer}>
+              <Ionicons name="log-in-outline" size={48} color="#64748b" />
+              <Text style={styles.emptyText}>Please login to create playlists</Text>
+            </View>
+          ) : (
+            <>
+              {/* Create New Playlist Section */}
+              <View style={styles.createPlaylistCard}>
+                <Text style={styles.createPlaylistTitle}>Create New Playlist</Text>
+                <View style={styles.createPlaylistSection}>
+                  <TextInput
+                    style={styles.playlistInput}
+                    placeholder="Playlist name"
+                    placeholderTextColor="#6b7280"
+                    value={newPlaylistName}
+                    onChangeText={setNewPlaylistName}
+                  />
+                  <TouchableOpacity
+                    style={[styles.createButton, !newPlaylistName.trim() && styles.createButtonDisabled]}
+                    onPress={createPlaylist}
+                    disabled={!newPlaylistName.trim() || isCreatingPlaylist}
+                  >
+                    {isCreatingPlaylist ? (
+                      <ActivityIndicator color="#ffffff" size="small" />
+                    ) : (
+                      <>
+                        <Ionicons name="add" size={20} color="#ffffff" />
+                        <Text style={styles.createButtonText}>Create</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* User's Playlists */}
+              <ScrollView style={styles.playlistsScrollView}>
+                {playlists.length === 0 ? (
+                  <View style={styles.centerContainer}>
+                    <Ionicons name="musical-notes-outline" size={48} color="#64748b" />
+                    <Text style={styles.emptyText}>No playlists yet</Text>
+                    <Text style={styles.emptySubtext}>Create your first playlist above!</Text>
+                  </View>
+                ) : (
+                  playlists.map(playlist => (
+                    <View key={playlist.id} style={styles.playlistCardContainer}>
+                      <TouchableOpacity
+                        style={styles.playlistCard}
+                        onPress={() => {
+                          navigation.navigate('PlaylistDetail', {
+                            playlistId: playlist.id,
+                            playlistTitle: playlist.title,
+                          });
+                        }}
+                      >
+                        <View style={styles.playlistCardIcon}>
+                          <Ionicons name="musical-notes" size={24} color="#8b5cf6" />
+                        </View>
+                        <View style={styles.playlistCardInfo}>
+                          <Text style={styles.playlistCardTitle}>{playlist.title}</Text>
+                          {playlist.description && (
+                            <Text style={styles.playlistCardDescription} numberOfLines={1}>
+                              {playlist.description}
+                            </Text>
+                          )}
+                          <Text style={styles.playlistCardCount}>
+                            {playlist.song_count} {playlist.song_count === 1 ? 'song' : 'songs'}
+                          </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={24} color="#9ca3af" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.deletePlaylistButton}
+                        onPress={() => deletePlaylist(playlist.id, playlist.title)}
+                      >
+                        <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+            </>
+          )}
+        </View>
+      )}
+
+      {/* Playlist Modal */}
+      <Modal
+        visible={showPlaylistModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowPlaylistModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add to Playlist</Text>
+              <TouchableOpacity onPress={() => setShowPlaylistModal(false)}>
+                <Ionicons name="close" size={24} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+
+            {currentSong && (
+              <Text style={styles.modalSubtitle}>
+                Adding: {currentSong.title}
+              </Text>
+            )}
+
+            {/* Create New Playlist */}
+            <View style={styles.createPlaylistSection}>
+              <TextInput
+                style={styles.playlistInput}
+                placeholder="New playlist name"
+                placeholderTextColor="#6b7280"
+                value={newPlaylistName}
+                onChangeText={setNewPlaylistName}
+              />
+              <TouchableOpacity
+                style={[styles.createButton, !newPlaylistName.trim() && styles.createButtonDisabled]}
+                onPress={createPlaylist}
+                disabled={!newPlaylistName.trim() || isCreatingPlaylist}
+              >
+                {isCreatingPlaylist ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <>
+                    <Ionicons name="add" size={20} color="#ffffff" />
+                    <Text style={styles.createButtonText}>Create</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Existing Playlists */}
+            <Text style={styles.playlistsLabel}>Your Playlists</Text>
+            <ScrollView style={styles.playlistsList}>
+              {playlists.length === 0 ? (
+                <Text style={styles.emptyText}>No playlists yet. Create one above!</Text>
+              ) : (
+                playlists.map(playlist => (
+                  <TouchableOpacity
+                    key={playlist.id}
+                    style={styles.playlistItem}
+                    onPress={() => addToPlaylist(playlist.id)}
+                  >
+                    <View style={styles.playlistIcon}>
+                      <Ionicons name="musical-notes" size={20} color="#8b5cf6" />
+                    </View>
+                    <View style={styles.playlistInfo}>
+                      <Text style={styles.playlistTitle}>{playlist.title}</Text>
+                      <Text style={styles.playlistCount}>
+                        {playlist.song_count} {playlist.song_count === 1 ? 'song' : 'songs'}
+                      </Text>
+                    </View>
+                    <Ionicons name="add-circle-outline" size={24} color="#8b5cf6" />
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -514,6 +885,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 30,
   },
+  youtubeAttributionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 10,
+    paddingVertical: 6,
+  },
+  youtubeAttributionText: {
+    fontSize: 11,
+    color: '#9ca3af',
+    fontWeight: '500',
+  },
   bottomControls: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -580,10 +964,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   playingIconContainer: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    paddingRight: 8,
+  },
+  addToPlaylistButton: {
+    padding: 0,
   },
   filtersContainer: {
     backgroundColor: '#1f2937',
@@ -642,5 +1029,208 @@ const styles = StyleSheet.create({
   },
   spacer: {
     width: 45,
+  },
+  // Tab styles
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#1e293b',
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: '#8b5cf6',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#94a3b8',
+  },
+  activeTabText: {
+    color: '#8b5cf6',
+  },
+  // Playlists tab styles
+  playlistsTab: {
+    flex: 1,
+    backgroundColor: '#111827',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptySubtext: {
+    color: '#6b7280',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  createPlaylistCard: {
+    backgroundColor: '#1f2937',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#374151',
+  },
+  createPlaylistTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 12,
+  },
+  playlistsScrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  playlistCardContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  playlistCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1f2937',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#374151',
+  },
+  playlistCardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  playlistCardInfo: {
+    flex: 1,
+  },
+  playlistCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+  playlistCardDescription: {
+    fontSize: 13,
+    color: '#9ca3af',
+    marginBottom: 4,
+  },
+  playlistCardCount: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  deletePlaylistButton: {
+    padding: 12,
+    marginLeft: 4,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#1f2937',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginBottom: 20,
+  },
+  createPlaylistSection: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  playlistInput: {
+    flex: 1,
+    backgroundColor: '#374151',
+    color: '#ffffff',
+    padding: 12,
+    borderRadius: 8,
+    fontSize: 16,
+  },
+  createButton: {
+    backgroundColor: '#8b5cf6',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  createButtonDisabled: {
+    opacity: 0.5,
+  },
+  createButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  playlistsLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 12,
+  },
+  playlistsList: {
+    maxHeight: 300,
+  },
+  playlistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#374151',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  playlistIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  playlistInfo: {
+    flex: 1,
+  },
+  playlistTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  playlistCount: {
+    color: '#9ca3af',
+    fontSize: 12,
   },
 });

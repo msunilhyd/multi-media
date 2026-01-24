@@ -33,7 +33,6 @@ export default function EntertainmentScreen() {
   const [isReady, setIsReady] = useState(false);
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'default' | 'user-playlists'>('default');
   const [isScreenFocused, setIsScreenFocused] = useState(true);
 
   useEffect(() => {
@@ -201,29 +200,6 @@ export default function EntertainmentScreen() {
     playItem(entertainmentItems[prevIndex], prevIndex);
   };
 
-  const renderTabNavigation = () => (
-    <View style={styles.tabContainer}>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === 'default' && styles.activeTab]}
-        onPress={() => setActiveTab('default')}
-      >
-        <Text style={[styles.tabText, activeTab === 'default' && styles.activeTabText]}>
-          All Videos ({entertainmentItems.length})
-        </Text>
-      </TouchableOpacity>
-      {token && (
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'user-playlists' && styles.activeTab]}
-          onPress={() => setActiveTab('user-playlists')}
-        >
-          <Text style={[styles.tabText, activeTab === 'user-playlists' && styles.activeTabText]}>
-            My Playlists
-          </Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
   const renderItem = ({ item, index }: { item: Entertainment; index: number }) => {
     const isCurrentItem = currentItem?.id === item.id;
     
@@ -253,26 +229,10 @@ export default function EntertainmentScreen() {
     );
   }
 
-  if (activeTab === 'user-playlists') {
-    return (
-      <View style={styles.container}>
-        {renderTabNavigation()}
-        <View style={styles.centerContainer}>
-          <Ionicons name="list" size={48} color="#64748b" />
-          <Text style={styles.comingSoonText}>User Playlists</Text>
-          <Text style={styles.comingSoonSubtext}>
-            Create and manage your entertainment playlists
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
   // Show empty state if no entertainment items
   if (entertainmentItems.length === 0) {
     return (
       <View style={styles.container}>
-        {renderTabNavigation()}
         <View style={styles.centerContainer}>
           <Ionicons name="videocam-off" size={64} color="#64748b" />
           <Text style={styles.comingSoonText}>No Videos Available</Text>
@@ -293,7 +253,6 @@ export default function EntertainmentScreen() {
 
   return (
     <View style={styles.container}>
-      {renderTabNavigation()}
       
       {/* Video Player - only mount when screen is focused */}
       {isScreenFocused && currentItem && currentItem.youtube_video_id && (
@@ -390,17 +349,6 @@ export default function EntertainmentScreen() {
           <View style={styles.controls}>
             <TouchableOpacity onPress={playPrevious} style={styles.controlButton}>
               <Ionicons name="play-skip-back" size={32} color="#e2e8f0" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={togglePlayPause}
-              style={[styles.controlButton, styles.playButton]}
-              disabled={!isReady}
-            >
-              <Ionicons
-                name={isPlaying ? 'pause' : 'play'}
-                size={36}
-                color="#ffffff"
-              />
             </TouchableOpacity>
             <TouchableOpacity onPress={playNext} style={styles.controlButton}>
               <Ionicons name="play-skip-forward" size={32} color="#e2e8f0" />

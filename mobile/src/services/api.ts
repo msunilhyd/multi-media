@@ -1,3 +1,5 @@
+// Local development backend
+// export const API_BASE_URL = 'http://localhost:8000';
 // Production backend
 export const API_BASE_URL = 'https://multi-media-production.up.railway.app';
 

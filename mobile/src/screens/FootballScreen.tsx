@@ -24,6 +24,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchAvailableDates, fetchHighlightsGroupedByDate, fetchHighlightsGroupedWithTeamFilter, HighlightsGroupedByLeague, Match, Highlight } from '../services/api';
 import TeamSelector from '../components/TeamSelector';
+import ComingSoonMatches from '../components/ComingSoonMatches';
 import { useAuth } from '../contexts/AuthContext';
 import { favoritesService } from '../services/favoritesService';
 
@@ -547,18 +548,7 @@ export default function FootballScreen() {
   );
 
   const renderComingSoon = () => (
-    <View style={styles.comingSoonContainer}>
-      <Ionicons name="timer-outline" size={64} color="#3b82f6" />
-      <Text style={styles.comingSoonTitle}>Coming Soon!</Text>
-      <Text style={styles.comingSoonText}>
-        Live match tracking and upcoming fixtures will be available soon
-      </Text>
-      {selectedTeams.length > 0 && (
-        <Text style={styles.comingSoonSubtext}>
-          You'll be notified when matches for your {selectedTeams.length} favorite team(s) are scheduled
-        </Text>
-      )}
-    </View>
+    <ComingSoonMatches selectedTeams={selectedTeams} />
   );
 
   const renderHighlight = (highlight: Highlight, match: Match) => (
@@ -569,7 +559,8 @@ export default function FootballScreen() {
     >
       <View style={styles.thumbnailContainer}>
         <YoutubePlayer
-          height={200}
+          height={Dimensions.get('window').width * (9 / 16)}
+          width={Dimensions.get('window').width}
           play={false}
           videoId={highlight.youtube_video_id}
           webViewProps={{

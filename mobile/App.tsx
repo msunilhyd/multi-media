@@ -1,11 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useEffect, useRef } from 'react';
 import { AppState, View, Text } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import MusicPlayerScreen from './src/screens/MusicPlayerScreen';
+import PlaylistDetailScreen from './src/screens/PlaylistDetailScreen';
 import FootballScreen from './src/screens/FootballScreen';
 import EntertainmentScreen from './src/screens/EntertainmentScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
@@ -15,6 +17,7 @@ import { useFonts, PlayfairDisplay_700Bold_Italic } from '@expo-google-fonts/pla
 import Analytics from './src/services/analytics';
 
 const Tab = createBottomTabNavigator();
+const AudioStack = createNativeStackNavigator();
 
 // Custom header component with gradient text matching frontend
 const CustomHeader = () => {
@@ -56,6 +59,39 @@ const CustomHeader = () => {
     </View>
   );
 };
+
+// Audio Stack Navigator for nested navigation
+function AudioStackNavigator() {
+  return (
+    <AudioStack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#1f2937',
+        },
+        headerTintColor: '#ffffff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <AudioStack.Screen 
+        name="MusicPlayer" 
+        component={MusicPlayerScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <AudioStack.Screen 
+        name="PlaylistDetail" 
+        component={PlaylistDetailScreen}
+        options={{
+          title: 'Playlist',
+          headerBackTitle: 'Back',
+        }}
+      />
+    </AudioStack.Navigator>
+  );
+}
 
 export default function App() {
   return (
@@ -195,8 +231,9 @@ function AppContent() {
         />
         <Tab.Screen 
           name="Background Audio" 
-          component={MusicPlayerScreen}
+          component={AudioStackNavigator}
           options={{
+            headerShown: true,
             header: () => <CustomHeader />,
             tabBarLabel: 'Audio'
           }}

@@ -85,6 +85,18 @@ export default function AuthScreen() {
     setIsLoading(true);
     try {
       console.log('🍎 Starting Apple Sign In...');
+      
+      // Check if Apple Sign In is available
+      if (!AppleAuthentication.isAvailableAsync()) {
+        console.log('🍎 Apple Sign In not available on this device');
+        Alert.alert(
+          'Apple Sign-In Not Available',
+          'Apple Sign-In is only available on physical iOS devices. Please test on a real device or use email/password or Google Sign-In.'
+        );
+        setIsLoading(false);
+        return;
+      }
+      
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -247,13 +259,18 @@ export default function AuthScreen() {
 
             {/* Apple Sign In */}
             {Platform.OS === 'ios' && (
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                cornerRadius={12}
-                style={styles.appleButton}
-                onPress={handleAppleSignIn}
-              />
+              <>
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                  cornerRadius={12}
+                  style={styles.appleButton}
+                  onPress={handleAppleSignIn}
+                />
+                <Text style={styles.appleSignInNote}>
+                  💡 Apple Sign-In works on physical iOS devices. For simulator testing, use Email or Google Sign-In.
+                </Text>
+              </>
             )}
 
             {/* Switch Mode */}
@@ -409,6 +426,13 @@ const styles = StyleSheet.create({
   appleButton: {
     width: '100%',
     height: 56,
+    marginBottom: 12,
+  },
+  appleSignInNote: {
+    fontSize: 12,
+    color: '#9ca3af',
+    textAlign: 'center',
     marginBottom: 24,
+    paddingHorizontal: 12,
   },
 });
