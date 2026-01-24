@@ -190,7 +190,28 @@ All critical crash and usability issues have been resolved. The app now function
 
 Test Account (if needed):
 Email: test@linusplaylists.com
-Password: TestApple2026!
+Password: 
+Apps
+Analytics
+Trends
+Reports
+Business
+Users and Access
+Sunil Mocharla
+Sunil Kumar Mocharla
+Apps
+
+LinusPlaylists
+
+View App Review Issues & Messages
+
+iOS 1.0 Rejected
+
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact UsTestApple2026!
 
 Please let us know if you need any additional information.
 
