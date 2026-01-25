@@ -36,8 +36,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedUser = await AsyncStorage.getItem('user_data');
       
       if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        // Validate the token by fetching the user profile from backend
+        try {
+          const validatedUser = await authService.getProfile(storedToken);
+          setToken(storedToken);
+          setUser(validatedUser);
+          // Update stored user data with validated data
+          await AsyncStorage.setItem('user_data', JSON.stringify(validatedUser));
+        } catch (error) {
+          // Token is invalid or user doesn't exist - clear stored data
+          console.log('Stored token is invalid, clearing auth data');
+          await AsyncStorage.removeItem('auth_token');
+          await AsyncStorage.removeItem('user_data');
+        }
       }
     } catch (error) {
       console.error('Failed to load stored auth:', error);

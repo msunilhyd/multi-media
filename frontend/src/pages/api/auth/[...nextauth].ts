@@ -43,7 +43,8 @@ export const authOptions: AuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
-        name: { label: 'Name', type: 'text' } // For registration
+        name: { label: 'Name', type: 'text' }, // For registration
+        mode: { label: 'Mode', type: 'text' }, // signin | signup
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -72,44 +73,45 @@ export const authOptions: AuthOptions = {
               accessToken: data.access_token, // Store the JWT token
             }
           } else if (response.status === 404) {
-            // User doesn't exist
-            if (credentials.name) {
-              // This is a signup attempt, try to register
-              try {
-                const registerResponse = await fetch(`${API_BASE_URL}/api/auth/register`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    email: credentials.email,
-                    password: credentials.password,
-                    name: credentials.name,
-                  }),
-                })
+            const isSignup = credentials.mode === 'signup'
 
-                if (registerResponse.ok) {
-                  const data = await registerResponse.json()
-                  return {
-                    id: data.user.id.toString(),
-                    email: data.user.email,
-                    name: data.user.name,
-                    accessToken: data.access_token, // Store the JWT token
-                  }
-                } else {
-                  const errorData = await registerResponse.json().catch(() => ({}))
-                  throw new Error(errorData.detail || 'Registration failed')
-                }
-              } catch (registerError) {
-                console.error('Registration error:', registerError)
-                if (registerError instanceof Error) {
-                  throw registerError
-                }
-                throw new Error('Failed to register. Please try again.')
-              }
-            } else {
-              // This is a signin attempt but user doesn't exist
+            if (!isSignup) {
+              // Explicit signin: do not auto-register
               throw new Error('Account not found. Please sign up first.')
+            }
+
+            // Signup flow: create account then return credentials
+            try {
+              const registerResponse = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  email: credentials.email,
+                  password: credentials.password,
+                  name: credentials.name,
+                }),
+              })
+
+              if (registerResponse.ok) {
+                const data = await registerResponse.json()
+                return {
+                  id: data.user.id.toString(),
+                  email: data.user.email,
+                  name: data.user.name,
+                  accessToken: data.access_token, // Store the JWT token
+                }
+              } else {
+                const errorData = await registerResponse.json().catch(() => ({}))
+                throw new Error(errorData.detail || 'Registration failed')
+              }
+            } catch (registerError) {
+              console.error('Registration error:', registerError)
+              if (registerError instanceof Error) {
+                throw registerError
+              }
+              throw new Error('Failed to register. Please try again.')
             }
           } else if (response.status === 401) {
             // Wrong password

@@ -50,6 +50,7 @@ export default function AuthModal({ isOpen, onClose, mode, onSwitchMode }: AuthM
         email,
         password,
         name: mode === 'signup' ? name : undefined,
+        mode, // tell backend whether this is signin or signup to avoid accidental auto-register
         redirect: false,
       });
 
