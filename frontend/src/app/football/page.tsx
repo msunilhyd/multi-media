@@ -29,6 +29,34 @@ const getYesterdayString = () => {
   return yesterday.toISOString().split('T')[0];
 };
 
+const getLastSevenDaysRange = () => {
+  const today = new Date();
+  const sevenDaysAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
+  return sevenDaysAgo.toISOString().split('T')[0];
+};
+
+// League priority order for sorting
+const LEAGUE_PRIORITY: { [key: string]: number } = {
+  'Premier League': 1,
+  'Champions League': 2,
+  'La Liga': 3,
+  'Serie A': 4,
+  'Bundesliga': 5,
+  'Ligue 1': 6,
+  'Copa del Rey': 7,
+  'DFB-Pokal': 8,
+  'Coppa Italia': 9,
+  'Coupe de France': 10,
+};
+
+const sortLeaguesByPriority = (leagues: HighlightsGroupedByLeague[]) => {
+  return [...leagues].sort((a, b) => {
+    const priorityA = LEAGUE_PRIORITY[a.league_name] ?? 999;
+    const priorityB = LEAGUE_PRIORITY[b.league_name] ?? 999;
+    return priorityA - priorityB;
+  });
+};
+
 export default function FootballPage() {
   const { data: session } = useSession();
   const user = session?.user;
@@ -41,6 +69,7 @@ export default function FootballPage() {
   const [calendarDate, setCalendarDate] = useState<string>(getTodayString());
   const [expandedLeagueIds, setExpandedLeagueIds] = useState<Set<number>>(new Set());
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [showWeek, setShowWeek] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isSavingFavorites, setIsSavingFavorites] = useState(false);
@@ -103,6 +132,9 @@ export default function FootballPage() {
         })).filter(league => league.matches.length > 0);
       }
       
+      // Sort leagues by priority
+      filteredData = sortLeaguesByPriority(filteredData);
+      
       setHighlightsData(filteredData);
       // Set the first league as expanded by default
       if (filteredData.length > 0) {
@@ -120,9 +152,75 @@ export default function FootballPage() {
 
   const handleDateSelect = async (date: string) => {
     console.log('Date selected:', date);
+    setShowWeek(false);
+    setShowComingSoon(false);
     setSelectedDate(date);
     setCalendarDate(date);
     await loadHighlights(date, selectedTeams.length > 0 ? selectedTeams : undefined);
+  };
+
+  const handleWeekSelect = async () => {
+    console.log('Week selected');
+    setShowWeek(true);
+    setShowComingSoon(false);
+    setSelectedDate(null);
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      setHighlightsData([]);
+      
+      const endDate = getTodayString();
+      const startDate = getLastSevenDaysRange();
+      
+      // Fetch highlights for each day in the past 7 days
+      const dates = [];
+      const currentDate = new Date(startDate);
+      while (currentDate.toISOString().split('T')[0] <= endDate) {
+        dates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      // Fetch all highlights for the week
+      const leagueMap = new Map<string, any>();
+      
+      for (const date of dates) {
+        const data = await fetchHighlightsGroupedByDate(date);
+        for (const league of data) {
+          if (!leagueMap.has(league.league_name)) {
+            leagueMap.set(league.league_name, { ...league, matches: [] });
+          }
+          const existingLeague = leagueMap.get(league.league_name);
+          existingLeague.matches.push(...league.matches);
+        }
+      }
+      
+      // Convert map back to array
+      let weekHighlights = Array.from(leagueMap.values());
+      
+      // Filter by teams if provided
+      if (selectedTeams && selectedTeams.length > 0) {
+        weekHighlights = weekHighlights.map(league => ({
+          ...league,
+          matches: league.matches.filter(match => 
+            selectedTeams.includes(match.home_team) || selectedTeams.includes(match.away_team)
+          )
+        })).filter(league => league.matches.length > 0);
+      }
+      
+      // Sort leagues by priority
+      weekHighlights = sortLeaguesByPriority(weekHighlights);
+      
+      setHighlightsData(weekHighlights);
+      if (weekHighlights.length > 0) {
+        setExpandedLeagueIds(new Set([weekHighlights[0].league.id]));
+      }
+    } catch (err) {
+      setError('Failed to load week highlights. Make sure the backend is running.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTeamsChange = async (teams: string[]) => {
@@ -292,6 +390,16 @@ export default function FootballPage() {
             >
               Yesterday
             </button>
+            <button
+              onClick={handleWeekSelect}
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                showWeek
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              This Week
+            </button>
             <div className="flex items-center gap-2">
               <input
                 type="date"
@@ -389,7 +497,7 @@ export default function FootballPage() {
           <div>
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                Highlights for {formatDateLabel(selectedDate || getTodayString())}
+                Highlights {showWeek ? '- This Week' : `for ${formatDateLabel(selectedDate || getTodayString())}`}
               </h2>
               <span className="text-gray-500 dark:text-gray-400">
                 {highlightsData.reduce((acc, league) => acc + league.total_highlights, 0)} videos available
