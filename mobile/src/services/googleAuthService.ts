@@ -1,5 +1,6 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 import axios from 'axios';
 import { API_BASE_URL } from './api';
 
@@ -7,6 +8,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_CLIENT_ID = '472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt.apps.googleusercontent.com';
 const IOS_URL_SCHEME = 'com.googleusercontent.apps.472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt';
+const ANDROID_APP_SCHEME = 'com.msunilhyd.musicplayer';
 
 const discovery = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -30,10 +32,9 @@ class GoogleAuthService {
   private redirectUri: string;
 
   constructor() {
-    // Use Google's iOS URL scheme
-    this.redirectUri = AuthSession.makeRedirectUri({
-      scheme: IOS_URL_SCHEME
-    });
+    // Use platform-specific redirect scheme
+    const scheme = Platform.OS === 'ios' ? IOS_URL_SCHEME : ANDROID_APP_SCHEME;
+    this.redirectUri = AuthSession.makeRedirectUri({ scheme });
     console.log('📱 Google OAuth Redirect URI:', this.redirectUri);
   }
 

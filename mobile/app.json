@@ -9,6 +9,7 @@
     "newArchEnabled": true,
     "scheme": [
       "com.sunil.music-player",
+      "com.msunilhyd.musicplayer",
       "com.googleusercontent.apps.472641857686-qcnd1804adma81q7j7o7t6ge9e80alkt"
     ],
     "splash": {
