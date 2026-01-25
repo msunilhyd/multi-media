@@ -64,6 +64,12 @@ export const authOptions: AuthOptions = {
             }),
           })
 
+          console.log('[auth] credentials authorize', {
+            email: credentials.email,
+            mode: credentials.mode,
+            status: response.status,
+          })
+
           if (response.ok) {
             const data = await response.json()
             return {
@@ -73,8 +79,7 @@ export const authOptions: AuthOptions = {
               accessToken: data.access_token, // Store the JWT token
             }
           } else if (response.status === 404) {
-            // Treat presence of name as signup intent as a fallback in case mode is missing
-            const isSignup = credentials.mode === 'signup' || !!credentials.name
+            const isSignup = credentials.mode === 'signup'
 
             if (!isSignup) {
               // Explicit signin: do not auto-register
