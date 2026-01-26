@@ -4,7 +4,7 @@ from typing import Dict, Any
 from datetime import date, timedelta
 from ..database import get_db
 from .. import models
-from ..scheduler import fetch_highlights_for_yesterday, fetch_highlights_for_today, refresh_today_scores, reconcile_todays_matches
+from ..scheduler import fetch_highlights_for_yesterday, fetch_highlights_for_today, refresh_today_scores, reconcile_todays_matches, fetch_highlights_for_matches_missing_them
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -297,4 +297,24 @@ async def trigger_reconciliation(background_tasks: BackgroundTasks):
         "success": True,
         "message": "Reconciliation job started in background. Check server logs for details.",
         "note": "This job re-fetches all today's matches from ESPN and ensures DB is up-to-date"
+    }
+
+@router.post("/fetch-missing-highlights")
+async def trigger_fetch_missing_highlights(background_tasks: BackgroundTasks):
+    """
+    Manually trigger highlight fetching for all finished matches without highlights.
+    
+    This will:
+    1. Find all finished matches from the past 7 days without highlights
+    2. Search YouTube for highlights for each match
+    3. Add found highlights to the database
+    
+    Useful after reconciliation adds missing matches or when highlights are delayed.
+    """
+    background_tasks.add_task(fetch_highlights_for_matches_missing_them)
+    
+    return {
+        "success": True,
+        "message": "Highlight fetch job started in background. Check server logs for details.",
+        "note": "This job searches for highlights for all finished matches without highlights"
     }

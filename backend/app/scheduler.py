@@ -501,6 +501,109 @@ async def fetch_highlights_for_today():
         db.close()
 
 
+async def fetch_highlights_for_matches_missing_them():
+    """
+    Fetch highlights for all finished matches (any date) that don't have highlights yet.
+    This is useful for immediately populating highlights after reconciliation adds missing matches.
+    
+    Can be triggered manually via /api/admin/fetch-missing-highlights
+    """
+    print(f"\n[Scheduler] ==================== FETCH MISSING HIGHLIGHTS ====================")
+    print(f"[Scheduler] Starting highlights fetch for matches without highlights at {datetime.now()}")
+    
+    db = SessionLocal()
+    highlights_found = 0
+    matches_checked = 0
+    
+    try:
+        # Get all finished matches without highlights from the past 7 days
+        seven_days_ago = date.today() - timedelta(days=7)
+        
+        finished_matches = db.query(models.Match).filter(
+            models.Match.match_date >= seven_days_ago,
+            models.Match.match_date <= date.today(),
+            models.Match.status == 'finished'
+        ).all()
+        
+        if not finished_matches:
+            print(f"[Scheduler] No finished matches in the past 7 days")
+            return
+        
+        # Filter to matches without highlights
+        matches_to_process = []
+        for match in finished_matches:
+            existing_highlight = db.query(models.Highlight).filter(
+                models.Highlight.match_id == match.id
+            ).first()
+            
+            if not existing_highlight:
+                league_name = match.league.name if match.league else "Unknown"
+                if match_has_team_of_interest(match.home_team, match.away_team, league_name):
+                    matches_to_process.append(match)
+        
+        if not matches_to_process:
+            finished_with_highlights = sum(1 for m in finished_matches if db.query(models.Highlight).filter(models.Highlight.match_id == m.id).first())
+            print(f"[Scheduler] All finished matches already have highlights ({finished_with_highlights}/{len(finished_matches)})")
+            return
+        
+        print(f"[Scheduler] Found {len(matches_to_process)} finished matches needing highlights\n")
+        
+        youtube_service = get_youtube_service()
+        
+        for match in matches_to_process:
+            matches_checked += 1
+            league_name = match.league.name if match.league else None
+            
+            try:
+                print(f"[Scheduler] [{matches_checked}/{len(matches_to_process)}] Searching: {match.home_team} vs {match.away_team} ({match.match_date})")
+                
+                videos = youtube_service.search_highlights(
+                    home_team=match.home_team,
+                    away_team=match.away_team,
+                    league=league_name,
+                    match_date=match.match_date,
+                    max_results=1
+                )
+                
+                if videos:
+                    video = videos[0]
+                    highlight = models.Highlight(
+                        match_id=match.id,
+                        youtube_video_id=video['video_id'],
+                        title=video['title'],
+                        description=video.get('description', ''),
+                        thumbnail_url=video.get('thumbnail_url', ''),
+                        channel_title=video.get('channel_title', ''),
+                        published_at=video.get('published_at'),
+                        view_count=video.get('view_count', 0),
+                        duration=video.get('duration', '')
+                    )
+                    db.add(highlight)
+                    db.commit()
+                    highlights_found += 1
+                    print(f"[Scheduler] ✓ Found: {video['title'][:60]}...")
+                else:
+                    print(f"[Scheduler] ✗ No highlights found yet")
+                    
+            except YouTubeQuotaExhaustedError:
+                print(f"[Scheduler] YouTube quota exhausted - stopping")
+                break
+            except Exception as e:
+                print(f"[Scheduler] Error: {e}")
+                continue
+        
+        print(f"\n[Scheduler] ==================== RESULT ====================")
+        print(f"[Scheduler] Matches checked: {matches_checked}")
+        print(f"[Scheduler] Highlights found: {highlights_found}")
+        print(f"[Scheduler] ====================================================\n")
+        
+    except Exception as e:
+        print(f"[Scheduler] Error in fetch missing highlights job: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 async def reconcile_todays_matches():
     """
     Comprehensive reconciliation job that:
