@@ -99,6 +99,36 @@ export async function fetchHighlightsGroupedWithTeamFilter(teams: string[], date
   return response.json();
 }
 
+export interface StandingsEntry {
+  position: number;
+  team: string;
+  team_id: string;
+  logo: string | null;
+  games_played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goals_for: number;
+  goals_against: number;
+  goal_difference: number;
+  points: number;
+  form: string;
+  qualification: string | null;
+  qualification_color: string | null;
+}
+
+export interface Standings {
+  league_name: string;
+  season: string;
+  standings: StandingsEntry[];
+}
+
+export async function fetchStandings(leagueSlug: string): Promise<Standings> {
+  const response = await fetch(`${API_BASE_URL}/api/standings/${leagueSlug}`);
+  if (!response.ok) throw new Error('Failed to fetch standings');
+  return response.json();
+}
+
 export interface Entertainment {
   id: number;
   title: string;

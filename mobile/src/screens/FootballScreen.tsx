@@ -22,11 +22,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchAvailableDates, fetchHighlightsGroupedByDate, fetchHighlightsGroupedWithTeamFilter, HighlightsGroupedByLeague, Match, Highlight } from '../services/api';
+import { fetchAvailableDates, fetchHighlightsGroupedByDate, fetchHighlightsGroupedWithTeamFilter, fetchStandings, HighlightsGroupedByLeague, Standings, Match, Highlight } from '../services/api';
 import TeamSelector from '../components/TeamSelector';
 import ComingSoonMatches from '../components/ComingSoonMatches';
+import StandingsTable from '../components/StandingsTable';
 import { useAuth } from '../contexts/AuthContext';
 import { favoritesService } from '../services/favoritesService';
+
+// Leagues that have standings available
+const LEAGUES_WITH_STANDINGS = ['premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'super-league', 'champions-league', 'europa-league'];
 
 // League color mappings matching frontend
 const leagueColors: Record<string, { colors: string[]; }> = {
@@ -64,6 +68,10 @@ export default function FootballScreen() {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [isSavingFavorites, setIsSavingFavorites] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [leagueStandings, setLeagueStandings] = useState<Record<number, Standings | null>>({});
+  const [showStandingsByLeague, setShowStandingsByLeague] = useState<Set<number>>(new Set());
+  const [loadingStandingsByLeague, setLoadingStandingsByLeague] = useState<Set<number>>(new Set());
+  const [showFullStandingsByLeague, setShowFullStandingsByLeague] = useState<Set<number>>(new Set());
   
   // Helper function to get yesterday's date string
   const getYesterdayString = () => {
@@ -250,6 +258,48 @@ export default function FootballScreen() {
     }
   };
 
+  const handleStandingsToggle = async (leagueId: number, leagueSlug: string) => {
+    const currentShowing = showStandingsByLeague.has(leagueId);
+    
+    if (!currentShowing && !leagueStandings[leagueId] && !loadingStandingsByLeague.has(leagueId)) {
+      const newLoadingSet = new Set(loadingStandingsByLeague);
+      newLoadingSet.add(leagueId);
+      setLoadingStandingsByLeague(newLoadingSet);
+      
+      try {
+        const data = await fetchStandings(leagueSlug);
+        setLeagueStandings(prev => ({ ...prev, [leagueId]: data }));
+      } catch (err) {
+        console.error('Failed to fetch standings:', err);
+      } finally {
+        const newLoadingSet = new Set(loadingStandingsByLeague);
+        newLoadingSet.delete(leagueId);
+        setLoadingStandingsByLeague(newLoadingSet);
+      }
+    }
+    
+    const newShowSet = new Set(showStandingsByLeague);
+    if (currentShowing) {
+      newShowSet.delete(leagueId);
+      // Reset full/compact view when closing
+      const newFullSet = new Set(showFullStandingsByLeague);
+      newFullSet.delete(leagueId);
+      setShowFullStandingsByLeague(newFullSet);
+    } else {
+      newShowSet.add(leagueId);
+    }
+    setShowStandingsByLeague(newShowSet);
+  };
+
+  const handleStandingsCompactToggle = (leagueId: number) => {
+    const newFullSet = new Set(showFullStandingsByLeague);
+    if (newFullSet.has(leagueId)) {
+      newFullSet.delete(leagueId);
+    } else {
+      newFullSet.add(leagueId);
+    }
+    setShowFullStandingsByLeague(newFullSet);
+  };
   useEffect(() => {
     const initializePage = async () => {
       // Load favorite teams first
@@ -603,6 +653,11 @@ export default function FootballScreen() {
   const renderLeagueSection = ({ item }: { item: HighlightsGroupedByLeague }) => {
     const isExpanded = expandedLeagueIds.has(item.league.id);
     const gradientColors = leagueColors[item.league.slug]?.colors || leagueColors['default'].colors;
+    const hasStandings = LEAGUES_WITH_STANDINGS.includes(item.league.slug);
+    const showStandings = showStandingsByLeague.has(item.league.id);
+    const standings = leagueStandings[item.league.id];
+    const isLoading = loadingStandingsByLeague.has(item.league.id);
+    const showFullStandings = showFullStandingsByLeague.has(item.league.id);
     
     // Collect all highlights from all matches
     const allHighlights = item.matches.flatMap(match => match.highlights);
@@ -633,17 +688,53 @@ export default function FootballScreen() {
                 </Text>
               </View>
             </View>
-            <Ionicons
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color="#ffffff"
-            />
+            <View style={styles.leagueHeaderRightActions}>
+              {hasStandings && (
+                <TouchableOpacity
+                  style={styles.leagueActionButton}
+                  onPress={() => handleStandingsToggle(item.league.id, item.league.slug)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="trending-up"
+                    size={16}
+                    color="#ffffff"
+                  />
+                  <Text style={styles.leagueActionButtonText}>
+                    {showStandings ? 'Hide' : 'Standings'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <Ionicons
+                name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                size={24}
+                color="#ffffff"
+              />
+            </View>
           </TouchableOpacity>
         </LinearGradient>
         
         {isExpanded && (
-          <View style={styles.matchesList}>
-            {item.matches.map((match) => renderMatch(match))}
+          <View style={styles.expandedContent}>
+            {/* Standings Section */}
+            {showStandings && standings && (
+              <View style={styles.standingsContainer}>
+                <View style={styles.standingsHeader}>
+                  <Text style={styles.standingsTitle}>Standings • {standings.season}</Text>
+                </View>
+                <StandingsTable
+                  standings={standings.standings}
+                  loading={isLoading}
+                  compact={!showFullStandings}
+                  onToggleExpand={() => handleStandingsCompactToggle(item.league.id)}
+                />
+              </View>
+            )}
+            
+            {/* Matches Section */}
+            <View style={styles.matchesList}>
+              {item.matches.map((match) => renderMatch(match))}
+            </View>
           </View>
         )}
       </View>
@@ -1237,4 +1328,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#000000',
   },
+  leagueHeaderRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  leagueActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+  },
+  leagueActionButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  expandedContent: {
+    backgroundColor: '#1e293b',
+  },
+  standingsContainer: {
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  standingsHeader: {
+    marginBottom: 12,
+  },
+  standingsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
 });
+
