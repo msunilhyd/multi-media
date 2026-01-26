@@ -44,13 +44,13 @@ export default function StandingsTable({ standings, compact = false }: Standings
             <thead>
               <tr className="bg-gray-800/50 text-gray-300 text-xs">
                 <th className="py-2 px-3 text-left">#</th>
+                <th className="py-2 px-3 text-center font-bold">Pts</th>
                 <th className="py-2 px-3 text-left">Team</th>
                 <th className="py-2 px-3 text-center">P</th>
                 <th className="py-2 px-3 text-center">W</th>
                 <th className="py-2 px-3 text-center">D</th>
                 <th className="py-2 px-3 text-center">L</th>
                 <th className="py-2 px-3 text-center">GD</th>
-                <th className="py-2 px-3 text-center font-bold">Pts</th>
               </tr>
             </thead>
             <tbody>
@@ -60,6 +60,7 @@ export default function StandingsTable({ standings, compact = false }: Standings
                   className={`border-b border-gray-800 hover:bg-gray-800/30 transition-colors ${getQualificationClass(entry.qualification_color)}`}
                 >
                   <td className="py-2 px-3 text-gray-400 font-medium">{entry.position}</td>
+                  <td className="py-2 px-3 text-center font-bold text-white text-base">{entry.points}</td>
                   <td className="py-2 px-3 flex items-center gap-2">
                     {entry.logo && (
                       <img src={entry.logo} alt={entry.team} className="w-5 h-5 object-contain" />
@@ -73,7 +74,6 @@ export default function StandingsTable({ standings, compact = false }: Standings
                   <td className={`py-2 px-3 text-center font-medium ${entry.goal_difference > 0 ? 'text-green-500' : entry.goal_difference < 0 ? 'text-red-500' : 'text-gray-400'}`}>
                     {entry.goal_difference > 0 ? '+' : ''}{entry.goal_difference}
                   </td>
-                  <td className="py-2 px-3 text-center font-bold text-white">{entry.points}</td>
                 </tr>
               ))}
             </tbody>
@@ -91,7 +91,8 @@ export default function StandingsTable({ standings, compact = false }: Standings
           <thead>
             <tr className="bg-gray-800/50 text-gray-300 text-xs uppercase">
               <th className="py-3 px-4 text-left sticky left-0 bg-gray-800/50 z-10">#</th>
-              <th className="py-3 px-4 text-left sticky left-12 bg-gray-800/50 z-10">Team</th>
+              <th className="py-3 px-4 text-center font-bold sticky left-12 bg-gray-800/50 z-10">Pts</th>
+              <th className="py-3 px-4 text-left sticky left-24 bg-gray-800/50 z-10">Team</th>
               <th className="py-3 px-4 text-center">P</th>
               <th className="py-3 px-4 text-center">W</th>
               <th className="py-3 px-4 text-center">D</th>
@@ -99,7 +100,6 @@ export default function StandingsTable({ standings, compact = false }: Standings
               <th className="py-3 px-4 text-center">GF</th>
               <th className="py-3 px-4 text-center">GA</th>
               <th className="py-3 px-4 text-center">GD</th>
-              <th className="py-3 px-4 text-center font-bold">Pts</th>
               <th className="py-3 px-4 text-center">Form</th>
             </tr>
           </thead>
@@ -110,7 +110,8 @@ export default function StandingsTable({ standings, compact = false }: Standings
                 className={`border-b border-gray-800 hover:bg-gray-800/30 transition-colors ${getQualificationClass(entry.qualification_color)}`}
               >
                 <td className="py-3 px-4 text-gray-400 font-medium sticky left-0 bg-gray-900/50">{entry.position}</td>
-                <td className="py-3 px-4 sticky left-12 bg-gray-900/50">
+                <td className="py-3 px-4 text-center font-bold text-white text-base sticky left-12 bg-gray-900/50">{entry.points}</td>
+                <td className="py-3 px-4 sticky left-24 bg-gray-900/50">
                   <div className="flex items-center gap-3">
                     {entry.logo && (
                       <img src={entry.logo} alt={entry.team} className="w-6 h-6 object-contain" />
@@ -132,7 +133,6 @@ export default function StandingsTable({ standings, compact = false }: Standings
                 <td className={`py-3 px-4 text-center font-medium ${entry.goal_difference > 0 ? 'text-green-500' : entry.goal_difference < 0 ? 'text-red-500' : 'text-gray-400'}`}>
                   {entry.goal_difference > 0 ? '+' : ''}{entry.goal_difference}
                 </td>
-                <td className="py-3 px-4 text-center font-bold text-white text-base">{entry.points}</td>
                 <td className="py-3 px-4">
                   <div className="flex gap-1 justify-center">
                     {entry.form && entry.form.split('').slice(-5).map((char, i) => (
