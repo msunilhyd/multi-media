@@ -32,7 +32,7 @@ const leagueColors: Record<string, string> = {
 };
 
 // Leagues that have standings available
-const LEAGUES_WITH_STANDINGS = ['premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions-league', 'europa-league'];
+const LEAGUES_WITH_STANDINGS = ['premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'super-league', 'champions-league', 'europa-league'];
 
 export default function LeagueSection({ leagueData, isExpanded, onToggle }: LeagueSectionProps) {
   const [isPlayAllOpen, setIsPlayAllOpen] = useState(false);
@@ -86,16 +86,6 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
           className={`w-full bg-gradient-to-r ${gradientClass} text-white p-4 flex items-center justify-between hover:opacity-90 transition-opacity`}
         >
           <div className="flex items-center gap-3">
-                        {hasStandings && (
-                          <button
-                            onClick={handleStandingsToggle}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                            title={showStandings ? "Hide standings" : "Show standings"}
-                          >
-                            <TrendingUp className="w-5 h-5" />
-                            <span className="font-medium">{showStandings ? 'Hide Table' : 'Standings'}</span>
-                          </button>
-                        )}
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
               <span className="text-lg font-bold">{league.name.charAt(0)}</span>
             </div>
@@ -107,6 +97,16 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {hasStandings && (
+              <button
+                onClick={handleStandingsToggle}
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                title={showStandings ? "Hide standings" : "Show standings"}
+              >
+                <TrendingUp className="w-5 h-5" />
+                <span className="font-medium">{showStandings ? 'Hide Table' : 'Standings'}</span>
+              </button>
+            )}
             {total_highlights > 0 && (
               <button
                 onClick={handlePlayAll}

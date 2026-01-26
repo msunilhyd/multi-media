@@ -11,6 +11,7 @@ LEAGUE_ESPN_MAP = {
     "bundesliga": "ger.1",
     "serie-a": "ita.1",
     "ligue-1": "fra.1",
+    "super-league": "tur.1",  # Turkish Super Lig
     "champions-league": "uefa.champions",
     "europa-league": "uefa.europa",
 }
@@ -27,6 +28,7 @@ async def get_standings(league_slug: str) -> Dict:
     - bundesliga
     - serie-a
     - ligue-1
+    - super-league (Turkish Super Lig)
     - champions-league
     - europa-league
     """
