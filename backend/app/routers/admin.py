@@ -275,7 +275,7 @@ def add_highlight_by_video_id(
         return {
             "success": False,
             "message": f"Error adding highlight: {str(e)}"
-        }        }
+        }
 
 
 @router.post("/reconcile-today")
