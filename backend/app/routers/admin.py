@@ -324,6 +324,14 @@ def update_league_display_order(db: Session = Depends(get_db)) -> Dict[str, Any]
         'fa-cup': 9,
         'efl-cup': 10,
         'supercopa-de-espana': 11,
+        'süper-lig': 12,
+        'super-lig': 12,
+        'caf-champions-league': 13,
+        'afcon': 14,
+        'copa-del-rey': 15,
+        'coppa-italia': 16,
+        'dfb-pokal': 17,
+        'coupe-de-france': 18,
     }
     
     # Get all leagues
