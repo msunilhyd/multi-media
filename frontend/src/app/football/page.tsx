@@ -51,8 +51,8 @@ const LEAGUE_PRIORITY: { [key: string]: number } = {
 
 const sortLeaguesByPriority = (leagues: HighlightsGroupedByLeague[]) => {
   return [...leagues].sort((a, b) => {
-    const priorityA = LEAGUE_PRIORITY[a.league_name] ?? 999;
-    const priorityB = LEAGUE_PRIORITY[b.league_name] ?? 999;
+    const priorityA = LEAGUE_PRIORITY[a.league.name] ?? 999;
+    const priorityB = LEAGUE_PRIORITY[b.league.name] ?? 999;
     return priorityA - priorityB;
   });
 };
@@ -187,10 +187,10 @@ export default function FootballPage() {
       for (const date of dates) {
         const data = await fetchHighlightsGroupedByDate(date);
         for (const league of data) {
-          if (!leagueMap.has(league.league_name)) {
-            leagueMap.set(league.league_name, { ...league, matches: [] });
+          if (!leagueMap.has(league.league.name)) {
+            leagueMap.set(league.league.name, { ...league, matches: [] });
           }
-          const existingLeague = leagueMap.get(league.league_name);
+          const existingLeague = leagueMap.get(league.league.name);
           existingLeague.matches.push(...league.matches);
         }
       }
