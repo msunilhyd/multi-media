@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronDown, ChevronUp, PlayCircle, TrendingUp } from 'lucide-react';
 import { HighlightsGroupedByLeague, fetchStandings, Standings } from '@/lib/api';
 import VideoCard from './VideoCard';
@@ -38,6 +38,7 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
   const [isPlayAllOpen, setIsPlayAllOpen] = useState(false);
   const [standings, setStandings] = useState<Standings | null>(null);
   const [showStandings, setShowStandings] = useState(false);
+  const [showFullStandings, setShowFullStandings] = useState(false);
   const [loadingStandings, setLoadingStandings] = useState(false);
   const { league, matches, total_highlights } = leagueData;
   
@@ -60,7 +61,11 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
       }
     }
     
-    setShowStandings(!showStandings);
+    const nextShow = !showStandings;
+    setShowStandings(nextShow);
+    if (!nextShow) {
+      setShowFullStandings(false); // reset when closing
+    }
   };
 
   // Collect all highlights from all matches in this league
@@ -138,8 +143,14 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Standings</h3>
                         <span className="text-sm text-gray-500 dark:text-gray-400">• {standings.season}</span>
                       </div>
+                      <button
+                        onClick={() => setShowFullStandings(prev => !prev)}
+                        className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        {showFullStandings ? 'Show Top 6' : 'Show All'}
+                      </button>
                     </div>
-                    <StandingsTable standings={standings.standings} compact={false} />
+                    <StandingsTable standings={standings.standings} compact={!showFullStandings} />
                   </>
                 ) : (
                   <div className="text-center py-8 text-gray-500 dark:text-gray-400">
