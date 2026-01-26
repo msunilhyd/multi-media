@@ -86,20 +86,20 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
           className={`w-full bg-gradient-to-r ${gradientClass} text-white p-4 flex items-center justify-between hover:opacity-90 transition-opacity`}
         >
           <div className="flex items-center gap-3">
+                        {hasStandings && (
+                          <button
+                            onClick={handleStandingsToggle}
+                            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                            title={showStandings ? "Hide standings" : "Show standings"}
+                          >
+                            <TrendingUp className="w-5 h-5" />
+                            <span className="font-medium">{showStandings ? 'Hide Table' : 'Standings'}</span>
+                          </button>
+                        )}
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
               <span className="text-lg font-bold">{league.name.charAt(0)}</span>
             </div>
-            <hasStandings && (
-              <button
-                onClick={handleStandingsToggle}
-                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                title={showStandings ? "Hide standings" : "Show standings"}
-              >
-                <TrendingUp className="w-5 h-5" />
-                <span className="font-medium">{showStandings ? 'Hide Table' : 'Standings'}</span>
-              </button>
-            )}
-            {div className="text-left">
+            <div className="text-left">
               <h2 className="text-xl font-bold">{league.name}</h2>
               <p className="text-white/80 text-sm">
                 {matches.length} match{matches.length !== 1 ? 'es' : ''} • {total_highlights} highlight{total_highlights !== 1 ? 's' : ''}
@@ -114,7 +114,17 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
                 title="Play all highlights"
               >
                 <PlayCircle className="w-5 h-5" />
-             showStandings && (
+                <span className="font-medium">Play All</span>
+              </button>
+            )}
+            {isExpanded ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
+          </div>
+        </button>
+        
+        {isExpanded && (
+          <div className="p-4 space-y-6">
+            {/* Standings Section */}
+            {showStandings && (
               <div className="mb-6">
                 {loadingStandings ? (
                   <div className="flex justify-center items-center py-8">
@@ -135,17 +145,7 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
                   <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                     Failed to load standings
                   </div>
-                )}gs</h3>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">• {standings.season}</span>
-                  </div>
-                  <button
-                    onClick={() => setShowStandings(!showStandings)}
-                    className="text-sm text-blue-500 hover:text-blue-600 font-medium"
-                  >
-                    {showStandings ? 'Show Less' : 'Show Full Table'}
-                  </button>
-                </div>
-                <StandingsTable standings={standings.standings} compact={!showStandings} />
+                )}
               </div>
             )}
 
