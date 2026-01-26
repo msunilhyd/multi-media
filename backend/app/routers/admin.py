@@ -299,6 +299,64 @@ async def trigger_reconciliation(background_tasks: BackgroundTasks):
         "note": "This job re-fetches all today's matches from ESPN and ensures DB is up-to-date"
     }
 
+@router.post("/update-league-order")
+def update_league_display_order(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """
+    Update league display order to prioritize Champions League.
+    Sets Champions League to display_order=1, Premier League to 2, etc.
+    """
+    
+    result = {
+        "updated_count": 0,
+        "leagues": []
+    }
+    
+    # Define the desired order
+    desired_order = {
+        'champions-league': 1,
+        'premier-league': 2,
+        'la-liga': 3,
+        'serie-a': 4,
+        'bundesliga': 5,
+        'ligue-1': 6,
+        'europa-league': 7,
+        'championship': 8,
+        'fa-cup': 9,
+        'efl-cup': 10,
+        'supercopa-de-espana': 11,
+    }
+    
+    # Get all leagues
+    leagues = db.query(models.League).all()
+    
+    # Update display orders
+    for league in leagues:
+        if league.slug in desired_order:
+            old_order = league.display_order
+            new_order = desired_order[league.slug]
+            
+            if old_order != new_order:
+                league.display_order = new_order
+                result["updated_count"] += 1
+                result["leagues"].append({
+                    "name": league.name,
+                    "slug": league.slug,
+                    "old_order": old_order,
+                    "new_order": new_order
+                })
+    
+    # Commit changes
+    db.commit()
+    
+    # Get final order
+    final_leagues = db.query(models.League).order_by(models.League.display_order).all()
+    result["final_order"] = [
+        {"position": league.display_order, "name": league.name, "slug": league.slug}
+        for league in final_leagues
+    ]
+    
+    return result
+
 @router.post("/fetch-missing-highlights")
 async def trigger_fetch_missing_highlights(background_tasks: BackgroundTasks):
     """
