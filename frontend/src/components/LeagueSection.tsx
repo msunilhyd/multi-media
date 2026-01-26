@@ -44,16 +44,24 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
   const gradientClass = leagueColors[league.slug] || leagueColors['default'];
   const hasStandings = LEAGUES_WITH_STANDINGS.includes(league.slug);
 
-  // Load standings when section is expanded and has standings available
-  useEffect(() => {
-    if (isExpanded && hasStandings && !standings && !loadingStandings) {
+  // Load standings when button is clicked
+  const handleStandingsToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent toggling the section
+    
+    if (!showStandings && !standings && !loadingStandings) {
       setLoadingStandings(true);
-      fetchStandings(league.slug)
-        .then(setStandings)
-        .catch(err => console.error('Failed to fetch standings:', err))
-        .finally(() => setLoadingStandings(false));
+      try {
+        const data = await fetchStandings(league.slug);
+        setStandings(data);
+      } catch (err) {
+        console.error('Failed to fetch standings:', err);
+      } finally {
+        setLoadingStandings(false);
+      }
     }
-  }, [isExpanded, hasStandings, league.slug, standings, loadingStandings]);
+    
+    setShowStandings(!showStandings);
+  };
 
   // Collect all highlights from all matches in this league
   const allHighlights = matches.flatMap(match => 
@@ -81,7 +89,17 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
               <span className="text-lg font-bold">{league.name.charAt(0)}</span>
             </div>
-            <div className="text-left">
+            <hasStandings && (
+              <button
+                onClick={handleStandingsToggle}
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                title={showStandings ? "Hide standings" : "Show standings"}
+              >
+                <TrendingUp className="w-5 h-5" />
+                <span className="font-medium">{showStandings ? 'Hide Table' : 'Standings'}</span>
+              </button>
+            )}
+            {div className="text-left">
               <h2 className="text-xl font-bold">{league.name}</h2>
               <p className="text-white/80 text-sm">
                 {matches.length} match{matches.length !== 1 ? 'es' : ''} • {total_highlights} highlight{total_highlights !== 1 ? 's' : ''}
@@ -96,22 +114,28 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
                 title="Play all highlights"
               >
                 <PlayCircle className="w-5 h-5" />
-                <span className="font-medium">Play All</span>
-              </button>
-            )}
-            {isExpanded ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
-          </div>
-        </button>
-        
-        {isExpanded && (
-          <div className="p-4 space-y-6">
-            {/* Standings Section */}
-            {hasStandings && standings && (
+             showStandings && (
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-blue-500" />
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Standings</h3>
+                {loadingStandings ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : standings ? (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-blue-500" />
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Standings</h3>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">• {standings.season}</span>
+                      </div>
+                    </div>
+                    <StandingsTable standings={standings.standings} compact={false} />
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    Failed to load standings
+                  </div>
+                )}gs</h3>
                     <span className="text-sm text-gray-500 dark:text-gray-400">• {standings.season}</span>
                   </div>
                   <button
