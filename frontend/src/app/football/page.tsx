@@ -202,7 +202,7 @@ export default function FootballPage() {
       if (selectedTeams && selectedTeams.length > 0) {
         weekHighlights = weekHighlights.map(league => ({
           ...league,
-          matches: league.matches.filter(match => 
+          matches: league.matches.filter((match: Match) => 
             selectedTeams.includes(match.home_team) || selectedTeams.includes(match.away_team)
           )
         })).filter(league => league.matches.length > 0);
