@@ -418,7 +418,10 @@ export default function FootballPage() {
             </div>
 
             <button
-              onClick={() => setShowComingSoon(!showComingSoon)}
+              onClick={() => {
+                setShowWeek(false);
+                setShowComingSoon(!showComingSoon);
+              }}
               className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 ${
                 showComingSoon
                   ? 'bg-blue-600 text-white'

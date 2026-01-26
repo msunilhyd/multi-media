@@ -55,8 +55,8 @@ def init_database():
             if league_count == 0:
                 print("\n🏆 Inserting default leagues...")
                 default_leagues = [
-                    League(name='Premier League', slug='premier-league', country='England', display_order=1),
-                    League(name='Champions League', slug='champions-league', country='Europe', display_order=2),
+                    League(name='Champions League', slug='champions-league', country='Europe', display_order=1),
+                    League(name='Premier League', slug='premier-league', country='England', display_order=2),
                     League(name='La Liga', slug='la-liga', country='Spain', display_order=3),
                     League(name='Serie A', slug='serie-a', country='Italy', display_order=4),
                     League(name='Bundesliga', slug='bundesliga', country='Germany', display_order=5),
@@ -65,7 +65,7 @@ def init_database():
                     League(name='EFL Championship', slug='championship', country='England', display_order=8),
                     League(name='FA Cup', slug='fa-cup', country='England', display_order=9),
                     League(name='EFL Cup', slug='efl-cup', country='England', display_order=10),
-                    League(name='Supercopa de España', slug='supercopa-de-espana', country='Spain', display_order=11),
+                    League(name='Supercopa de España', slug='supercoca-de-espana', country='Spain', display_order=11),
                 ]
                 session.add_all(default_leagues)
                 session.commit()
