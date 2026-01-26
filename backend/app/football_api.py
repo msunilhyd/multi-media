@@ -159,5 +159,70 @@ class ESPNFootballAPI:
             return None
 
 
+    async def get_standings(self, league_slug: str) -> Optional[Dict]:
+        """Fetch standings for a specific league"""
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(
+                    f"https://site.api.espn.com/apis/v2/sports/soccer/{league_slug}/standings",
+                    headers=self.headers
+                )
+                
+                if response.status_code != 200:
+                    return None
+                
+                data = response.json()
+                
+                # Navigate to the standings entries
+                if not data.get("children"):
+                    return None
+                
+                season_data = data["children"][0]
+                standings_data = season_data.get("standings")
+                
+                if not standings_data:
+                    return None
+                
+                entries = standings_data.get("entries", [])
+                
+                # Parse standings
+                standings = []
+                for entry in entries:
+                    team = entry.get("team", {})
+                    stats = entry.get("stats", [])
+                    note = entry.get("note", {})
+                    
+                    # Extract stats by name
+                    stats_dict = {stat["name"]: stat for stat in stats}
+                    
+                    standings.append({
+                        "position": len(standings) + 1,
+                        "team": team.get("displayName", ""),
+                        "team_id": team.get("id", ""),
+                        "logo": team.get("logos", [{}])[0].get("href") if team.get("logos") else None,
+                        "games_played": int(stats_dict.get("gamesPlayed", {}).get("value", 0)),
+                        "wins": int(stats_dict.get("wins", {}).get("value", 0)),
+                        "draws": int(stats_dict.get("ties", {}).get("value", 0)),
+                        "losses": int(stats_dict.get("losses", {}).get("value", 0)),
+                        "goals_for": int(stats_dict.get("pointsFor", {}).get("value", 0)),
+                        "goals_against": int(stats_dict.get("pointsAgainst", {}).get("value", 0)),
+                        "goal_difference": int(stats_dict.get("pointDifferential", {}).get("value", 0)),
+                        "points": int(stats_dict.get("points", {}).get("value", 0)),
+                        "form": stats_dict.get("streak", {}).get("displayValue", ""),
+                        "qualification": note.get("description"),
+                        "qualification_color": note.get("color")
+                    })
+                
+                return {
+                    "league_name": data.get("name", ""),
+                    "season": standings_data.get("seasonDisplayName", ""),
+                    "standings": standings
+                }
+        
+        except Exception as e:
+            print(f"Error fetching standings for {league_slug}: {e}")
+            return None
+
+
 def get_football_api() -> ESPNFootballAPI:
     return ESPNFootballAPI()

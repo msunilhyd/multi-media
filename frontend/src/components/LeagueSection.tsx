@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, PlayCircle } from 'lucide-react';
-import { HighlightsGroupedByLeague } from '@/lib/api';
+import { useState, useEffect } from 'react';
+import { ChevronDown, ChevronUp, PlayCircle, TrendingUp } from 'lucide-react';
+import { HighlightsGroupedByLeague, fetchStandings, Standings } from '@/lib/api';
 import VideoCard from './VideoCard';
 import PlayAllModal from './PlayAllModal';
+import StandingsTable from './StandingsTable';
 
 interface LeagueSectionProps {
   leagueData: HighlightsGroupedByLeague;
@@ -30,11 +31,29 @@ const leagueColors: Record<string, string> = {
   'default': 'from-blue-700 to-blue-500',
 };
 
+// Leagues that have standings available
+const LEAGUES_WITH_STANDINGS = ['premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions-league', 'europa-league'];
+
 export default function LeagueSection({ leagueData, isExpanded, onToggle }: LeagueSectionProps) {
   const [isPlayAllOpen, setIsPlayAllOpen] = useState(false);
+  const [standings, setStandings] = useState<Standings | null>(null);
+  const [showStandings, setShowStandings] = useState(false);
+  const [loadingStandings, setLoadingStandings] = useState(false);
   const { league, matches, total_highlights } = leagueData;
   
   const gradientClass = leagueColors[league.slug] || leagueColors['default'];
+  const hasStandings = LEAGUES_WITH_STANDINGS.includes(league.slug);
+
+  // Load standings when section is expanded and has standings available
+  useEffect(() => {
+    if (isExpanded && hasStandings && !standings && !loadingStandings) {
+      setLoadingStandings(true);
+      fetchStandings(league.slug)
+        .then(setStandings)
+        .catch(err => console.error('Failed to fetch standings:', err))
+        .finally(() => setLoadingStandings(false));
+    }
+  }, [isExpanded, hasStandings, league.slug, standings, loadingStandings]);
 
   // Collect all highlights from all matches in this league
   const allHighlights = matches.flatMap(match => 
@@ -85,11 +104,37 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
         </button>
         
         {isExpanded && (
-          <div className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {allHighlights.map((highlight) => (
-                <VideoCard key={highlight.id} highlight={highlight} showMatchInfo={true} />
-              ))}
+          <div className="p-4 space-y-6">
+            {/* Standings Section */}
+            {hasStandings && standings && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-blue-500" />
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Standings</h3>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">• {standings.season}</span>
+                  </div>
+                  <button
+                    onClick={() => setShowStandings(!showStandings)}
+                    className="text-sm text-blue-500 hover:text-blue-600 font-medium"
+                  >
+                    {showStandings ? 'Show Less' : 'Show Full Table'}
+                  </button>
+                </div>
+                <StandingsTable standings={standings.standings} compact={!showStandings} />
+              </div>
+            )}
+
+            {/* Highlights Section */}
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                Highlights
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {allHighlights.map((highlight) => (
+                  <VideoCard key={highlight.id} highlight={highlight} showMatchInfo={true} />
+                ))}
+              </div>
             </div>
           </div>
         )}
