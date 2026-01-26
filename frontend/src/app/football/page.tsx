@@ -10,6 +10,7 @@ import ComingSoon from '@/components/ComingSoon';
 import TeamSelector from '@/components/TeamSelector';
 import {
   HighlightsGroupedByLeague,
+  Match,
   fetchAvailableDates,
   fetchHighlightsGroupedByDate,
   fetchFavoriteTeams,
