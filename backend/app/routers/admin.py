@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Dict, Any
 from datetime import date, timedelta
 from ..database import get_db
 from .. import models
-from ..scheduler import fetch_highlights_for_yesterday, fetch_highlights_for_today, refresh_today_scores
+from ..scheduler import fetch_highlights_for_yesterday, fetch_highlights_for_today, refresh_today_scores, reconcile_todays_matches
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -275,4 +275,26 @@ def add_highlight_by_video_id(
         return {
             "success": False,
             "message": f"Error adding highlight: {str(e)}"
-        }
+        }        }
+
+
+@router.post("/reconcile-today")
+async def trigger_reconciliation(background_tasks: BackgroundTasks):
+    """
+    Manually trigger the match reconciliation job.
+    
+    This will:
+    1. Re-fetch all of today's matches from ESPN
+    2. Add any missing matches to the database
+    3. Update match statuses and scores
+    4. Check for and fetch missing highlights
+    
+    Useful for debugging or recovering from scheduler failures.
+    """
+    background_tasks.add_task(reconcile_todays_matches)
+    
+    return {
+        "success": True,
+        "message": "Reconciliation job started in background. Check server logs for details.",
+        "note": "This job re-fetches all today's matches from ESPN and ensures DB is up-to-date"
+    }
