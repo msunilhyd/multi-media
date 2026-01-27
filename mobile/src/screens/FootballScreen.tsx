@@ -300,6 +300,7 @@ export default function FootballScreen() {
     }
     setShowFullStandingsByLeague(newFullSet);
   };
+
   useEffect(() => {
     const initializePage = async () => {
       // Load favorite teams first
