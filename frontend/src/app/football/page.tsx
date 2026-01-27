@@ -74,6 +74,8 @@ export default function FootballPage() {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isSavingFavorites, setIsSavingFavorites] = useState(false);
+  const [selectedLeague, setSelectedLeague] = useState<string>('');
+  const [highlightsLimit, setHighlightsLimit] = useState<number | null>(null);
 
   // Load favorite teams from localStorage or user account on mount
   useEffect(() => {
@@ -113,7 +115,7 @@ export default function FootballPage() {
     }
   };
 
-  const loadHighlights = async (date: string, teams?: string[]) => {
+  const loadHighlights = async (date: string, teams?: string[], league?: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -122,15 +124,44 @@ export default function FootballPage() {
       
       const data = await fetchHighlightsGroupedByDate(date);
       
-      // Filter by teams if provided
+      // Filter by league if provided
       let filteredData = data;
+      if (league) {
+        filteredData = data.filter(l => l.league.slug === league || l.league.name === league);
+      }
+      
+      // Filter by teams if provided
       if (teams && teams.length > 0) {
-        filteredData = data.map(league => ({
+        filteredData = filteredData.map(league => ({
           ...league,
           matches: league.matches.filter(match => 
             teams.includes(match.home_team) || teams.includes(match.away_team)
           )
         })).filter(league => league.matches.length > 0);
+      }
+      
+      // Apply highlights limit if set
+      if (highlightsLimit !== null && highlightsLimit > 0) {
+        filteredData = filteredData.map(league => {
+          const allHighlights = league.matches.flatMap(m => m.highlights);
+          const limitedHighlights = allHighlights.slice(0, highlightsLimit);
+          // Reconstruct matches with limited highlights
+          const limitedMatches = [];
+          let remainingLimit = highlightsLimit;
+          for (const match of league.matches) {
+            if (remainingLimit <= 0) break;
+            const matchHighlights = match.highlights.slice(0, remainingLimit);
+            if (matchHighlights.length > 0) {
+              limitedMatches.push({ ...match, highlights: matchHighlights });
+              remainingLimit -= matchHighlights.length;
+            }
+          }
+          return {
+            ...league,
+            matches: limitedMatches,
+            total_highlights: limitedHighlights.length
+          };
+        }).filter(league => league.matches.length > 0);
       }
       
       // Sort leagues by priority
@@ -157,7 +188,7 @@ export default function FootballPage() {
     setShowComingSoon(false);
     setSelectedDate(date);
     setCalendarDate(date);
-    await loadHighlights(date, selectedTeams.length > 0 ? selectedTeams : undefined);
+    await loadHighlights(date, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined);
   };
 
   const handleWeekSelect = async () => {
@@ -199,6 +230,13 @@ export default function FootballPage() {
       // Convert map back to array
       let weekHighlights = Array.from(leagueMap.values());
       
+      // Filter by league if provided
+      if (selectedLeague) {
+        weekHighlights = weekHighlights.filter(l => 
+          l.league.slug === selectedLeague || l.league.name === selectedLeague
+        );
+      }
+      
       // Filter by teams if provided
       if (selectedTeams && selectedTeams.length > 0) {
         weekHighlights = weekHighlights.map(league => ({
@@ -207,6 +245,30 @@ export default function FootballPage() {
             selectedTeams.includes(match.home_team) || selectedTeams.includes(match.away_team)
           )
         })).filter(league => league.matches.length > 0);
+      }
+      
+      // Apply highlights limit if provided
+      if (highlightsLimit !== null && highlightsLimit > 0) {
+        weekHighlights = weekHighlights.map(league => {
+          const limitedMatches = [];
+          let remainingLimit = highlightsLimit;
+          
+          for (const match of league.matches) {
+            if (remainingLimit <= 0) break;
+            const matchHighlights = match.highlights.slice(0, remainingLimit);
+            if (matchHighlights.length > 0) {
+              limitedMatches.push({ ...match, highlights: matchHighlights });
+              remainingLimit -= matchHighlights.length;
+            }
+          }
+          
+          const totalHighlights = limitedMatches.reduce((sum, m) => sum + m.highlights.length, 0);
+          return { 
+            ...league, 
+            matches: limitedMatches,
+            total_highlights: totalHighlights
+          };
+        }).filter(league => league.matches.length > 0);
       }
       
       // Sort leagues by priority
@@ -234,7 +296,7 @@ export default function FootballPage() {
     
     // Reload highlights with new filter
     if (selectedDate) {
-      await loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined);
+      await loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined);
     }
     
     // Show save dialog only if user is logged in, has a token, and has selected teams
@@ -318,7 +380,7 @@ export default function FootballPage() {
       }
       
       setSelectedDate(defaultDate);
-      await loadHighlights(defaultDate, selectedTeams.length > 0 ? selectedTeams : undefined);
+      await loadHighlights(defaultDate, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined);
     };
     
     initializePage();
@@ -353,6 +415,98 @@ export default function FootballPage() {
           </div>
         )}
 
+        {/* Filter Section */}
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Trophy className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Filters</h3>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">League:</label>
+              <select
+                value={selectedLeague}
+                onChange={(e) => {
+                  setSelectedLeague(e.target.value);
+                  if (showWeek) {
+                    handleWeekSelect();
+                  } else if (selectedDate) {
+                    loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, e.target.value || undefined);
+                  }
+                }}
+                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Leagues</option>
+                <option value="eng.1">Premier League</option>
+                <option value="uefa.champions">Champions League</option>
+                <option value="esp.1">La Liga</option>
+                <option value="ita.1">Serie A</option>
+                <option value="ger.1">Bundesliga</option>
+                <option value="fra.1">Ligue 1</option>
+                <option value="esp.copa_del_rey">Copa del Rey</option>
+                <option value="ger.dfb_pokal">DFB-Pokal</option>
+                <option value="ita.coppa_italia">Coppa Italia</option>
+                <option value="fra.coupe_de_france">Coupe de France</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Limit:</label>
+              <select
+                value={highlightsLimit === null ? '' : highlightsLimit}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? null : parseInt(e.target.value);
+                  setHighlightsLimit(value);
+                  if (showWeek) {
+                    handleWeekSelect();
+                  } else if (selectedDate) {
+                    loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined);
+                  }
+                }}
+                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Highlights</option>
+                <option value="5">5 highlights</option>
+                <option value="10">10 highlights</option>
+                <option value="20">20 highlights</option>
+                <option value="50">50 highlights</option>
+              </select>
+            </div>
+            <TeamSelector selectedTeams={selectedTeams} onTeamsChange={handleTeamsChange} onDone={handleTeamSelectionDone} />
+            {(selectedLeague || highlightsLimit || selectedTeams.length > 0) && (
+              <button
+                onClick={() => {
+                  setSelectedLeague('');
+                  setHighlightsLimit(null);
+                  setSelectedTeams([]);
+                  if (showWeek) {
+                    handleWeekSelect();
+                  } else if (selectedDate) {
+                    loadHighlights(selectedDate, undefined, undefined);
+                  }
+                }}
+                className="px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 transition-colors text-sm font-medium"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+          {(selectedLeague || highlightsLimit || selectedTeams.length > 0) && (
+            <div className="flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-400">
+              {selectedLeague && (
+                <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">League filter active</span>
+              )}
+              {highlightsLimit && (
+                <span className="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">Showing {highlightsLimit} highlights</span>
+              )}
+              {selectedTeams.length > 0 && (
+                <span className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded">{selectedTeams.length} team(s) selected</span>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Date Picker Section */}
         <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center justify-between mb-3">
@@ -360,7 +514,6 @@ export default function FootballPage() {
               <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <h3 className="font-semibold text-gray-700 dark:text-gray-300">Select Date</h3>
             </div>
-            <TeamSelector selectedTeams={selectedTeams} onTeamsChange={handleTeamsChange} onDone={handleTeamSelectionDone} />
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -437,11 +590,6 @@ export default function FootballPage() {
               </span>
             )}
           </div>
-          {selectedTeams.length > 0 && (
-            <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-              Showing matches for: <span className="font-medium text-blue-600 dark:text-blue-400">{selectedTeams.length} team(s)</span>
-            </div>
-          )}
         </div>
 
         {/* Save Favorites Dialog */}
