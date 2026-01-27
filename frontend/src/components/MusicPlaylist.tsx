@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search } from 'lucide-react';
 import type { Song } from '@/lib/api';
 import PlaylistItem from './PlaylistItem';
 
@@ -73,13 +73,13 @@ interface YTPlayer {
 export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentSong, setCurrentSong] = useState<Song | null>(playlist.songs[0] || null);
   const [isReady, setIsReady] = useState(false);
   const [isShuffleOn, setIsShuffleOn] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [languageFilter, setLanguageFilter] = useState<string>('');
   const [composerFilter, setComposerFilter] = useState<string>('');
   const [yearFilter, setYearFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -112,19 +112,35 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   // Filter songs based on selected filters (using normalized language comparison), skip language for entertainment
   const filteredSongs = useMemo(() => {
     return playlist.songs.filter(song => {
+      // Search filter - checks title, composer, movie, and language
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = 
+          song.title.toLowerCase().includes(query) ||
+          song.composer.toLowerCase().includes(query) ||
+          (song.movie && song.movie !== '-' && song.movie.toLowerCase().includes(query)) ||
+          (song.language && song.language.toLowerCase().includes(query));
+        if (!matchesSearch) return false;
+      }
+      
+      // Other filters
       if (!isEntertainmentContent && languageFilter && normalizeLanguage(song.language) !== languageFilter) return false;
       if (composerFilter && song.composer !== composerFilter) return false;
       if (yearFilter && song.year !== yearFilter) return false;
       return true;
     });
-  }, [playlist.songs, languageFilter, composerFilter, yearFilter, isEntertainmentContent]);
+  }, [playlist.songs, languageFilter, composerFilter, yearFilter, searchQuery, isEntertainmentContent]);
   
-  const hasActiveFilters = (!isEntertainmentContent && languageFilter) || composerFilter || yearFilter;
+  // Initialize currentSong with the first song from the unfiltered list
+  const [currentSong, setCurrentSong] = useState<Song | null>(playlist.songs[0] || null);
+  
+  const hasActiveFilters = (!isEntertainmentContent && languageFilter) || composerFilter || yearFilter || searchQuery;
   
   const clearFilters = () => {
     setLanguageFilter('');
     setComposerFilter('');
     setYearFilter('');
+    setSearchQuery('');
   };
   
   // Use refs to access current state values in callbacks without causing re-renders
@@ -143,6 +159,19 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+  
+  // Initialize currentSong from filteredSongs on mount
+  useEffect(() => {
+    // On initial load, sync currentSong with the first filtered song
+    if (filteredSongs.length > 0) {
+      const firstFilteredSong = filteredSongs[0];
+      // Only update if currentSong is different from first filtered song
+      if (!currentSong || currentSong.videoId !== firstFilteredSong.videoId) {
+        setCurrentSong(firstFilteredSong);
+        setCurrentIndex(0);
+      }
+    }
+  }, [filteredSongs]);  // Removed currentSong from dependencies to avoid loops
   
   // Keep refs in sync with state
   useEffect(() => {
@@ -287,7 +316,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
         return;
       }
 
-      const firstSong = playlist.songs[0];
+      const firstSong = filteredSongs[0] || playlist.songs[0];
       if (!firstSong) return;
 
       try {
@@ -638,6 +667,28 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
                   >
                     <ArrowUp className="w-5 h-5" />
                   </button>
+                </div>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="mt-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/60" />
+                  <input
+                    type="text"
+                    placeholder="Search songs, composers, movies..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-10 py-2 text-sm bg-white/20 text-white placeholder-white/60 rounded border border-white/30 focus:outline-none focus:border-white/50"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
               
