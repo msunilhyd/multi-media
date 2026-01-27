@@ -94,15 +94,28 @@ async def get_audio_stream(
     start_seconds: Optional[int] = None,
     end_seconds: Optional[int] = None
 ):
-    """Get direct audio stream URL for a YouTube video"""
-    return await audio_extractor.extract_audio_url(video_id, start_seconds, end_seconds)
+    """DEPRECATED: Audio streaming endpoint.
+    
+    This endpoint is no longer available as it violates YouTube Terms of Service.
+    YouTube audio must be played through the official YouTube player.
+    
+    Users should open YouTube directly: https://www.youtube.com/watch?v={video_id}
+    """
+    raise HTTPException(
+        status_code=410,
+        detail="Audio streaming has been discontinued to comply with YouTube Terms of Service. "
+               "Please use the official YouTube app or web player."
+    )
 
 @router.get("/playlist/{playlist_name}")
 async def get_playlist_audio_urls(playlist_name: str, db: Session = Depends(get_db)):
-    """Get audio URLs for an entire playlist - useful for preloading next tracks"""
-    # This will use the playlist data from your frontend
-    # For now, returning a simple response - you can integrate with your playlist data later
-    return {
-        "playlist": playlist_name,
-        "message": "Playlist audio streaming endpoint ready"
-    }
+    """Get audio URLs for an entire playlist - DEPRECATED
+    
+    This endpoint is no longer available as audio extraction violates YouTube ToS.
+    Please use the official YouTube player instead.
+    """
+    raise HTTPException(
+        status_code=410,
+        detail="Playlist audio streaming has been discontinued to comply with YouTube Terms of Service. "
+               "Please use the official YouTube app or web player."
+    )

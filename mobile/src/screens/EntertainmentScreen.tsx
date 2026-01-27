@@ -346,6 +346,12 @@ export default function EntertainmentScreen() {
             </Text>
           </View>
 
+          {/* Source Attribution */}
+          <View style={styles.youtubeAttributionBadge}>
+            <Ionicons name="logo-youtube" size={14} color="#ef4444" />
+            <Text style={styles.youtubeAttributionText}>Powered by YouTube</Text>
+          </View>
+
           <View style={styles.controls}>
             <TouchableOpacity onPress={playPrevious} style={styles.controlButton}>
               <Ionicons name="play-skip-back" size={32} color="#e2e8f0" />
@@ -467,6 +473,20 @@ const styles = StyleSheet.create({
     gap: 32,
     backgroundColor: '#1e293b',
     width: '100%',
+  },
+  youtubeAttributionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 8,
+    marginBottom: 8,
+    paddingVertical: 4,
+  },
+  youtubeAttributionText: {
+    fontSize: 11,
+    color: '#9ca3af',
+    fontWeight: '500',
   },
   controlButton: {
     padding: 12,

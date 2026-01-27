@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Platform,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { audioService } from '../services/audioService';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../services/api';
 
@@ -138,44 +139,32 @@ export default function PlaylistDetailScreen({ route, navigation }: any) {
 
   const playSong = async (song: Song, index: number) => {
     try {
-      // Stop any previous playback before starting new song
-      try {
-        await audioService.pauseAsync();
-      } catch (e) {
-        // Ignore error if no song was playing
-      }
-      
       setCurrentSong(song);
       setCurrentIndex(index);
-      await audioService.playSong({
-        id: song.id,
-        title: song.title,
-        language: song.language,
-        year: song.year || '',
-        composer: song.composer,
-        videoId: song.videoId,
-        movie: song.movie || '',
-        startSeconds: song.startSeconds || undefined,
-        endSeconds: song.endSeconds || undefined,
-      });
-      setIsPlaying(true);
+      setIsPlaying(false);
+      
+      // Open YouTube official app/web for the song
+      const youtubeUrl = `https://www.youtube.com/watch?v=${song.videoId}`;
+      Alert.alert(
+        'Opening YouTube',
+        `Now playing: ${song.title}\n\nOpening YouTube to play this song.`,
+        [{ text: 'OK', onPress: async () => await Linking.openURL(youtubeUrl) }]
+      );
     } catch (error) {
-      console.error('Error playing song:', error);
-      Alert.alert('Error', 'Failed to play song');
+      console.error('Error opening YouTube:', error);
+      Alert.alert('Error', 'Unable to open YouTube');
     }
   };
 
   const togglePlayPause = async () => {
-    try {
-      if (isPlaying) {
-        await audioService.pauseAsync();
-        setIsPlaying(false);
-      } else {
-        await audioService.resumeAsync();
-        setIsPlaying(true);
+    if (currentSong) {
+      const youtubeUrl = `https://www.youtube.com/watch?v=${currentSong.videoId}`;
+      try {
+        await Linking.openURL(youtubeUrl);
+      } catch (error) {
+        console.error('Error opening YouTube:', error);
+        Alert.alert('Error', 'Unable to open YouTube');
       }
-    } catch (error) {
-      console.error('Error toggling play/pause:', error);
     }
   };
 
@@ -368,7 +357,7 @@ export default function PlaylistDetailScreen({ route, navigation }: any) {
               onPress={togglePlayPause}
             >
               <Ionicons 
-                name={isPlaying ? 'pause' : 'play'} 
+                name="play" 
                 size={28} 
                 color="#ffffff" 
               />

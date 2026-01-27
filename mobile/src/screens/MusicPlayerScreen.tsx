@@ -11,17 +11,13 @@ import {
   Animated,
   Modal,
   TextInput,
+  Linking,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
-import { audioService } from '../services/audioService';
-import { trackPlayerService } from '../services/trackPlayerService';
 import { defaultPlaylist, Song } from '../data/playlists';
 import { useAuth } from '../contexts/AuthContext';
-
-// Flag to switch between audio services
-const USE_TRACK_PLAYER = true; // Set to true to enable car controls
 
 interface Playlist {
   id: number;
@@ -225,27 +221,6 @@ export default function MusicPlayerScreen() {
   };
 
   useEffect(() => {
-    // Setup track player and register callbacks for car controls
-    if (USE_TRACK_PLAYER) {
-      trackPlayerService.setup().then(() => {
-        // Register next/previous callbacks for car steering wheel controls
-        trackPlayerService.setNavigationCallbacks(playNext, playPrevious);
-        console.log('🎵 TrackPlayer ready with car controls');
-      }).catch(error => {
-        console.error('Failed to setup TrackPlayer:', error);
-      });
-    }
-    
-    return () => {
-      if (USE_TRACK_PLAYER) {
-        trackPlayerService.stop().catch(console.error);
-      } else {
-        audioService.unloadAsync();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     // Auto-hide the ephemeral message after 5 seconds
     const timer = setTimeout(() => {
       Animated.timing(fadeAnim, {
@@ -262,47 +237,30 @@ export default function MusicPlayerScreen() {
   useFocusEffect(
     useCallback(() => {
       // Screen is focused - do nothing, let user control playback
-      console.log('🎵 Audio tab focused');
+      console.log('🎵 Music tab focused');
       return () => {
-        // Screen is unfocused - pause the audio
-        console.log('🎵 Audio tab unfocused - pausing audio');
-        if (isPlaying) {
-          if (USE_TRACK_PLAYER) {
-            trackPlayerService.pause();
-          } else {
-            audioService.pauseAsync();
-          }
-          setIsPlaying(false);
-          console.log('🎵 Audio paused - navigated away from Background Audio');
-        }
+        // Screen is unfocused - just reset state
+        console.log('🎵 Music tab unfocused');
+        setIsPlaying(false);
       };
     }, [isPlaying])
   );
 
   const playSong = async (song: Song, filteredIndex?: number) => {
     try {
-      console.log(`🎵 Playing song: ${song.title} (${song.videoId})`);
+      console.log(`🎵 Opening song in YouTube: ${song.title} (${song.videoId})`);
       setIsLoading(true);
-      
-      // Stop any previous playback before starting new song
-      try {
-        await audioService.pauseAsync();
-      } catch (e) {
-        // Ignore error if no song was playing
-      }
-      
-      if (USE_TRACK_PLAYER) {
-        await trackPlayerService.playSong(song);
-      } else {
-        await audioService.playSong(song);
-      }
       
       setCurrentSong(song);
       // Find the index in the full playlist
       const fullIndex = defaultPlaylist.findIndex(s => s.id === song.id);
       setCurrentIndex(fullIndex);
-      setIsPlaying(true);
-      console.log(`✅ Song loaded successfully`);
+      setIsPlaying(false);
+      console.log(`✅ Ready to play in YouTube`);
+      
+      // Open YouTube link
+      const youtubeUrl = `https://www.youtube.com/watch?v=${song.videoId}`;
+      await Linking.openURL(youtubeUrl);
       
       // Scroll to show the song centered in filtered list
       if (filteredIndex !== undefined && filteredIndex >= 0) {
@@ -319,16 +277,8 @@ export default function MusicPlayerScreen() {
         }, 300);
       }
     } catch (error) {
-      console.error('❌ Play error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // If it's a stream error, automatically skip to next song
-      if (errorMessage.includes('Failed to get audio stream') || errorMessage.includes('404')) {
-        console.log('⏭️ Stream failed, skipping to next song...');
-        setTimeout(() => playNext(), 500);
-      } else {
-        Alert.alert('Error', `Failed to play ${song.title}: ${errorMessage}`);
-      }
+      console.error('❌ Error opening YouTube:', error);
+      Alert.alert('Error', `Could not open YouTube for ${song.title}`);
     } finally {
       setIsLoading(false);
     }
@@ -336,21 +286,14 @@ export default function MusicPlayerScreen() {
 
   const togglePlayPause = async () => {
     try {
-      if (isPlaying) {
-        if (USE_TRACK_PLAYER) {
-          await trackPlayerService.pause();
-        } else {
-          await audioService.pauseAsync();
-        }
-        setIsPlaying(false);
-      } else {
-        if (USE_TRACK_PLAYER) {
-          await trackPlayerService.play();
-        } else {
-          await audioService.resumeAsync();
-        }
-        setIsPlaying(true);
+      if (!currentSong) {
+        Alert.alert('No song selected', 'Please tap a song to play');
+        return;
       }
+      
+      // When user taps play/pause, open YouTube for the current song
+      const youtubeUrl = `https://www.youtube.com/watch?v=${currentSong.videoId}`;
+      await Linking.openURL(youtubeUrl);
     } catch (error) {
       console.error('Toggle play/pause error:', error);
     }
