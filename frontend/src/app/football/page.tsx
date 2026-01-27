@@ -122,6 +122,70 @@ export default function FootballPage() {
       // Clear previous data immediately to avoid showing stale data
       setHighlightsData([]);
       
+      // If league filter is active, search backwards through dates to find enough highlights
+      if (league && highlightsLimit && highlightsLimit > 0) {
+        const allHighlights: any[] = [];
+        const currentDate = new Date(date + 'T12:00:00');
+        const maxDaysBack = 14; // Search up to 2 weeks back
+        
+        for (let i = 0; i < maxDaysBack && allHighlights.length < highlightsLimit; i++) {
+          const searchDate = new Date(currentDate);
+          searchDate.setDate(currentDate.getDate() - i);
+          const dateStr = searchDate.toISOString().split('T')[0];
+          
+          try {
+            const data = await fetchHighlightsGroupedByDate(dateStr);
+            const leagueData = data.filter(l => l.league.slug === league || l.league.name === league);
+            
+            for (const leagueGroup of leagueData) {
+              for (const match of leagueGroup.matches) {
+                for (const highlight of match.highlights) {
+                  if (allHighlights.length < highlightsLimit) {
+                    allHighlights.push({ match, highlight, league: leagueGroup.league, date: dateStr });
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error(`Failed to fetch highlights for ${dateStr}:`, err);
+          }
+        }
+        
+        // Group highlights back by league
+        if (allHighlights.length > 0) {
+          const leagueMap = new Map<string, any>();
+          for (const item of allHighlights) {
+            if (!leagueMap.has(item.league.name)) {
+              leagueMap.set(item.league.name, {
+                league: item.league,
+                matches: [],
+                total_highlights: 0
+              });
+            }
+            
+            const leagueGroup = leagueMap.get(item.league.name);
+            let matchGroup = leagueGroup.matches.find((m: any) => m.id === item.match.id);
+            if (!matchGroup) {
+              matchGroup = { ...item.match, highlights: [], date: item.date };
+              leagueGroup.matches.push(matchGroup);
+            }
+            matchGroup.highlights.push(item.highlight);
+            leagueGroup.total_highlights++;
+          }
+          
+          const filteredData = Array.from(leagueMap.values());
+          setHighlightsData(filteredData);
+          if (filteredData.length > 0) {
+            setExpandedLeagueIds(new Set([filteredData[0].league.id]));
+          }
+          return filteredData;
+        } else {
+          setError(`No ${league} highlights found in the last ${maxDaysBack} days.`);
+          return [];
+        }
+      }
+      
+      // Normal single-date loading
       const data = await fetchHighlightsGroupedByDate(date);
       
       // Filter by league if provided
