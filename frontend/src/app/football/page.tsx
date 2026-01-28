@@ -514,16 +514,16 @@ export default function FootballPage() {
                 className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Leagues</option>
-                <option value="eng.1">Premier League</option>
-                <option value="uefa.champions">Champions League</option>
-                <option value="esp.1">La Liga</option>
-                <option value="ita.1">Serie A</option>
-                <option value="ger.1">Bundesliga</option>
-                <option value="fra.1">Ligue 1</option>
-                <option value="esp.copa_del_rey">Copa del Rey</option>
-                <option value="ger.dfb_pokal">DFB-Pokal</option>
-                <option value="ita.coppa_italia">Coppa Italia</option>
-                <option value="fra.coupe_de_france">Coupe de France</option>
+                <option value="premier-league">Premier League</option>
+                <option value="uefa-champions-league">Champions League</option>
+                <option value="la-liga">La Liga</option>
+                <option value="serie-a">Serie A</option>
+                <option value="bundesliga">Bundesliga</option>
+                <option value="ligue-1">Ligue 1</option>
+                <option value="copa-del-rey">Copa del Rey</option>
+                <option value="dfb-pokal">DFB-Pokal</option>
+                <option value="coppa-italia">Coppa Italia</option>
+                <option value="coupe-de-france">Coupe de France</option>
               </select>
             </div>
             <div className="flex items-center gap-2">
