@@ -157,7 +157,6 @@ export default function FootballPage() {
         }
         
         // Apply the actual limit if set
-        const effectiveLimit = limit !== undefined ? limit : highlightsLimit;
         const finalHighlights = effectiveLimit && effectiveLimit > 0 
           ? allHighlights.slice(0, effectiveLimit)
           : allHighlights;
