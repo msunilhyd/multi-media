@@ -212,30 +212,6 @@ export default function FootballPage() {
         })).filter(league => league.matches.length > 0);
       }
       
-      // Apply highlights limit if set
-      if (highlightsLimit !== null && highlightsLimit > 0) {
-        filteredData = filteredData.map(league => {
-          const allHighlights = league.matches.flatMap(m => m.highlights);
-          const limitedHighlights = allHighlights.slice(0, highlightsLimit);
-          // Reconstruct matches with limited highlights
-          const limitedMatches = [];
-          let remainingLimit = highlightsLimit;
-          for (const match of league.matches) {
-            if (remainingLimit <= 0) break;
-            const matchHighlights = match.highlights.slice(0, remainingLimit);
-            if (matchHighlights.length > 0) {
-              limitedMatches.push({ ...match, highlights: matchHighlights });
-              remainingLimit -= matchHighlights.length;
-            }
-          }
-          return {
-            ...league,
-            matches: limitedMatches,
-            total_highlights: limitedHighlights.length
-          };
-        }).filter(league => league.matches.length > 0);
-      }
-      
       // Sort leagues by priority
       filteredData = sortLeaguesByPriority(filteredData);
       
@@ -317,30 +293,6 @@ export default function FootballPage() {
             selectedTeams.includes(match.home_team) || selectedTeams.includes(match.away_team)
           )
         })).filter(league => league.matches.length > 0);
-      }
-      
-      // Apply highlights limit if provided
-      if (highlightsLimit !== null && highlightsLimit > 0) {
-        weekHighlights = weekHighlights.map(league => {
-          const limitedMatches = [];
-          let remainingLimit = highlightsLimit;
-          
-          for (const match of league.matches) {
-            if (remainingLimit <= 0) break;
-            const matchHighlights = match.highlights.slice(0, remainingLimit);
-            if (matchHighlights.length > 0) {
-              limitedMatches.push({ ...match, highlights: matchHighlights });
-              remainingLimit -= matchHighlights.length;
-            }
-          }
-          
-          const totalHighlights = limitedMatches.reduce((sum, m) => sum + m.highlights.length, 0);
-          return { 
-            ...league, 
-            matches: limitedMatches,
-            total_highlights: totalHighlights
-          };
-        }).filter(league => league.matches.length > 0);
       }
       
       // Sort leagues by priority
