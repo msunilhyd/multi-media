@@ -531,11 +531,13 @@ export default function FootballPage() {
               >
                 <option value="">All Leagues</option>
                 <option value="premier-league">Premier League</option>
-                <option value="uefa-champions-league">Champions League</option>
+                <option value="champions-league">Champions League</option>
+                <option value="europa-league">Europa League</option>
                 <option value="la-liga">La Liga</option>
                 <option value="serie-a">Serie A</option>
                 <option value="bundesliga">Bundesliga</option>
                 <option value="ligue-1">Ligue 1</option>
+                <option value="fa-cup">FA Cup</option>
                 <option value="copa-del-rey">Copa del Rey</option>
                 <option value="dfb-pokal">DFB-Pokal</option>
                 <option value="coppa-italia">Coppa Italia</option>
