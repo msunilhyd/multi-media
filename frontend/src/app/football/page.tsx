@@ -236,6 +236,11 @@ export default function FootballPage() {
           }
           
           const filteredData = Array.from(leagueMap.values());
+          console.log('📊 Final data structure:', filteredData.map(l => ({ 
+            league: l.league.name, 
+            matches: l.matches.length,
+            highlights: l.total_highlights 
+          })));
           setHighlightsData(filteredData);
           if (filteredData.length > 0 && !loadMore) {
             setExpandedLeagueIds(new Set([filteredData[0].league.id]));
