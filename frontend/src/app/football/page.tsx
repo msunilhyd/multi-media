@@ -122,13 +122,14 @@ export default function FootballPage() {
       // Clear previous data immediately to avoid showing stale data
       setHighlightsData([]);
       
-      // If league filter is active, search backwards through dates to find enough highlights
-      if (league && highlightsLimit && highlightsLimit > 0) {
+      // If league filter is active, search backwards through dates to find highlights
+      if (league) {
         const allHighlights: any[] = [];
         const currentDate = new Date(date + 'T12:00:00');
         const maxDaysBack = 14; // Search up to 2 weeks back
+        const targetLimit = highlightsLimit && highlightsLimit > 0 ? highlightsLimit : 100; // Default to 100 if no limit
         
-        for (let i = 0; i < maxDaysBack && allHighlights.length < highlightsLimit; i++) {
+        for (let i = 0; i < maxDaysBack && allHighlights.length < targetLimit; i++) {
           const searchDate = new Date(currentDate);
           searchDate.setDate(currentDate.getDate() - i);
           const dateStr = searchDate.toISOString().split('T')[0];
@@ -140,7 +141,7 @@ export default function FootballPage() {
             for (const leagueGroup of leagueData) {
               for (const match of leagueGroup.matches) {
                 for (const highlight of match.highlights) {
-                  if (allHighlights.length < highlightsLimit) {
+                  if (allHighlights.length < targetLimit) {
                     allHighlights.push({ match, highlight, league: leagueGroup.league, date: dateStr });
                   }
                 }
@@ -151,10 +152,15 @@ export default function FootballPage() {
           }
         }
         
+        // Apply the actual limit if set
+        const finalHighlights = highlightsLimit && highlightsLimit > 0 
+          ? allHighlights.slice(0, highlightsLimit)
+          : allHighlights;
+        
         // Group highlights back by league
-        if (allHighlights.length > 0) {
+        if (finalHighlights.length > 0) {
           const leagueMap = new Map<string, any>();
-          for (const item of allHighlights) {
+          for (const item of finalHighlights) {
             if (!leagueMap.has(item.league.name)) {
               leagueMap.set(item.league.name, {
                 league: item.league,
@@ -180,7 +186,7 @@ export default function FootballPage() {
           }
           return filteredData;
         } else {
-          setError(`No ${league} highlights found in the last ${maxDaysBack} days.`);
+          // No highlights found - show message
           return [];
         }
       }
