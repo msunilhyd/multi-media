@@ -121,9 +121,9 @@ export default function FootballPage() {
       // Clear previous data immediately to avoid showing stale data
       setHighlightsData([]);
       
-      // If league filter is active, search backwards through dates to find highlights
-      if (league) {
-        console.log('🔍 League filter active:', league, 'Teams:', teams);
+      // If league or team filter is active, search backwards through dates to find highlights
+      if (league || (teams && teams.length > 0)) {
+        console.log('🔍 Filter active - League:', league, 'Teams:', teams);
         const allHighlights: any[] = [];
         const currentDate = new Date(date + 'T12:00:00');
         const maxDaysBack = 14; // Search up to 2 weeks back
@@ -135,9 +135,14 @@ export default function FootballPage() {
           
           try {
             const data = await fetchHighlightsGroupedByDate(dateStr);
-            console.log(`📅 ${dateStr}: Found ${data.length} leagues, searching for ${league}`);
-            const leagueData = data.filter(l => l.league.slug === league || l.league.name === league);
-            console.log(`  ✅ Found ${leagueData.length} matching league(s)`);
+            console.log(`📅 ${dateStr}: Found ${data.length} leagues`);
+            
+            // Filter by league if provided
+            let leagueData = data;
+            if (league) {
+              leagueData = data.filter(l => l.league.slug === league || l.league.name === league);
+              console.log(`  ✅ Found ${leagueData.length} matching league(s)`);
+            }
             
             for (const leagueGroup of leagueData) {
               for (const match of leagueGroup.matches) {
