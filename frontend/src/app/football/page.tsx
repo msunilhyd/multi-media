@@ -126,12 +126,28 @@ export default function FootballPage() {
         console.log('🔍 Filter active - League:', league, 'Teams:', teams);
         const allHighlights: any[] = [];
         const currentDate = new Date(date + 'T12:00:00');
-        const maxDaysBack = 14; // Search up to 2 weeks back
         
-        for (let i = 0; i < maxDaysBack && allHighlights.length < 100; i++) {
+        // Calculate season start date (August 1st of current season)
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth(); // 0-11
+        // If we're before August (month 7), use previous year's August
+        const seasonStartYear = currentMonth < 7 ? currentYear - 1 : currentYear;
+        const seasonStart = new Date(seasonStartYear, 7, 1); // August 1st
+        const seasonStartStr = seasonStart.toISOString().split('T')[0];
+        
+        console.log(`📅 Searching from ${date} back to season start: ${seasonStartStr}`);
+        
+        for (let i = 0; allHighlights.length < 200; i++) {
           const searchDate = new Date(currentDate);
           searchDate.setDate(currentDate.getDate() - i);
           const dateStr = searchDate.toISOString().split('T')[0];
+          
+          // Stop if we've gone before season start
+          if (dateStr < seasonStartStr) {
+            console.log('📅 Reached season start, stopping search');
+            break;
+          }
           
           try {
             const data = await fetchHighlightsGroupedByDate(dateStr);
