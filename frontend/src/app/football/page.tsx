@@ -75,6 +75,9 @@ export default function FootballPage() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isSavingFavorites, setIsSavingFavorites] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState<string>('');
+  const [hasMore, setHasMore] = useState(false);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  const [seasonStartDate, setSeasonStartDate] = useState<string>('');
 
   // Load favorite teams from localStorage or user account on mount
   useEffect(() => {
@@ -114,38 +117,52 @@ export default function FootballPage() {
     }
   };
 
-  const loadHighlights = async (date: string, teams?: string[], league?: string) => {
+  const loadHighlights = async (date: string, teams?: string[], league?: string, loadMore: boolean = false) => {
     try {
       setIsLoading(true);
       setError(null);
-      // Clear previous data immediately to avoid showing stale data
-      setHighlightsData([]);
       
       // If league or team filter is active, search backwards through dates to find highlights
       if (league || (teams && teams.length > 0)) {
-        console.log('🔍 Filter active - League:', league, 'Teams:', teams);
+        console.log('🔍 Filter active - League:', league, 'Teams:', teams, 'LoadMore:', loadMore);
+        
+        // Clear data if not loading more
+        if (!loadMore) {
+          setHighlightsData([]);
+          setCurrentSearchIndex(0);
+        }
+        
         const allHighlights: any[] = [];
         const currentDate = new Date(date + 'T12:00:00');
         
         // Calculate season start date (August 1st of current season)
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth(); // 0-11
-        // If we're before August (month 7), use previous year's August
-        const seasonStartYear = currentMonth < 7 ? currentYear - 1 : currentYear;
-        const seasonStart = new Date(seasonStartYear, 7, 1); // August 1st
-        const seasonStartStr = seasonStart.toISOString().split('T')[0];
+        let seasonStartStr = seasonStartDate;
+        if (!seasonStartStr) {
+          const now = new Date();
+          const currentYear = now.getFullYear();
+          const currentMonth = now.getMonth(); // 0-11
+          const seasonStartYear = currentMonth < 7 ? currentYear - 1 : currentYear;
+          const seasonStart = new Date(seasonStartYear, 7, 1);
+          seasonStartStr = seasonStart.toISOString().split('T')[0];
+          setSeasonStartDate(seasonStartStr);
+        }
         
-        console.log(`📅 Searching from ${date} back to season start: ${seasonStartStr}`);
+        console.log(`📅 Searching from index ${loadMore ? currentSearchIndex : 0}`);
         
-        for (let i = 0; allHighlights.length < 200; i++) {
+        const startIndex = loadMore ? currentSearchIndex : 0;
+        const targetCount = 5; // Load 5 highlights at a time
+        let searchIndex = startIndex;
+        
+        for (let i = startIndex; allHighlights.length < targetCount; i++) {
           const searchDate = new Date(currentDate);
           searchDate.setDate(currentDate.getDate() - i);
           const dateStr = searchDate.toISOString().split('T')[0];
+          searchIndex = i + 1;
           
           // Stop if we've gone before season start
           if (dateStr < seasonStartStr) {
             console.log('📅 Reached season start, stopping search');
+            setHasMore(false);
             break;
           }
           
@@ -178,11 +195,27 @@ export default function FootballPage() {
           }
         }
         
-        console.log(`🎯 Total highlights found: ${allHighlights.length}`);
+        console.log(`🎯 Highlights in batch: ${allHighlights.length}, Search index: ${searchIndex}`);
+        
+        // Update search index and hasMore flag
+        setCurrentSearchIndex(searchIndex);
+        setHasMore(allHighlights.length === targetCount);
         
         // Group highlights back by league
         if (allHighlights.length > 0) {
           const leagueMap = new Map<string, any>();
+          
+          // If loading more, start with existing data
+          if (loadMore) {
+            for (const existing of highlightsData) {
+              leagueMap.set(existing.league.name, {
+                league: existing.league,
+                matches: [...existing.matches],
+                total_highlights: existing.total_highlights
+              });
+            }
+          }
+          
           for (const item of allHighlights) {
             if (!leagueMap.has(item.league.name)) {
               leagueMap.set(item.league.name, {
@@ -204,14 +237,21 @@ export default function FootballPage() {
           
           const filteredData = Array.from(leagueMap.values());
           setHighlightsData(filteredData);
-          if (filteredData.length > 0) {
+          if (filteredData.length > 0 && !loadMore) {
             setExpandedLeagueIds(new Set([filteredData[0].league.id]));
           }
           return filteredData;
         } else {
-          // No highlights found - show message
+          // No highlights found in this batch
+          if (!loadMore) {
+            setHasMore(false);
+          }
           return [];
         }
+      } else {
+        // Reset pagination when no filters
+        setHasMore(false);
+        setCurrentSearchIndex(0);
       }
       
       // Normal single-date loading
@@ -694,6 +734,22 @@ export default function FootballPage() {
                 }}
               />
             ))}
+            
+            {/* Load More Button */}
+            {hasMore && !isLoading && (
+              <div className="mt-8 text-center">
+                <button
+                  onClick={() => {
+                    if (selectedDate) {
+                      loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined, true);
+                    }
+                  }}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-lg hover:shadow-xl"
+                >
+                  Load More Highlights
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </main>
