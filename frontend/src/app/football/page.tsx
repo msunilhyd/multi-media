@@ -16,6 +16,7 @@ import {
   fetchFavoriteTeams,
   replaceFavoriteTeams,
   FavoriteTeamCreate,
+  fetchRecentHighlightsByLeague,
 } from '@/lib/api';
 
 // Helper functions to get dates in local timezone
@@ -76,37 +77,18 @@ export default function FootballPage() {
   const [isSavingFavorites, setIsSavingFavorites] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState<string>('');
   const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const [seasonStartDate, setSeasonStartDate] = useState<string>('');
 
-  // Load favorite teams from localStorage or user account on mount
+  // Clear teams on page load - teams are not persisted across reloads
   useEffect(() => {
-    const loadFavorites = async () => {
-      if (user && token) {
-        // Load from user account
-        try {
-          const favorites = await fetchFavoriteTeams(token);
-          const teamNames = favorites.map(f => f.team_name);
-          setSelectedTeams(teamNames);
-          localStorage.setItem('favoriteTeams', JSON.stringify(teamNames));
-        } catch (err) {
-          console.error('Failed to load favorite teams:', err);
-          // Fall back to localStorage
-          const stored = localStorage.getItem('favoriteTeams');
-          if (stored) {
-            setSelectedTeams(JSON.parse(stored));
-          }
-        }
-      } else {
-        // Load from localStorage
-        const stored = localStorage.getItem('favoriteTeams');
-        if (stored) {
-          setSelectedTeams(JSON.parse(stored));
-        }
-      }
-    };
-    loadFavorites();
-  }, [user, token]);
+    // Clear any stored favorite teams on mount
+    localStorage.removeItem('favoriteTeams');
+    setSelectedTeams([]);
+    setShowWeek(true);
+    setSelectedDate(null);
+  }, []);
 
   const loadAvailableDates = async () => {
     try {
@@ -119,8 +101,25 @@ export default function FootballPage() {
 
   const loadHighlights = async (date: string, teams?: string[], league?: string, loadMore: boolean = false) => {
     try {
-      setIsLoading(true);
+      // Only show loading spinner if not loading more (preserve existing content during load more)
+      if (!loadMore) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
       setError(null);
+      
+      // Use optimized endpoint if only league filter is active (no teams, no date, not loading more)
+      if (league && (!teams || teams.length === 0) && !date && !loadMore) {
+        const result = await fetchRecentHighlightsByLeague(league, 25);
+        setHighlightsData([result]);
+        setExpandedLeagueIds(new Set([result.league.id]));
+        setHasMore(false); // Optionally implement pagination if needed
+        setCurrentSearchIndex(0);
+        setIsLoading(false);
+        setIsLoadingMore(false);
+        return [result];
+      }
       
       // If league or team filter is active, search backwards through dates to find highlights
       if (league || (teams && teams.length > 0)) {
@@ -150,24 +149,51 @@ export default function FootballPage() {
         console.log(`📅 Searching from index ${loadMore ? currentSearchIndex : 0}`);
         
         const startIndex = loadMore ? currentSearchIndex : 0;
-        const targetCount = 5; // Load 5 highlights at a time
+        const targetCount = 25; // Load 25 highlights at a time for better coverage
+        const batchSize = 7; // Fetch 7 days at a time in parallel
+        const maxSearchDays = 90; // Maximum 90 days back to get more matches
         let searchIndex = startIndex;
         
-        for (let i = startIndex; allHighlights.length < targetCount; i++) {
-          const searchDate = new Date(currentDate);
-          searchDate.setDate(currentDate.getDate() - i);
-          const dateStr = searchDate.toISOString().split('T')[0];
-          searchIndex = i + 1;
+        // Search in batches for better performance
+        while (allHighlights.length < targetCount && searchIndex < maxSearchDays) {
+          const datesToFetch: string[] = [];
           
-          // Stop if we've gone before season start
-          if (dateStr < seasonStartStr) {
-            console.log('📅 Reached season start, stopping search');
-            setHasMore(false);
+          // Prepare batch of dates to fetch
+          for (let j = 0; j < batchSize && allHighlights.length < targetCount; j++) {
+            const searchDate = new Date(currentDate);
+            searchDate.setDate(currentDate.getDate() - (searchIndex + j));
+            const dateStr = searchDate.toISOString().split('T')[0];
+            
+            // Stop if we've gone before season start
+            if (dateStr < seasonStartStr) {
+              console.log('📅 Reached season start, stopping search');
+              setHasMore(false);
+              break;
+            }
+            
+            datesToFetch.push(dateStr);
+          }
+          
+          if (datesToFetch.length === 0) {
             break;
           }
           
-          try {
-            const data = await fetchHighlightsGroupedByDate(dateStr);
+          // Fetch all dates in parallel
+          const fetchPromises = datesToFetch.map(dateStr => 
+            fetchHighlightsGroupedByDate(dateStr)
+              .then(data => ({ dateStr, data, error: null }))
+              .catch(err => ({ dateStr, data: [], error: err }))
+          );
+          
+          const results = await Promise.all(fetchPromises);
+          
+          // Process results
+          for (const { dateStr, data, error } of results) {
+            if (error) {
+              console.error(`Failed to fetch highlights for ${dateStr}:`, error);
+              continue;
+            }
+            
             console.log(`📅 ${dateStr}: Found ${data.length} leagues`);
             
             // Filter by league if provided
@@ -187,11 +213,36 @@ export default function FootballPage() {
                 }
                 for (const highlight of match.highlights) {
                   allHighlights.push({ match, highlight, league: leagueGroup.league, date: dateStr });
+                  
+                  // Early exit if we have enough highlights
+                  if (allHighlights.length >= targetCount) {
+                    break;
+                  }
+                }
+                if (allHighlights.length >= targetCount) {
+                  break;
                 }
               }
+              if (allHighlights.length >= targetCount) {
+                break;
+              }
             }
-          } catch (err) {
-            console.error(`Failed to fetch highlights for ${dateStr}:`, err);
+          }
+          
+          searchIndex += datesToFetch.length;
+          
+          // Stop if we've reached max search days
+          if (searchIndex >= maxSearchDays) {
+            console.log(`📅 Reached maximum search limit (${maxSearchDays} days)`);
+            setHasMore(false);
+            break;
+          }
+          
+          // If we didn't get enough highlights and fetched less than batchSize, we've exhausted the search
+          if (allHighlights.length < targetCount && datesToFetch.length < batchSize) {
+            console.log('📅 No more dates to search');
+            setHasMore(false);
+            break;
           }
         }
         
@@ -199,24 +250,31 @@ export default function FootballPage() {
         
         // Update search index and hasMore flag
         setCurrentSearchIndex(searchIndex);
-        setHasMore(allHighlights.length === targetCount);
+        setHasMore(allHighlights.length === targetCount && searchIndex < maxSearchDays);
         
         // Group highlights back by league
         if (allHighlights.length > 0) {
-          const leagueMap = new Map<string, any>();
-          
-          // If loading more, start with existing data
+          const leagueMap = new Map();
+          // If loading more, start with existing data and build a set of existing highlight IDs for deduplication
+          const existingHighlightIds = new Set();
           if (loadMore) {
             for (const existing of highlightsData) {
-              leagueMap.set(existing.league.name, {
+              const leagueCopy = {
                 league: existing.league,
-                matches: [...existing.matches],
+                matches: existing.matches.map(m => ({ ...m, highlights: [...m.highlights] })),
                 total_highlights: existing.total_highlights
-              });
+              };
+              leagueMap.set(existing.league.name, leagueCopy);
+              for (const match of existing.matches) {
+                for (const h of match.highlights) {
+                  existingHighlightIds.add(h.id);
+                }
+              }
             }
           }
-          
+          // Add new highlights, skipping duplicates
           for (const item of allHighlights) {
+            if (existingHighlightIds.has(item.highlight.id)) continue;
             if (!leagueMap.has(item.league.name)) {
               leagueMap.set(item.league.name, {
                 league: item.league,
@@ -224,9 +282,8 @@ export default function FootballPage() {
                 total_highlights: 0
               });
             }
-            
             const leagueGroup = leagueMap.get(item.league.name);
-            let matchGroup = leagueGroup.matches.find((m: any) => m.id === item.match.id);
+            let matchGroup = leagueGroup.matches.find((m) => m.id === item.match.id);
             if (!matchGroup) {
               matchGroup = { ...item.match, highlights: [], date: item.date };
               leagueGroup.matches.push(matchGroup);
@@ -234,7 +291,6 @@ export default function FootballPage() {
             matchGroup.highlights.push(item.highlight);
             leagueGroup.total_highlights++;
           }
-          
           const filteredData = Array.from(leagueMap.values());
           console.log('📊 Final data structure:', filteredData.map(l => ({ 
             league: l.league.name, 
@@ -247,10 +303,8 @@ export default function FootballPage() {
           }
           return filteredData;
         } else {
-          // No highlights found in this batch
-          if (!loadMore) {
-            setHasMore(false);
-          }
+          // No highlights found in this batch - hide Load More button
+          setHasMore(false);
           return [];
         }
       } else {
@@ -261,13 +315,11 @@ export default function FootballPage() {
       
       // Normal single-date loading
       const data = await fetchHighlightsGroupedByDate(date);
-      
       // Filter by league if provided
       let filteredData = data;
       if (league) {
         filteredData = data.filter(l => l.league.slug === league || l.league.name === league);
       }
-      
       // Filter by teams if provided
       if (teams && teams.length > 0) {
         filteredData = filteredData.map(league => ({
@@ -277,39 +329,89 @@ export default function FootballPage() {
           )
         })).filter(league => league.matches.length > 0);
       }
-      
       // Sort leagues by priority
       filteredData = sortLeaguesByPriority(filteredData);
-      
-      setHighlightsData(filteredData);
-      // Set the first league as expanded by default
-      if (filteredData.length > 0) {
-        setExpandedLeagueIds(new Set([filteredData[0].league.id]));
+      // If loading more, append new highlights to existing data (deduplicated)
+      if (loadMore && highlightsData.length > 0) {
+        const leagueMap = new Map();
+        // Copy existing data and build highlight ID set
+        const existingHighlightIds = new Set();
+        for (const existing of highlightsData) {
+          const leagueCopy = {
+            league: existing.league,
+            matches: existing.matches.map(m => ({ ...m, highlights: [...m.highlights] })),
+            total_highlights: existing.total_highlights
+          };
+          leagueMap.set(existing.league.name, leagueCopy);
+          for (const match of existing.matches) {
+            for (const h of match.highlights) {
+              existingHighlightIds.add(h.id);
+            }
+          }
+        }
+        // Add new highlights, skipping duplicates
+        for (const league of filteredData) {
+          if (!leagueMap.has(league.league.name)) {
+            leagueMap.set(league.league.name, {
+              league: league.league,
+              matches: [],
+              total_highlights: 0
+            });
+          }
+          const leagueGroup = leagueMap.get(league.league.name);
+          for (const match of league.matches) {
+            let matchGroup = leagueGroup.matches.find((m) => m.id === match.id);
+            if (!matchGroup) {
+              matchGroup = { ...match, highlights: [] };
+              leagueGroup.matches.push(matchGroup);
+            }
+            for (const highlight of match.highlights) {
+              if (!existingHighlightIds.has(highlight.id)) {
+                matchGroup.highlights.push(highlight);
+                leagueGroup.total_highlights++;
+              }
+            }
+          }
+        }
+        const mergedData = Array.from(leagueMap.values());
+        setHighlightsData(mergedData);
+        return mergedData;
+      } else {
+        setHighlightsData(filteredData);
+        // Set the first league as expanded by default
+        if (filteredData.length > 0) {
+          setExpandedLeagueIds(new Set([filteredData[0].league.id]));
+        }
+        return filteredData;
       }
-      return filteredData;
     } catch (err) {
       setError('Failed to load highlights. Make sure the backend is running.');
       console.error(err);
       return [];
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
   const handleDateSelect = async (date: string) => {
     console.log('Date selected:', date);
+    console.log('Resetting league filter to All Leagues');
     setShowWeek(false);
     setShowComingSoon(false);
     setSelectedDate(date);
     setCalendarDate(date);
-    await loadHighlights(date, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined);
+    setSelectedLeague(''); // Reset league filter when date is selected
+    await loadHighlights(date, selectedTeams.length > 0 ? selectedTeams : undefined, undefined);
   };
 
   const handleWeekSelect = async () => {
     console.log('Week selected');
+    console.log('Resetting league filter to All Leagues');
     setShowWeek(true);
     setShowComingSoon(false);
     setSelectedDate(null);
+    setSelectedLeague(''); // Reset league filter when week is selected
     
     try {
       setIsLoading(true);
@@ -378,17 +480,21 @@ export default function FootballPage() {
 
   const handleTeamsChange = async (teams: string[]) => {
     setSelectedTeams(teams);
+    // If teams are selected, clear the date filter to avoid highlighting Today
+    if (teams.length > 0) {
+      setSelectedDate(null);
+    }
   };
 
   const handleTeamSelectionDone = async () => {
-    // Save to localStorage
-    localStorage.setItem('favoriteTeams', JSON.stringify(selectedTeams));
-    
+    // If teams are selected, clear the date filter to avoid highlighting Today
+    if (selectedTeams.length > 0) {
+      setSelectedDate(null);
+    }
     // Reload highlights with new filter
     if (selectedDate) {
       await loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined);
     }
-    
     // Show save dialog only if user is logged in, has a token, and has selected teams
     if (user && token && selectedTeams.length > 0) {
       setShowSaveDialog(true);
@@ -521,10 +627,21 @@ export default function FootballPage() {
                 onChange={(e) => {
                   const newLeague = e.target.value;
                   setSelectedLeague(newLeague);
-                  if (showWeek) {
-                    handleWeekSelect();
-                  } else if (selectedDate) {
-                    loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, newLeague || undefined);
+                  // When a league is selected, clear all date/week filters and only show that league
+                  if (newLeague) {
+                    setSelectedDate(null);
+                    setCalendarDate(getTodayString());
+                    setShowWeek(false);
+                    setShowComingSoon(false);
+                    // Always load only the selected league, not all leagues for the week
+                    loadHighlights(getTodayString(), selectedTeams.length > 0 ? selectedTeams : undefined, newLeague);
+                  } else {
+                    // When "All Leagues" is selected, reload current view
+                    if (showWeek) {
+                      handleWeekSelect();
+                    } else if (selectedDate) {
+                      loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, undefined);
+                    }
                   }
                 }}
                 className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -546,20 +663,54 @@ export default function FootballPage() {
             </div>
             <TeamSelector selectedTeams={selectedTeams} onTeamsChange={handleTeamsChange} onDone={handleTeamSelectionDone} />
             {(selectedLeague || selectedTeams.length > 0) && (
-              <button
-                onClick={() => {
-                  setSelectedLeague('');
-                  setSelectedTeams([]);
-                  if (showWeek) {
-                    handleWeekSelect();
-                  } else if (selectedDate) {
-                    loadHighlights(selectedDate, undefined, undefined);
-                  }
-                }}
-                className="px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 transition-colors text-sm font-medium"
-              >
-                Clear Filters
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    setSelectedLeague('');
+                    setSelectedTeams([]);
+                    if (showWeek) {
+                      handleWeekSelect();
+                    } else if (selectedDate) {
+                      loadHighlights(selectedDate, undefined, undefined);
+                    }
+                  }}
+                  className="px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 transition-colors text-sm font-medium"
+                >
+                  Clear Filters
+                </button>
+                {/* Show filtered teams as removable badges */}
+                {selectedTeams.map((team) => (
+                  <span
+                    key={team}
+                    className="flex items-center bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded ml-2 text-sm"
+                    style={{ gap: '0.25rem' }}
+                  >
+                    {team}
+                    <button
+                      onClick={() => {
+                        const newTeams = selectedTeams.filter((t) => t !== team);
+                        setSelectedTeams(newTeams);
+                        // If no teams left, reload highlights with no team filter
+                        if (newTeams.length === 0) {
+                          if (selectedDate) {
+                            loadHighlights(selectedDate, undefined, selectedLeague || undefined);
+                          }
+                        } else {
+                          if (selectedDate) {
+                            loadHighlights(selectedDate, newTeams, selectedLeague || undefined);
+                          }
+                        }
+                      }}
+                      className="ml-1 text-green-700 dark:text-green-300 hover:text-red-600 focus:outline-none"
+                      aria-label={`Remove ${team}`}
+                      title={`Remove ${team}`}
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </>
             )}
           </div>
           {(selectedLeague || selectedTeams.length > 0) && (
@@ -590,7 +741,7 @@ export default function FootballPage() {
                 handleDateSelect(todayStr);
               }}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                !showComingSoon && selectedDate === getTodayString()
+                !showComingSoon && !showWeek && !selectedLeague && selectedDate === getTodayString()
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
@@ -604,7 +755,7 @@ export default function FootballPage() {
                 handleDateSelect(yesterdayStr);
               }}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                !showComingSoon && selectedDate === getYesterdayString()
+                !showComingSoon && !showWeek && !selectedLeague && selectedDate === getYesterdayString()
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
@@ -614,7 +765,7 @@ export default function FootballPage() {
             <button
               onClick={handleWeekSelect}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                showWeek
+                showWeek && !selectedLeague
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
@@ -714,14 +865,28 @@ export default function FootballPage() {
           </div>
         ) : (
           <div>
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                Highlights {showWeek ? '- This Week' : `for ${formatDateLabel(selectedDate || getTodayString())}`}
-              </h2>
-              <span className="text-gray-500 dark:text-gray-400">
-                {highlightsData.reduce((acc, league) => acc + league.total_highlights, 0)} videos available
-              </span>
-            </div>
+            {/* Only show the heading if the matches are actually from the selected date/week */}
+            {(() => {
+              // Find the earliest and latest match dates in the highlightsData
+              const allMatchDates = highlightsData.flatMap(l => l.matches.map(m => m.match_date));
+              const uniqueDates = Array.from(new Set(allMatchDates));
+              const isToday = selectedDate === getTodayString() && uniqueDates.length === 1 && uniqueDates[0] === getTodayString();
+              const isYesterday = selectedDate === getYesterdayString() && uniqueDates.length === 1 && uniqueDates[0] === getYesterdayString();
+              const isWeek = showWeek && uniqueDates.length > 0 && uniqueDates.some(d => true); // always show for week if any
+              if ((isToday && selectedDate) || (isYesterday && selectedDate) || (isWeek && showWeek)) {
+                return (
+                  <div className="mb-6 flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                      Highlights {showWeek ? '- This Week' : `for ${formatDateLabel(selectedDate || getTodayString())}`}
+                    </h2>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {highlightsData.reduce((acc, league) => acc + league.total_highlights, 0)} videos available
+                    </span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
             
             {highlightsData.map((leagueData) => (
               <LeagueSection 
@@ -747,13 +912,18 @@ export default function FootballPage() {
               <div className="mt-8 text-center">
                 <button
                   onClick={() => {
-                    if (selectedDate) {
-                      loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined, true);
+                    if (!isLoadingMore) {
+                      const dateToUse = selectedDate || getTodayString();
+                      loadHighlights(dateToUse, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined, true);
                     }
                   }}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-lg hover:shadow-xl"
+                  disabled={isLoadingMore}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
                 >
-                  Load More Highlights
+                  {isLoadingMore && (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  )}
+                  {isLoadingMore ? 'Loading...' : 'Load More Highlights'}
                 </button>
               </div>
             )}
