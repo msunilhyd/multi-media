@@ -75,7 +75,6 @@ export default function FootballPage() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isSavingFavorites, setIsSavingFavorites] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState<string>('');
-  const [highlightsLimit, setHighlightsLimit] = useState<number | null>(null);
 
   // Load favorite teams from localStorage or user account on mount
   useEffect(() => {
@@ -115,7 +114,7 @@ export default function FootballPage() {
     }
   };
 
-  const loadHighlights = async (date: string, teams?: string[], league?: string, limit?: number | null) => {
+  const loadHighlights = async (date: string, teams?: string[], league?: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -124,14 +123,12 @@ export default function FootballPage() {
       
       // If league filter is active, search backwards through dates to find highlights
       if (league) {
-        const effectiveLimit = limit !== undefined ? limit : highlightsLimit;
-        console.log('🔍 League filter active:', league, 'Target limit:', effectiveLimit);
+        console.log('🔍 League filter active:', league, 'Teams:', teams);
         const allHighlights: any[] = [];
         const currentDate = new Date(date + 'T12:00:00');
         const maxDaysBack = 14; // Search up to 2 weeks back
-        const targetLimit = effectiveLimit && effectiveLimit > 0 ? effectiveLimit : 100; // Default to 100 if no limit
         
-        for (let i = 0; i < maxDaysBack && allHighlights.length < targetLimit; i++) {
+        for (let i = 0; i < maxDaysBack && allHighlights.length < 100; i++) {
           const searchDate = new Date(currentDate);
           searchDate.setDate(currentDate.getDate() - i);
           const dateStr = searchDate.toISOString().split('T')[0];
@@ -144,10 +141,14 @@ export default function FootballPage() {
             
             for (const leagueGroup of leagueData) {
               for (const match of leagueGroup.matches) {
-                for (const highlight of match.highlights) {
-                  if (allHighlights.length < targetLimit) {
-                    allHighlights.push({ match, highlight, league: leagueGroup.league, date: dateStr });
+                // Filter by teams if provided
+                if (teams && teams.length > 0) {
+                  if (!teams.includes(match.home_team) && !teams.includes(match.away_team)) {
+                    continue; // Skip this match
                   }
+                }
+                for (const highlight of match.highlights) {
+                  allHighlights.push({ match, highlight, league: leagueGroup.league, date: dateStr });
                 }
               }
             }
@@ -156,17 +157,12 @@ export default function FootballPage() {
           }
         }
         
-        // Apply the actual limit if set
-        const finalHighlights = effectiveLimit && effectiveLimit > 0 
-          ? allHighlights.slice(0, effectiveLimit)
-          : allHighlights;
-        
-        console.log(`🎯 Total highlights found: ${allHighlights.length}, Final after limit: ${finalHighlights.length}`);
+        console.log(`🎯 Total highlights found: ${allHighlights.length}`);
         
         // Group highlights back by league
-        if (finalHighlights.length > 0) {
+        if (allHighlights.length > 0) {
           const leagueMap = new Map<string, any>();
-          for (const item of finalHighlights) {
+          for (const item of allHighlights) {
             if (!leagueMap.has(item.league.name)) {
               leagueMap.set(item.league.name, {
                 league: item.league,
@@ -510,7 +506,7 @@ export default function FootballPage() {
                   if (showWeek) {
                     handleWeekSelect();
                   } else if (selectedDate) {
-                    loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, newLeague || undefined, highlightsLimit);
+                    loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, newLeague || undefined);
                   }
                 }}
                 className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -528,34 +524,11 @@ export default function FootballPage() {
                 <option value="coupe-de-france">Coupe de France</option>
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Limit:</label>
-              <select
-                value={highlightsLimit === null ? '' : highlightsLimit}
-                onChange={(e) => {
-                  const value = e.target.value === '' ? null : parseInt(e.target.value);
-                  setHighlightsLimit(value);
-                  if (showWeek) {
-                    handleWeekSelect();
-                  } else if (selectedDate) {
-                    loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined, value);
-                  }
-                }}
-                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Highlights</option>
-                <option value="5">5 highlights</option>
-                <option value="10">10 highlights</option>
-                <option value="20">20 highlights</option>
-                <option value="50">50 highlights</option>
-              </select>
-            </div>
             <TeamSelector selectedTeams={selectedTeams} onTeamsChange={handleTeamsChange} onDone={handleTeamSelectionDone} />
-            {(selectedLeague || highlightsLimit || selectedTeams.length > 0) && (
+            {(selectedLeague || selectedTeams.length > 0) && (
               <button
                 onClick={() => {
                   setSelectedLeague('');
-                  setHighlightsLimit(null);
                   setSelectedTeams([]);
                   if (showWeek) {
                     handleWeekSelect();
@@ -569,13 +542,10 @@ export default function FootballPage() {
               </button>
             )}
           </div>
-          {(selectedLeague || highlightsLimit || selectedTeams.length > 0) && (
+          {(selectedLeague || selectedTeams.length > 0) && (
             <div className="flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-400">
               {selectedLeague && (
                 <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">League filter active</span>
-              )}
-              {highlightsLimit && (
-                <span className="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">Showing {highlightsLimit} highlights</span>
               )}
               {selectedTeams.length > 0 && (
                 <span className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded">{selectedTeams.length} team(s) selected</span>
