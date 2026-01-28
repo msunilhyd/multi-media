@@ -124,6 +124,7 @@ export default function FootballPage() {
       
       // If league filter is active, search backwards through dates to find highlights
       if (league) {
+        console.log('🔍 League filter active:', league, 'Target limit:', highlightsLimit);
         const allHighlights: any[] = [];
         const currentDate = new Date(date + 'T12:00:00');
         const maxDaysBack = 14; // Search up to 2 weeks back
@@ -136,7 +137,9 @@ export default function FootballPage() {
           
           try {
             const data = await fetchHighlightsGroupedByDate(dateStr);
+            console.log(`📅 ${dateStr}: Found ${data.length} leagues, searching for ${league}`);
             const leagueData = data.filter(l => l.league.slug === league || l.league.name === league);
+            console.log(`  ✅ Found ${leagueData.length} matching league(s)`);
             
             for (const leagueGroup of leagueData) {
               for (const match of leagueGroup.matches) {
@@ -156,6 +159,8 @@ export default function FootballPage() {
         const finalHighlights = highlightsLimit && highlightsLimit > 0 
           ? allHighlights.slice(0, highlightsLimit)
           : allHighlights;
+        
+        console.log(`🎯 Total highlights found: ${allHighlights.length}, Final after limit: ${finalHighlights.length}`);
         
         // Group highlights back by league
         if (finalHighlights.length > 0) {
