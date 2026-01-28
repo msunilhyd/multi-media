@@ -115,7 +115,7 @@ export default function FootballPage() {
     }
   };
 
-  const loadHighlights = async (date: string, teams?: string[], league?: string) => {
+  const loadHighlights = async (date: string, teams?: string[], league?: string, limit?: number | null) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -124,11 +124,12 @@ export default function FootballPage() {
       
       // If league filter is active, search backwards through dates to find highlights
       if (league) {
-        console.log('🔍 League filter active:', league, 'Target limit:', highlightsLimit);
+        const effectiveLimit = limit !== undefined ? limit : highlightsLimit;
+        console.log('🔍 League filter active:', league, 'Target limit:', effectiveLimit);
         const allHighlights: any[] = [];
         const currentDate = new Date(date + 'T12:00:00');
         const maxDaysBack = 14; // Search up to 2 weeks back
-        const targetLimit = highlightsLimit && highlightsLimit > 0 ? highlightsLimit : 100; // Default to 100 if no limit
+        const targetLimit = effectiveLimit && effectiveLimit > 0 ? effectiveLimit : 100; // Default to 100 if no limit
         
         for (let i = 0; i < maxDaysBack && allHighlights.length < targetLimit; i++) {
           const searchDate = new Date(currentDate);
@@ -156,8 +157,9 @@ export default function FootballPage() {
         }
         
         // Apply the actual limit if set
-        const finalHighlights = highlightsLimit && highlightsLimit > 0 
-          ? allHighlights.slice(0, highlightsLimit)
+        const effectiveLimit = limit !== undefined ? limit : highlightsLimit;
+        const finalHighlights = effectiveLimit && effectiveLimit > 0 
+          ? allHighlights.slice(0, effectiveLimit)
           : allHighlights;
         
         console.log(`🎯 Total highlights found: ${allHighlights.length}, Final after limit: ${finalHighlights.length}`);
@@ -504,11 +506,12 @@ export default function FootballPage() {
               <select
                 value={selectedLeague}
                 onChange={(e) => {
-                  setSelectedLeague(e.target.value);
+                  const newLeague = e.target.value;
+                  setSelectedLeague(newLeague);
                   if (showWeek) {
                     handleWeekSelect();
                   } else if (selectedDate) {
-                    loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, e.target.value || undefined);
+                    loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, newLeague || undefined, highlightsLimit);
                   }
                 }}
                 className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -536,7 +539,7 @@ export default function FootballPage() {
                   if (showWeek) {
                     handleWeekSelect();
                   } else if (selectedDate) {
-                    loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined);
+                    loadHighlights(selectedDate, selectedTeams.length > 0 ? selectedTeams : undefined, selectedLeague || undefined, value);
                   }
                 }}
                 className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
