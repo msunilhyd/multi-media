@@ -82,12 +82,15 @@ export default function FootballPage() {
   const [seasonStartDate, setSeasonStartDate] = useState<string>('');
 
   // Clear teams on page load - teams are not persisted across reloads
+
   useEffect(() => {
     // Clear any stored favorite teams on mount
     localStorage.removeItem('favoriteTeams');
     setSelectedTeams([]);
     setShowWeek(true);
     setSelectedDate(null);
+    // Ensure highlights for This Week are loaded on first load
+    handleWeekSelect();
   }, []);
 
   const loadAvailableDates = async () => {
