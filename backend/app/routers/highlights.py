@@ -228,32 +228,28 @@ def update_highlight(
         raise HTTPException(status_code=500, detail=f"Error fetching video details: {str(e)}")
 
 
-@router.get("/{league_slug}", response_model=schemas.HighlightsGroupedByLeague)
-def get_highlights_by_league(
+
+# New optimized endpoint for recent highlights by league with limit
+@router.get("/{league_slug}/recent", response_model=schemas.HighlightsGroupedByLeague)
+def get_recent_highlights_by_league(
     league_slug: str,
-    match_date: Optional[date] = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
+    """Get recent highlights for a league, ordered by match date (desc), limited by 'limit' param."""
     league = db.query(models.League).options(
         joinedload(models.League.matches).joinedload(models.Match.highlights)
     ).filter(models.League.slug == league_slug).first()
-    
     if not league:
         raise HTTPException(status_code=404, detail="League not found")
-    
-    if match_date:
-        matches_with_highlights = [
-            m for m in league.matches 
-            if m.match_date == match_date and len(m.highlights) > 0
-        ]
-    else:
-        matches_with_highlights = [
-            m for m in league.matches if len(m.highlights) > 0
-        ]
-    
+    # Only matches with highlights
+    matches_with_highlights = [
+        m for m in league.matches if len(m.highlights) > 0
+    ]
     matches_with_highlights.sort(key=lambda x: x.match_date, reverse=True)
+    # Limit the number of matches returned
+    matches_with_highlights = matches_with_highlights[:limit]
     total_highlights = sum(len(m.highlights) for m in matches_with_highlights)
-    
     return schemas.HighlightsGroupedByLeague(
         league=league,
         matches=matches_with_highlights,

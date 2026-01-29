@@ -389,6 +389,8 @@ class YouTubeService:
         # Alternate spellings for teams (especially Turkish teams with special chars)
         # Maps normalized team name -> list of acceptable variations in video titles
         alternate_names = {
+            'f.c. kopenhavn': ['f.c. københavn', 'fc kopenhavn', 'kobenhavn', 'copenhagen'],
+            'barcelona': ['barcelona', 'barca', 'barça'],
             'fatih karagumruk': ['karagumruk', 'karagümrük', 'f. karagumruk'],
             'caykur rizespor': ['rizespor', 'caykur', 'çaykur'],
             'istanbul basaksehir': ['basaksehir', 'başakşehir', 'i. basaksehir'],

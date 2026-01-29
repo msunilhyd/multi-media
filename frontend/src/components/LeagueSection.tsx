@@ -86,9 +86,9 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
   return (
     <>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-6">
-        <button
+        <div
           onClick={onToggle}
-          className={`w-full bg-gradient-to-r ${gradientClass} text-white p-4 flex items-center justify-between hover:opacity-90 transition-opacity`}
+          className={`w-full bg-gradient-to-r ${gradientClass} text-white p-4 flex items-center justify-between hover:opacity-90 transition-opacity cursor-pointer`}
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
@@ -124,7 +124,7 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
             )}
             {isExpanded ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
           </div>
-        </button>
+        </div>
         
         {isExpanded && (
           <div className="p-4 space-y-6">
