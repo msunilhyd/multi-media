@@ -1,3 +1,4 @@
+// Trigger Vercel rebuild: 2026-01-28
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export interface League {
@@ -176,8 +177,6 @@ export async function fetchHighlightsGrouped(date?: string, teams?: string[]): P
   if (!response.ok) throw new Error('Failed to fetch highlights');
   return response.json();
 }
-
-
 
 export async function fetchHighlightsByLeague(leagueSlug: string, date?: string): Promise<HighlightsGroupedByLeague> {
   const params = date ? `?match_date=${date}` : '';
@@ -460,4 +459,10 @@ export async function clearFavoriteTeams(token: string): Promise<void> {
     },
   });
   if (!response.ok) throw new Error('Failed to clear favorite teams');
+}
+
+export async function fetchRecentHighlightsByLeague(leagueSlug: string, limit: number = 20): Promise<HighlightsGroupedByLeague> {
+  const response = await fetch(`${API_BASE_URL}/api/highlights/${leagueSlug}/recent?limit=${limit}`);
+  if (!response.ok) throw new Error('Failed to fetch recent highlights');
+  return response.json();
 }
