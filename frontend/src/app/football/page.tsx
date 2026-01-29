@@ -283,7 +283,7 @@ export default function FootballPage() {
               });
             }
             const leagueGroup = leagueMap.get(item.league.name);
-            let matchGroup = leagueGroup.matches.find((m) => m.id === item.match.id);
+            let matchGroup = leagueGroup.matches.find((m: Match) => m.id === item.match.id);
             if (!matchGroup) {
               matchGroup = { ...item.match, highlights: [], date: item.date };
               leagueGroup.matches.push(matchGroup);
@@ -360,7 +360,7 @@ export default function FootballPage() {
           }
           const leagueGroup = leagueMap.get(league.league.name);
           for (const match of league.matches) {
-            let matchGroup = leagueGroup.matches.find((m) => m.id === match.id);
+            let matchGroup = leagueGroup.matches.find((m: Match) => m.id === match.id);
             if (!matchGroup) {
               matchGroup = { ...match, highlights: [] };
               leagueGroup.matches.push(matchGroup);
