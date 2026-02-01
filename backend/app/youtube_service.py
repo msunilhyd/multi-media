@@ -218,30 +218,22 @@ class YouTubeService:
             away_unique = self._get_unique_team_identifier(away_team)
             
             # Date filtering: highlights usually uploaded within 24-48 hours after match
-            # Allow 1 day before (for early uploads) to 2 days after for recent matches
-            # For older matches, extend window to catch late uploads
+            # Keep tight window (1-2 days) to avoid showing old videos as highlights
             earliest_date = None
             latest_date = None
             if match_date:
-                days_since_match = (date.today() - match_date).days
-                
-                # For recent matches (yesterday/today): tight 1-2 day window
-                if days_since_match <= 2:
-                    earliest_date = match_date - timedelta(days=1)
-                    latest_date = match_date + timedelta(days=2)
-                # For older matches: wider 30-day window to catch late uploads
-                # This ensures we get the most recent upload of that match
-                else:
-                    earliest_date = match_date - timedelta(days=2)
-                    latest_date = match_date + timedelta(days=30)
+                # Always use tight window: 1 day before to 2 days after match
+                # This ensures we only show fresh highlights, never 30-day-old videos
+                earliest_date = match_date - timedelta(days=1)
+                latest_date = match_date + timedelta(days=2)
                 
                 print(f"[YouTube] Searching {playlist_id} for videos between {earliest_date} and {latest_date}")
             
-            # Paginate through playlist to find videos (up to 250 videos = 5 pages with date filter)
-            # Increased from 3 to 5 pages since we're filtering by date
+            # Paginate through playlist to find videos (up to 150 videos = 3 pages)
+            # With tight 1-2 day window, 3 pages should be sufficient
             next_page_token = None
             pages_fetched = 0
-            max_pages = 5 if match_date else 3
+            max_pages = 3
             
             while pages_fetched < max_pages:
                 request_params = {
