@@ -41,10 +41,13 @@ class YouTubeService:
     
     # Additional channels to search for each league (fallback) - ordered by priority
     # Using uploads playlist IDs (UU prefix instead of UC)
-    # Only US broadcasters allowed
+    # Mix of official channels and regional broadcasters for geo-diversity
     FALLBACK_CHANNELS = {
         "Premier League": [
-            "UUqZQlzSHbVJrwrn5XvzrzcA",   # NBC Sports
+            "UUG5qGWdu8nIRZqJ_GgDwQ-w",   # Premier League Official (worldwide)
+            "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports Football (UK)
+            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo (US)
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC (US/global)
         ],
         "La Liga": [
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
@@ -142,56 +145,75 @@ class YouTubeService:
         Search for match highlights using channel playlists only (no expensive search API).
         Each playlist call costs only 3 API units vs 100 units for search.
         
+        Now searches MULTIPLE channels to ensure geo-diversity:
+        - Primary official channel
+        - Up to 3 fallback channels
+        - Aggregates and ranks all results
+        
         Args:
             match_date: Date of the match to search highlights for. Helps filter videos by publish date.
+            max_results: Maximum number of highlights to return (default 5, use 10 for geo-diversity)
         """
         if not self.youtube:
             raise YouTubeQuotaExhaustedError("No YouTube API keys configured")
         
-        videos = []
+        all_videos = []
         channels_tried = set()
+        channels_to_search = []
         
-        # Try official channel first (3 units)
+        # Build list of channels to search
         if league and league in self.OFFICIAL_CHANNELS:
-            primary_channel = self.OFFICIAL_CHANNELS[league]
-            channels_tried.add(primary_channel)
+            channels_to_search.append(self.OFFICIAL_CHANNELS[league])
+        
+        if league and league in self.FALLBACK_CHANNELS:
+            # Add up to 3 fallback channels for geo-diversity
+            channels_to_search.extend(self.FALLBACK_CHANNELS[league][:3])
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_channels = []
+        for ch in channels_to_search:
+            if ch not in seen:
+                seen.add(ch)
+                unique_channels.append(ch)
+        
+        # Search each channel and aggregate results
+        for playlist_id in unique_channels:
+            if playlist_id in channels_tried:
+                continue
             
-            videos = self._search_channel_playlist(
-                primary_channel, 
+            channels_tried.add(playlist_id)
+            
+            channel_videos = self._search_channel_playlist(
+                playlist_id, 
                 home_team, 
                 away_team,
                 match_date=match_date,
-                max_results=10
+                max_results=5  # Fetch 5 from each channel
             )
-            # None means all API keys exhausted
-            if videos is None:
-                raise YouTubeQuotaExhaustedError("All YouTube API keys have exceeded their daily quota. Please try again tomorrow or add new API keys.")
             
-            if videos:
-                videos = self._rank_videos(videos, home_team, away_team)
-                return videos[:max_results]
+            # None means all API keys exhausted
+            if channel_videos is None:
+                raise YouTubeQuotaExhaustedError("All YouTube API keys have exceeded their daily quota.")
+            
+            if channel_videos:
+                all_videos.extend(channel_videos)
         
-        # Try all fallback channels if primary didn't return results
-        if league and league in self.FALLBACK_CHANNELS:
-            for fallback_playlist in self.FALLBACK_CHANNELS[league]:
-                if fallback_playlist in channels_tried:
-                    continue  # Skip already tried channels
-                    
-                channels_tried.add(fallback_playlist)
-                fallback_videos = self._search_channel_playlist(
-                    fallback_playlist, 
-                    home_team, 
-                    away_team,
-                    match_date=match_date,
-                    max_results=10
-                )
-                if fallback_videos is None:
-                    raise YouTubeQuotaExhaustedError("All YouTube API keys have exceeded their daily quota.")
-                if fallback_videos:
-                    videos = self._rank_videos(fallback_videos, home_team, away_team)
-                    return videos[:max_results]
+        # If we found videos, deduplicate, rank, and return top results
+        if all_videos:
+            # Deduplicate by video ID
+            seen_video_ids = set()
+            unique_videos = []
+            for video in all_videos:
+                if video['video_id'] not in seen_video_ids:
+                    seen_video_ids.add(video['video_id'])
+                    unique_videos.append(video)
+            
+            # Rank by quality and geo-diversity
+            ranked_videos = self._rank_videos(unique_videos, home_team, away_team)
+            return ranked_videos[:max_results]
         
-        # No highlights found in any channel - return empty (no expensive search fallback)
+        # No highlights found in any channel
         print(f"No highlights found for {home_team} vs {away_team} in {len(channels_tried)} channels")
         return []
     
