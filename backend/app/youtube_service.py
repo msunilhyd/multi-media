@@ -593,6 +593,37 @@ class YouTubeService:
                 elif video['view_count'] > 10000:
                     score += 20
             
+            # Geo-diversity bonus: prioritize videos with wider availability
+            blocked_countries = video.get('blocked_countries', [])
+            allowed_countries = video.get('allowed_countries', [])
+            
+            if blocked_countries:
+                # Penalize based on number of blocked countries
+                blocked_count = len(blocked_countries)
+                if blocked_count == 0:
+                    score += 100  # Worldwide available = highest priority
+                elif blocked_count < 5:
+                    score += 60   # Minimally restricted (e.g., blocked in 1-4 countries)
+                elif blocked_count < 20:
+                    score += 30   # Moderately restricted
+                elif blocked_count < 50:
+                    score += 10   # Significantly restricted
+                # else: heavily restricted (50+ countries), no bonus
+            elif allowed_countries:
+                # Has allowlist - only available in specific countries
+                allowed_count = len(allowed_countries)
+                if allowed_count > 100:
+                    score += 80   # Available in many countries
+                elif allowed_count > 50:
+                    score += 50   # Available in moderate number of countries
+                elif allowed_count > 20:
+                    score += 30   # Available in some countries
+                else:
+                    score += 10   # Limited availability (20 or fewer countries)
+            else:
+                # No geo restrictions at all = best case
+                score += 100
+            
             return score
         
         for video in filtered_videos:
