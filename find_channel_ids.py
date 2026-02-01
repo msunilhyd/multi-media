@@ -60,9 +60,11 @@ def find_channel_playlist_id(channel_name: str):
 
 if __name__ == "__main__":
     channels_to_find = [
-        "TNT Sports",
-        "BBC Sport",
-        "BT Sport",
+        "DAZN Canada",
+        "Stan Sport",
+        "beIN SPORTS",
+        "Canal+ Sport",
+        "Viaplay",
     ]
     
     for channel in channels_to_find:
