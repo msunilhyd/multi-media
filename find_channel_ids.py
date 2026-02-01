@@ -60,11 +60,12 @@ def find_channel_playlist_id(channel_name: str):
 
 if __name__ == "__main__":
     channels_to_find = [
-        "DAZN Canada",
-        "Stan Sport",
-        "beIN SPORTS",
-        "Canal+ Sport",
-        "Viaplay",
+        "Sony Sports Network",
+        "Sony Sports",
+        "Sky Sport Italia",
+        "Sky Sport Italy",
+        "Movistar Plus+",
+        "ESPN Deportes",
     ]
     
     for channel in channels_to_find:

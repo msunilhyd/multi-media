@@ -64,6 +64,9 @@ class YouTubeService:
         "Champions League": [
             "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo (US - 2.7M subs)
             "UU4i_9WvfPRTuRWEaWyfKuFw",   # TNT Sports Football (UK - 6.29M subs)
+            "UU_WKb6N9iTGc77hxwXLDrbA",   # Sony Sports Network (India - 5.75M subs)
+            "UUAvNr5DMVncoJnJAotXOjOQ",   # Sky Sport Italia (Italy - 956K subs)
+            "UU08mnbiC4FykqpHqbEWgFcg",   # ESPN Deportes (Latin America - 6.71M subs)
             "UUaNeFN9L6CHcfn_FA7I_Wng",   # DAZN Canada (377K subs)
             "UU0jPwNs4B7yJySNewHan5hQ",   # Stan Sport Football (Australia - 1M subs)
             "UUJUCcJUeh0Cz2xyKwkw5Q1w",   # beIN SPORTS (MENA/Asia - 16.3M subs)
