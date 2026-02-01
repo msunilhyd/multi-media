@@ -22,8 +22,8 @@ class YouTubeService:
         "Bundesliga": "UU6c1z7bA__85CIWZ_jpCK-Q",          # ESPN FC (US broadcaster)
         "Serie A": "UUET00YnetHT7tOpu12v8jxg",             # CBS Sports Golazo / Paramount+ (US broadcaster)
         "Ligue 1": "UU6c1z7bA__85CIWZ_jpCK-Q",             # ESPN FC (US broadcaster)
-        "Champions League": "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo / Paramount+
-        "Europa League": "UUET00YnetHT7tOpu12v8jxg",       # CBS Sports Golazo / Paramount+
+        "Champions League": "UUyGa1YEx9ST66rYrJTGIKOw",   # UEFA Official (6.4M subs, worldwide)
+        "Europa League": "UUyGa1YEx9ST66rYrJTGIKOw",       # UEFA Official
         "AFCON": "UU0YatYmg5JRYzXJPxIdRd8g",               # beIN SPORTS USA (Official AFCON broadcaster)
         "CAF Champions League": "UU0YatYmg5JRYzXJPxIdRd8g", # beIN SPORTS USA
         "Copa del Rey": "UU6c1z7bA__85CIWZ_jpCK-Q",        # ESPN FC
@@ -62,10 +62,10 @@ class YouTubeService:
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
         "Champions League": [
-            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo (primary)
-            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
-            "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports Football
-            "UUqZQlzSHbVJrwrn5XvzrzcA",   # NBC Sports
+            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo (US - 2.7M subs)
+            "UU4i_9WvfPRTuRWEaWyfKuFw",   # TNT Sports Football (UK - 6.29M subs)
+            "UUW6-BQWFA70Dyyc7ZpZ9Xlg",   # BBC Sport (UK highlights - 910K subs)
+            "UU_WKb6N9iTGc77hxwXLDrbA",   # Sony Sports Network (India - 5.75M subs)
         ],
         "Europa League": [
             "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo
