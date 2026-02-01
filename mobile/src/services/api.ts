@@ -23,6 +23,9 @@ export interface Highlight {
   view_count: number | null;
   duration: string | null;
   is_official: boolean;
+  is_geo_blocked?: boolean;
+  blocked_countries?: string[];
+  allowed_countries?: string[];
 }
 
 export interface Match {

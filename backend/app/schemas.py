@@ -31,6 +31,9 @@ class HighlightBase(BaseModel):
     channel_title: Optional[str] = None
     view_count: Optional[int] = None
     duration: Optional[str] = None
+    is_geo_blocked: Optional[bool] = False
+    blocked_countries: Optional[List[str]] = []
+    allowed_countries: Optional[List[str]] = []
 
 
 class HighlightCreate(HighlightBase):

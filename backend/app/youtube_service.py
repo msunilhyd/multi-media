@@ -299,7 +299,10 @@ class YouTubeService:
                             'channel_title': snippet['channelTitle'],
                             'published_at': snippet['publishedAt'],
                             'view_count': None,
-                            'duration': None
+                            'duration': None,
+                            'is_geo_blocked': False,
+                            'blocked_countries': [],
+                            'allowed_countries': []
                         })
                 
                 # Get next page token, break if no more pages
@@ -310,6 +313,10 @@ class YouTubeService:
             # Sort videos by publish date (newest first) to prefer recent uploads
             if videos:
                 videos.sort(key=lambda v: v.get('published_at', ''), reverse=True)
+                # Enrich with region restriction details
+                video_ids = [v['video_id'] for v in videos]
+                if video_ids:
+                    videos = self._enrich_video_details(videos, video_ids)
             
             return videos[:max_results]
         except HttpError as e:
@@ -466,7 +473,10 @@ class YouTubeService:
                 'channel_title': snippet['channelTitle'],
                 'published_at': snippet['publishedAt'],
                 'view_count': None,
-                'duration': None
+                'duration': None,
+                'is_geo_blocked': False,
+                'blocked_countries': [],
+                'allowed_countries': []
             })
         
         if video_ids:
@@ -477,7 +487,7 @@ class YouTubeService:
     def _enrich_video_details(self, videos: List[Dict], video_ids: List[str]) -> List[Dict]:
         try:
             details_response = self.youtube.videos().list(
-                part='statistics,contentDetails',
+                part='statistics,contentDetails,status',
                 id=','.join(video_ids)
             ).execute()
             
@@ -486,9 +496,22 @@ class YouTubeService:
                 vid_id = item['id']
                 stats = item.get('statistics', {})
                 content = item.get('contentDetails', {})
+                status = item.get('status', {})
+                
+                # Check for region restrictions
+                region_restriction = content.get('regionRestriction', {})
+                blocked_countries = region_restriction.get('blocked', [])
+                allowed_countries = region_restriction.get('allowed', [])
+                
+                # Determine if video is geo-blocked
+                is_geo_blocked = len(blocked_countries) > 0 or (len(allowed_countries) > 0)
+                
                 details_map[vid_id] = {
                     'view_count': int(stats.get('viewCount', 0)),
-                    'duration': self._parse_duration(content.get('duration', ''))
+                    'duration': self._parse_duration(content.get('duration', '')),
+                    'is_geo_blocked': is_geo_blocked,
+                    'blocked_countries': blocked_countries,
+                    'allowed_countries': allowed_countries,
                 }
             
             for video in videos:

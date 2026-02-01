@@ -608,6 +608,12 @@ export default function FootballScreen() {
       style={styles.highlightCard}
       onPress={() => playVideo(highlight.youtube_video_id)}
     >
+      {highlight.is_geo_blocked && (
+        <View style={styles.geoBlockWarning}>
+          <Ionicons name="globe-outline" size={14} color="#f59e0b" />
+          <Text style={styles.geoBlockText}>May not be available in some regions</Text>
+        </View>
+      )}
       <View style={styles.thumbnailContainer}>
         <YoutubePlayer
           height={Dimensions.get('window').width * (9 / 16)}
@@ -864,7 +870,7 @@ export default function FootballScreen() {
                   // Close modal and show error message
                   Alert.alert(
                     'Video Unavailable',
-                    'This video is no longer available or has been removed from YouTube.',
+                    'This video is not available in your region or has been removed from YouTube. Please try another highlight.',
                     [
                       {
                         text: 'OK',
@@ -1170,6 +1176,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  geoBlockWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(245, 158, 11, 0.3)',
+  },
+  geoBlockText: {
+    fontSize: 12,
+    color: '#f59e0b',
+    fontWeight: '600',
   },
   thumbnailContainer: {
     backgroundColor: '#000000',

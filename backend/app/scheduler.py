@@ -332,27 +332,27 @@ async def fetch_highlights_for_yesterday(send_notification: bool = False):
                     away_team=match.away_team,
                     league=league_name,
                     match_date=match.match_date,
-                    max_results=1
+                    max_results=10  # Fetch multiple highlights for geo-filtering
                 )
                 
                 if videos:
-                    video = videos[0]
-                    # Store highlight in DB
-                    highlight = models.Highlight(
-                        match_id=match.id,
-                        youtube_video_id=video['video_id'],
-                        title=video['title'],
-                        description=video.get('description', ''),
-                        thumbnail_url=video.get('thumbnail_url', ''),
-                        channel_title=video.get('channel_title', ''),
-                        published_at=video.get('published_at'),
-                        view_count=video.get('view_count', 0),
-                        duration=video.get('duration', '')
-                    )
-                    db.add(highlight)
+                    # Store ALL highlights in DB for better geo-filtering options
+                    for video in videos:
+                        highlight = models.Highlight(
+                            match_id=match.id,
+                            youtube_video_id=video['video_id'],
+                            title=video['title'],
+                            description=video.get('description', ''),
+                            thumbnail_url=video.get('thumbnail_url', ''),
+                            channel_title=video.get('channel_title', ''),
+                            published_at=video.get('published_at'),
+                            view_count=video.get('view_count', 0),
+                            duration=video.get('duration', '')
+                        )
+                        db.add(highlight)
                     db.commit()
-                    highlights_found += 1
-                    print(f"[Scheduler] ✓ Found: {video['title'][:50]}...")
+                    highlights_found += len(videos)
+                    print(f"[Scheduler] ✓ Found {len(videos)} highlights for {match.home_team} vs {match.away_team}")
                 else:
                     print(f"[Scheduler] ✗ No highlights found for {match.home_team} vs {match.away_team}")
                     # Track this match for notification

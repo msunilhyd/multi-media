@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import date
@@ -7,18 +7,29 @@ from .. import models, schemas
 from ..youtube_service import get_youtube_service, YouTubeQuotaExhaustedError
 from ..models_users import User, UserFavoriteTeam
 from .auth import get_current_user
+from ..geo_service import get_geo_service, GeoService
 
 router = APIRouter(prefix="/api/highlights", tags=["highlights"])
 
 
 @router.get("", response_model=List[schemas.HighlightsGroupedByLeague])
-def get_highlights_grouped(
+async def get_highlights_grouped(
+    request: Request,
     match_date: Optional[date] = Query(default=None),
     teams: Optional[str] = Query(default=None, description="Comma-separated list of team names to filter"),
     db: Session = Depends(get_db)
 ):
-    """Get highlights grouped by league with optional team filtering"""
+    """Get highlights grouped by league with optional team filtering and geo-filtering"""
     target_date = match_date or date.today()
+    
+    # Detect user's country from IP
+    client_ip = request.client.host if request.client else None
+    country_code = None
+    if client_ip:
+        geo_service = get_geo_service()
+        country_code = await geo_service.get_country_from_ip(client_ip)
+        if country_code:
+            print(f"[Highlights] Detected user country: {country_code} from IP: {client_ip}")
     
     # Parse team names if provided
     team_filter = None
@@ -38,9 +49,17 @@ def get_highlights_grouped(
                 # If team filter is provided, only include matches with those teams
                 if team_filter:
                     if m.home_team in team_filter or m.away_team in team_filter:
-                        matches_with_highlights.append(m)
+                        # Filter highlights by country availability
+                        if country_code:
+                            m = _filter_match_highlights_by_country(m, country_code)
+                        if len(m.highlights) > 0:  # Only add if has available highlights
+                            matches_with_highlights.append(m)
                 else:
-                    matches_with_highlights.append(m)
+                    # Filter highlights by country availability
+                    if country_code:
+                        m = _filter_match_highlights_by_country(m, country_code)
+                    if len(m.highlights) > 0:  # Only add if has available highlights
+                        matches_with_highlights.append(m)
         
         if matches_with_highlights:
             total_highlights = sum(len(m.highlights) for m in matches_with_highlights)
@@ -51,6 +70,33 @@ def get_highlights_grouped(
             ))
     
     return result
+
+
+def _filter_match_highlights_by_country(match: models.Match, country_code: str) -> models.Match:
+    """Filter highlights for a match to show only those available in the user's country"""
+    geo_service = get_geo_service()
+    
+    available_highlights = []
+    for highlight in match.highlights:
+        # Convert to dict format for geo service
+        highlight_dict = {
+            'blocked_countries': [],
+            'allowed_countries': []
+        }
+        
+        # Check if video is available in user's country
+        is_available = geo_service.is_video_available_in_country(
+            country_code,
+            highlight_dict['blocked_countries'],
+            highlight_dict['allowed_countries']
+        )
+        
+        if is_available:
+            available_highlights.append(highlight)
+    
+    # Replace match highlights with filtered list
+    match.highlights = available_highlights
+    return match
 
 
 

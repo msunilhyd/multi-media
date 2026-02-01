@@ -15,7 +15,7 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { youtube_video_id, title, thumbnail_url, channel_title, view_count, duration, is_official, matchInfo, matchDate, matchTime } = highlight;
+  const { youtube_video_id, title, thumbnail_url, channel_title, view_count, duration, is_official, matchInfo, matchDate, matchTime, is_geo_blocked, blocked_countries, allowed_countries } = highlight;
 
   const formatViewCount = (count: number | null) => {
     if (!count) return null;
@@ -232,6 +232,14 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
           <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
             <CheckCircle className="w-3 h-3" />
             Official
+          </div>
+        )}
+        {is_geo_blocked && (
+          <div className="absolute top-2 right-2 bg-amber-500/90 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Region Restricted
           </div>
         )}
       </div>
