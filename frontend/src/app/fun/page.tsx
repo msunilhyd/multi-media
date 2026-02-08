@@ -173,7 +173,7 @@ export default function FunPage() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       
-      <main className="w-full min-h-screen mx-auto px-2 sm:px-4 py-4 sm:py-8 overflow-x-hidden">
+      <main className="container mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4 flex items-center justify-center gap-3">
@@ -217,7 +217,7 @@ export default function FunPage() {
       </main>
       
       <footer className="bg-gray-800 text-white py-6 mt-12">
-        <div className="w-full mx-auto px-2 sm:px-4 text-center overflow-x-hidden">
+        <div className="container mx-auto px-4 text-center">
           <p className="text-gray-400">
             Fun Zone
           </p>
