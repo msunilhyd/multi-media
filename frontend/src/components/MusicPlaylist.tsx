@@ -171,7 +171,8 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
         setCurrentIndex(0);
       }
     }
-  }, [filteredSongs]);  // Removed currentSong from dependencies to avoid loops
+  }, [filteredSongs]);  // eslint-disable-line react-hooks/exhaustive-deps
+  // Removed currentSong from dependencies to avoid infinite loops
   
   // Keep refs in sync with state
   useEffect(() => {

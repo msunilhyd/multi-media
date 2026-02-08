@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { StandingsEntry } from '@/lib/api';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
@@ -62,7 +63,7 @@ export default function StandingsTable({ standings, compact = false }: Standings
                   <td className="py-2 px-3 text-gray-400 font-medium">{entry.position}</td>
                   <td className="py-2 px-3 flex items-center gap-2">
                     {entry.logo && (
-                      <img src={entry.logo} alt={entry.team} className="w-5 h-5 object-contain" />
+                      <Image src={entry.logo} alt={entry.team} width={20} height={20} className="w-5 h-5 object-contain" />
                     )}
                     <span className="font-medium text-white truncate">{entry.team}</span>
                   </td>
@@ -114,7 +115,7 @@ export default function StandingsTable({ standings, compact = false }: Standings
                   <td className="py-1 px-0.5 sticky left-4 bg-gray-950">
                     <div className="flex items-center gap-0.5">
                       {entry.logo && (
-                        <img src={entry.logo} alt={entry.team} className="w-3 h-3 object-contain flex-shrink-0" />
+                        <Image src={entry.logo} alt={entry.team} width={12} height={12} className="w-3 h-3 object-contain flex-shrink-0" />
                       )}
                       <div className="min-w-0">
                         <div className="font-medium text-white text-xs truncate">{entry.team}</div>
