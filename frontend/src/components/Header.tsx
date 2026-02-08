@@ -30,9 +30,9 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white shadow-lg border-b border-gray-700 sticky top-0 z-[100] pointer-events-auto">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+    <header className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white shadow-lg border-b border-gray-700 sticky top-0 z-[100] pointer-events-auto overflow-x-hidden">
+      <div className="w-full mx-auto px-2 sm:px-4 py-4 overflow-x-hidden">
+        <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-4">
           {/* Logo / Home */}
           <Link href="/" className="group flex items-center gap-3 hover:opacity-90 transition-all pointer-events-auto">
             <div className="relative">

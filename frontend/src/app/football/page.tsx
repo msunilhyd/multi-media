@@ -606,7 +606,7 @@ export default function FootballPage() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="w-full min-h-screen mx-auto px-2 sm:px-4 py-4 sm:py-8 overflow-x-hidden">
         {error && (
           <div className="mb-6 bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
@@ -622,9 +622,9 @@ export default function FootballPage() {
               <h3 className="font-semibold text-gray-700 dark:text-gray-300">Filters</h3>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">League:</label>
+              <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">League:</label>
               <select
                 value={selectedLeague}
                 onChange={(e) => {
@@ -647,7 +647,7 @@ export default function FootballPage() {
                     }
                   }
                 }}
-                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Leagues</option>
                 <option value="premier-league">Premier League</option>
@@ -685,10 +685,9 @@ export default function FootballPage() {
                 {selectedTeams.map((team) => (
                   <span
                     key={team}
-                    className="flex items-center bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded ml-2 text-sm"
-                    style={{ gap: '0.25rem' }}
+                    className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded text-xs sm:text-sm flex-shrink-0"
                   >
-                    {team}
+                    <span className="truncate">{team}</span>
                     <button
                       onClick={() => {
                         const newTeams = selectedTeams.filter((t) => t !== team);
@@ -704,7 +703,7 @@ export default function FootballPage() {
                           }
                         }
                       }}
-                      className="ml-1 text-green-700 dark:text-green-300 hover:text-red-600 focus:outline-none"
+                      className="text-green-700 dark:text-green-300 hover:text-red-600 focus:outline-none font-bold"
                       aria-label={`Remove ${team}`}
                       title={`Remove ${team}`}
                       type="button"
@@ -736,14 +735,14 @@ export default function FootballPage() {
               <h3 className="font-semibold text-gray-700 dark:text-gray-300">Select Date</h3>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
               onClick={() => {
                 const todayStr = getTodayString();
                 setShowComingSoon(false);
                 handleDateSelect(todayStr);
               }}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg transition-colors font-medium whitespace-nowrap ${
                 !showComingSoon && !showWeek && !selectedLeague && selectedDate === getTodayString()
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -757,7 +756,7 @@ export default function FootballPage() {
                 setShowComingSoon(false);
                 handleDateSelect(yesterdayStr);
               }}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg transition-colors font-medium whitespace-nowrap ${
                 !showComingSoon && !showWeek && !selectedLeague && selectedDate === getYesterdayString()
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -767,7 +766,7 @@ export default function FootballPage() {
             </button>
             <button
               onClick={handleWeekSelect}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg transition-colors font-medium whitespace-nowrap ${
                 showWeek && !selectedLeague
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -775,28 +774,26 @@ export default function FootballPage() {
             >
               This Week
             </button>
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={calendarDate}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setCalendarDate(e.target.value);
-                    setShowComingSoon(false);
-                    handleDateSelect(e.target.value);
-                  }
-                }}
-                max={new Date().toISOString().split('T')[0]}
-                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <input
+              type="date"
+              value={calendarDate}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setCalendarDate(e.target.value);
+                  setShowComingSoon(false);
+                  handleDateSelect(e.target.value);
+                }
+              }}
+              max={new Date().toISOString().split('T')[0]}
+              className="px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
 
             <button
               onClick={() => {
                 setShowWeek(false);
                 setShowComingSoon(!showComingSoon);
               }}
-              className={`px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg transition-colors font-medium flex items-center gap-1 whitespace-nowrap ${
                 showComingSoon
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -935,7 +932,7 @@ export default function FootballPage() {
       </main>
       
       <footer className="bg-gray-800 text-white py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
+        <div className="w-full mx-auto px-2 sm:px-4 text-center overflow-x-hidden">
           <p className="text-gray-400">
             Football Highlights Dashboard • Data from ESPN • Videos from YouTube
           </p>

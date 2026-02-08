@@ -159,7 +159,7 @@ export default function MusicPage() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="w-full min-h-screen mx-auto px-2 sm:px-4 py-4 sm:py-8 overflow-x-hidden">
         {/* Tab Navigation */}
         <div className="mb-8">
           <div className="border-b border-gray-200 dark:border-gray-700">
@@ -192,7 +192,7 @@ export default function MusicPage() {
       </main>
       
       <footer className="bg-gray-800 text-white py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
+        <div className="w-full mx-auto px-2 sm:px-4 text-center overflow-x-hidden">
           <p className="text-gray-400">
             Music Playlist Player • Powered by YouTube • {songs.length} songs
           </p>
