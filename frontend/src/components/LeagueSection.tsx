@@ -97,7 +97,7 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
             <div className="text-left">
               <h2 className="text-xl font-bold">{league.name}</h2>
               <p className="text-white/80 text-sm">
-                {matches.length} match{matches.length !== 1 ? 'es' : ''} • {total_highlights} highlight{total_highlights !== 1 ? 's' : ''}
+                {matches.length} match{matches.length !== 1 ? 'es' : ''}
               </p>
             </div>
           </div>

@@ -805,7 +805,7 @@ export default function FootballPage() {
               <Clock className="w-4 h-4" />
               Coming Soon
             </button>
-            {!showComingSoon && selectedDate && !availableDates.includes(selectedDate) && (
+            {!showComingSoon && selectedDate && !availableDates.includes(selectedDate) && highlightsData.length === 0 && (
               <span className="text-sm text-amber-600 dark:text-amber-400">
                 No highlights found for this date
               </span>
