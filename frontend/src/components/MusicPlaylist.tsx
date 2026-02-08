@@ -326,7 +326,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
           width: '100%',
           videoId: firstSong.videoId,
           playerVars: {
-            autoplay: 0,
+            autoplay: 1,
             rel: 0,
             modestbranding: 1,
             start: firstSong.startSeconds ?? undefined,
@@ -383,7 +383,16 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
               }
             },
             onError: (event) => {
-              console.log('VIDEO ERROR - calling handleNext from onError, error code:', event.data);
+              const errorCodes: { [key: number]: string } = {
+                2: 'Invalid parameter',
+                5: 'HTML5 player error',
+                100: 'Video not found (removed or private)',
+                101: 'Video owner does not allow embedding',
+                150: 'Same as 101 (hidden for some reason)',
+              };
+              const errorMsg = errorCodes[event.data] || `Unknown error (code: ${event.data})`;
+              console.log('❌ VIDEO ERROR:', errorMsg, '- skipping to next song');
+              // Skip to next song on any error
               handleNext();
             },
           },

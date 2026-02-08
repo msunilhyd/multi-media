@@ -86,7 +86,7 @@ LEAGUE_MAPPINGS = {
     "Championship": {"slug": "championship", "country": "England"},
     "FA Cup": {"slug": "fa-cup", "country": "England"},
     "EFL Cup": {"slug": "efl-cup", "country": "England"},
-    "League Cup": {"slug": "efl-cup", "country": "England"},
+    "English League Cup": {"slug": "efl-cup", "country": "England"},
     "Scottish Premiership": {"slug": "scottish-premiership", "country": "Scotland"},
     "MLS": {"slug": "mls", "country": "USA"},
     "World Cup": {"slug": "world-cup", "country": "International"},

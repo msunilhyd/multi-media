@@ -74,7 +74,7 @@ EUROPEAN_COMPETITIONS_FILTERED: Set[str] = {
 # Map domestic cups to their corresponding league for team filtering
 CUP_TO_LEAGUE_MAPPING: Dict[str, str] = {
     "FA Cup": "Premier League",
-    "League Cup": "Premier League",
+    "English League Cup": "Premier League",
     "Copa del Rey": "La Liga",
     "Coupe de France": "Ligue 1",
     "DFB-Pokal": "Bundesliga",

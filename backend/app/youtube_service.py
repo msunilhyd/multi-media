@@ -32,7 +32,7 @@ class YouTubeService:
         "DFB-Pokal": "UU6c1z7bA__85CIWZ_jpCK-Q",           # ESPN FC (US broadcaster)
         "Coppa Italia": "UUET00YnetHT7tOpu12v8jxg",        # CBS Sports Golazo / Paramount+
         "FA Cup": "UUqZQlzSHbVJrwrn5XvzrzcA",              # NBC Sports
-        "League Cup": "UUKy1dAqELo0zrOtPkf0eTMw",          # Sky Sports Football (UK broadcaster)
+        "English League Cup": "UUKy1dAqELo0zrOtPkf0eTMw",          # Sky Sports Football (UK broadcaster)
         "EFL Cup": "UUKy1dAqELo0zrOtPkf0eTMw",             # Sky Sports Football
         "Indian Super League": "UUSQ8md_xMUPrIxiH-lT2-xw",       # Indian Super League Official
         "MLS": "UUSZbXT5TLLW_i-5W8FZpFsg",                   # Major League Soccer Official
@@ -82,7 +82,7 @@ class YouTubeService:
             "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports Football
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
-        "League Cup": [
+        "English League Cup": [
             "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports Football (primary for EFL Cup)
             "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC

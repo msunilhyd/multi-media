@@ -14,7 +14,7 @@ const leagueColors: Record<string, string> = {
   'Champions League': 'bg-blue-800',
   'Europa League': 'bg-amber-500',
   'FA Cup': 'bg-red-500',
-  'League Cup': 'bg-green-500',
+  'English League Cup': 'bg-green-500',
   'Copa del Rey': 'bg-yellow-600',
   'Supercopa de España': 'bg-yellow-500',
   'DFB-Pokal': 'bg-red-700',

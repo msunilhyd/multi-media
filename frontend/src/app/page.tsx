@@ -9,19 +9,19 @@ export default function Home() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-3 sm:px-4 py-8 sm:py-12">
         {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-3 sm:mb-4">
             Welcome to <span className="font-[family-name:var(--font-playfair)] italic bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">LinusPlaylists</span>
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto px-2">
             Your one-stop destination for football highlights, music playlists, and fun entertainment
           </p>
         </div>
         
         {/* Cards Section */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-4 sm:gap-8 max-w-6xl mx-auto">
           {/* Football Card */}
           <Link href="/football" className="group">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">

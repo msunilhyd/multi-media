@@ -49,6 +49,11 @@ export default function LeagueSection({ leagueData, isExpanded, onToggle }: Leag
   const handleStandingsToggle = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent toggling the section
     
+    // If section is collapsed and we're about to show standings, expand first
+    if (!isExpanded && !showStandings) {
+      onToggle(); // Expand the section
+    }
+    
     if (!showStandings && !standings && !loadingStandings) {
       setLoadingStandings(true);
       try {

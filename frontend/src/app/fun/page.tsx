@@ -173,7 +173,7 @@ export default function FunPage() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {/* Page Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4 flex items-center justify-center gap-3">

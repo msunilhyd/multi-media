@@ -29,7 +29,7 @@ class ESPNFootballAPI:
         "caf.champions": "CAF Champions League",
         # Domestic cups
         "eng.fa": "FA Cup",
-        "eng.league_cup": "League Cup",
+        "eng.league_cup": "English League Cup",
         "esp.copa_del_rey": "Copa del Rey",
         "esp.supercopa": "Supercopa de España",
         "fra.coupe_de_france": "Coupe de France",

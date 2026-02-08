@@ -302,7 +302,8 @@ export default function FootballPage() {
           })));
           setHighlightsData(filteredData);
           if (filteredData.length > 0 && !loadMore) {
-            setExpandedLeagueIds(new Set([filteredData[0].league.id]));
+            // Expand all leagues by default
+            setExpandedLeagueIds(new Set(filteredData.map(l => l.league.id)));
           }
           return filteredData;
         } else {
@@ -381,9 +382,9 @@ export default function FootballPage() {
         return mergedData;
       } else {
         setHighlightsData(filteredData);
-        // Set the first league as expanded by default
+        // Expand all leagues by default
         if (filteredData.length > 0) {
-          setExpandedLeagueIds(new Set([filteredData[0].league.id]));
+          setExpandedLeagueIds(new Set(filteredData.map(l => l.league.id)));
         }
         return filteredData;
       }
@@ -471,7 +472,8 @@ export default function FootballPage() {
       
       setHighlightsData(weekHighlights);
       if (weekHighlights.length > 0) {
-        setExpandedLeagueIds(new Set([weekHighlights[0].league.id]));
+        // Expand all leagues by default
+        setExpandedLeagueIds(new Set(weekHighlights.map(l => l.league.id)));
       }
     } catch (err) {
       setError('Failed to load week highlights. Make sure the backend is running.');
@@ -606,7 +608,7 @@ export default function FootballPage() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {error && (
           <div className="mb-6 bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
@@ -937,7 +939,7 @@ export default function FootballPage() {
       <footer className="bg-gray-800 text-white py-6 mt-12">
         <div className="container mx-auto px-4 text-center">
           <p className="text-gray-400">
-            Football Highlights Dashboard • Data from ESPN • Videos from YouTube
+            @LinusPlaylists.com
           </p>
         </div>
       </footer>

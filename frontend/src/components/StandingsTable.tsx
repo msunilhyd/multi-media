@@ -46,11 +46,11 @@ export default function StandingsTable({ standings, compact = false }: Standings
                 <th className="py-2 px-3 text-left">#</th>
                 <th className="py-2 px-3 text-left">Team</th>
                 <th className="py-2 px-3 text-center font-bold">Pts</th>
-                <th className="py-2 px-3 text-center">P</th>
-                <th className="py-2 px-3 text-center">W</th>
-                <th className="py-2 px-3 text-center">D</th>
-                <th className="py-2 px-3 text-center">L</th>
-                <th className="py-2 px-3 text-center">GD</th>
+                <th className="py-2 px-1.5 text-center">P</th>
+                <th className="py-2 px-1.5 text-center">W</th>
+                <th className="py-2 px-1.5 text-center">D</th>
+                <th className="py-2 px-1.5 text-center">L</th>
+                <th className="py-2 px-1.5 text-center">GD</th>
               </tr>
             </thead>
             <tbody>
@@ -67,11 +67,11 @@ export default function StandingsTable({ standings, compact = false }: Standings
                     <span className="font-medium text-white truncate">{entry.team}</span>
                   </td>
                   <td className="py-2 px-3 text-center font-bold text-white text-base">{entry.points}</td>
-                  <td className="py-2 px-3 text-center text-gray-300">{entry.games_played}</td>
-                  <td className="py-2 px-3 text-center text-gray-300">{entry.wins}</td>
-                  <td className="py-2 px-3 text-center text-gray-300">{entry.draws}</td>
-                  <td className="py-2 px-3 text-center text-gray-300">{entry.losses}</td>
-                  <td className={`py-2 px-3 text-center font-medium ${entry.goal_difference > 0 ? 'text-green-500' : entry.goal_difference < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                  <td className="py-2 px-1.5 text-center text-gray-300">{entry.games_played}</td>
+                  <td className="py-2 px-1.5 text-center text-gray-300">{entry.wins}</td>
+                  <td className="py-2 px-1.5 text-center text-gray-300">{entry.draws}</td>
+                  <td className="py-2 px-1.5 text-center text-gray-300">{entry.losses}</td>
+                  <td className={`py-2 px-1.5 text-center font-medium ${entry.goal_difference > 0 ? 'text-green-500' : entry.goal_difference < 0 ? 'text-red-500' : 'text-gray-400'}`}>
                     {entry.goal_difference > 0 ? '+' : ''}{entry.goal_difference}
                   </td>
                 </tr>
@@ -85,87 +85,86 @@ export default function StandingsTable({ standings, compact = false }: Standings
 
   // Full view
   return (
-    <div className="bg-gray-900/50 rounded-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-800/50 text-gray-300 text-xs uppercase">
-              <th className="py-3 px-4 text-left sticky left-0 bg-gray-800/50 z-10">#</th>
-              <th className="py-3 px-4 text-left sticky left-12 bg-gray-800/50 z-10">Team</th>
-              <th className="py-3 px-4 text-center font-bold">Pts</th>
-              <th className="py-3 px-4 text-center">P</th>
-              <th className="py-3 px-4 text-center">W</th>
-              <th className="py-3 px-4 text-center">D</th>
-              <th className="py-3 px-4 text-center">L</th>
-              <th className="py-3 px-4 text-center">GF</th>
-              <th className="py-3 px-4 text-center">GA</th>
-              <th className="py-3 px-4 text-center">GD</th>
-              <th className="py-3 px-4 text-center">Form</th>
-            </tr>
-          </thead>
-          <tbody>
-            {standings.map((entry) => (
-              <tr
-                key={entry.position}
-                className={`border-b border-gray-800 hover:bg-gray-800/30 transition-colors ${getQualificationClass(entry.qualification_color)}`}
-              >
-                <td className="py-3 px-4 text-gray-400 font-medium sticky left-0 bg-gray-900/50">{entry.position}</td>
-                <td className="py-3 px-4 sticky left-12 bg-gray-900/50">
-                  <div className="flex items-center gap-3">
-                    {entry.logo && (
-                      <img src={entry.logo} alt={entry.team} className="w-6 h-6 object-contain" />
-                    )}
-                    <div>
-                      <div className="font-medium text-white">{entry.team}</div>
-                      {entry.qualification && (
-                        <div className="text-xs text-gray-400">{entry.qualification}</div>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="py-3 px-4 text-center font-bold text-white text-base">{entry.points}</td>
-                <td className="py-3 px-4 text-center text-gray-300">{entry.games_played}</td>
-                <td className="py-3 px-4 text-center text-gray-300">{entry.wins}</td>
-                <td className="py-3 px-4 text-center text-gray-300">{entry.draws}</td>
-                <td className="py-3 px-4 text-center text-gray-300">{entry.losses}</td>
-                <td className="py-3 px-4 text-center text-gray-300">{entry.goals_for}</td>
-                <td className="py-3 px-4 text-center text-gray-300">{entry.goals_against}</td>
-                <td className={`py-3 px-4 text-center font-medium ${entry.goal_difference > 0 ? 'text-green-500' : entry.goal_difference < 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                  {entry.goal_difference > 0 ? '+' : ''}{entry.goal_difference}
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex gap-1 justify-center">
-                    {entry.form && entry.form.split('').slice(-5).map((char, i) => (
-                      <div key={i} className="w-5 h-5 flex items-center justify-center text-xs">
-                        {getFormIcon(char)}
-                      </div>
-                    ))}
-                  </div>
-                </td>
+    <div className="flex justify-center py-4">
+      <div className="bg-gray-950 border border-gray-800 rounded-lg overflow-hidden shadow-xl">
+        <div className="overflow-x-auto">
+          <table className="text-xs whitespace-nowrap">
+            <thead>
+              <tr className="bg-gray-800/80 text-gray-300 text-xs uppercase">
+                <th className="py-1.5 px-0.5 text-center sticky left-0 bg-gray-800/80 z-10">#</th>
+                <th className="py-1.5 px-0.5 text-left sticky left-4 bg-gray-800/80 z-10">Team</th>
+                <th className="py-1.5 px-0 text-center font-bold">Pts</th>
+                <th className="py-1.5 px-0 text-center">P</th>
+                <th className="py-1.5 px-0 text-center">W</th>
+                <th className="py-1.5 px-0 text-center">D</th>
+                <th className="py-1.5 px-0 text-center">L</th>
+                <th className="py-1.5 px-0 text-center">GF</th>
+                <th className="py-1.5 px-0 text-center">GA</th>
+                <th className="py-1.5 px-0 text-center">GD</th>
+                <th className="py-1.5 px-0 text-center">Form</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Legend */}
-      <div className="p-4 bg-gray-800/30 border-t border-gray-800">
-        <div className="flex flex-wrap gap-4 text-xs text-gray-400">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-500"></div>
-            <span>Champions League</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-500"></div>
-            <span>Europa League</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-orange-500"></div>
-            <span>Conference League</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-red-500"></div>
-            <span>Relegation</span>
+            </thead>
+            <tbody>
+              {standings.map((entry) => (
+                <tr
+                  key={entry.position}
+                  className={`hover:bg-gray-800/40 transition-colors ${entry.position > 4 ? getQualificationClass(entry.qualification_color) : ''}`}
+                >
+                  <td className="py-1 px-0.5 text-gray-400 font-medium sticky left-0 bg-gray-950 text-center">{entry.position}</td>
+                  <td className="py-1 px-0.5 sticky left-4 bg-gray-950">
+                    <div className="flex items-center gap-0.5">
+                      {entry.logo && (
+                        <img src={entry.logo} alt={entry.team} className="w-3 h-3 object-contain flex-shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="font-medium text-white text-xs truncate">{entry.team}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-1 px-0 text-center font-bold text-white">{entry.points}</td>
+                  <td className="py-1 px-0 text-center text-gray-300">{entry.games_played}</td>
+                  <td className="py-1 px-0 text-center text-gray-300">{entry.wins}</td>
+                  <td className="py-1 px-0 text-center text-gray-300">{entry.draws}</td>
+                  <td className="py-1 px-0 text-center text-gray-300">{entry.losses}</td>
+                  <td className="py-1 px-0 text-center text-gray-300">{entry.goals_for}</td>
+                  <td className="py-1 px-0 text-center text-gray-300">{entry.goals_against}</td>
+                  <td className={`py-1 px-0 text-center font-medium text-xs ${entry.goal_difference > 0 ? 'text-green-500' : entry.goal_difference < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {entry.goal_difference > 0 ? '+' : ''}{entry.goal_difference}
+                  </td>
+                  <td className="py-1 px-0">
+                    <div className="flex gap-0 justify-center">
+                      {entry.form && entry.form.split('').slice(-5).map((char, i) => (
+                        <div key={i} className="w-3 h-3 flex items-center justify-center text-xs">
+                          {getFormIcon(char)}
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Legend */}
+        <div className="p-3 bg-gray-900/50 border-t border-gray-800">
+          <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500"></div>
+              <span>Champions League</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500"></div>
+              <span>Europa League</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-orange-500"></div>
+              <span>Conference League</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-red-500"></div>
+              <span>Relegation</span>
+            </div>
           </div>
         </div>
       </div>
