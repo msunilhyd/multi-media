@@ -289,6 +289,12 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
         startSeconds: nextSong.startSeconds ?? undefined,
         endSeconds: nextSong.endSeconds ?? undefined,
       });
+      // Auto-play the next song after loading
+      setTimeout(() => {
+        if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+          playerRef.current.playVideo();
+        }
+      }, 500);
     }
   }, []);
 
@@ -393,7 +399,8 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
               };
               const errorMsg = errorCodes[event.data] || `Unknown error (code: ${event.data})`;
               console.log('❌ VIDEO ERROR:', errorMsg, '- skipping to next song');
-              // Skip to next song on any error
+              // Skip to next song on any error and auto-play
+              setIsPlaying(true);
               handleNext();
             },
           },
