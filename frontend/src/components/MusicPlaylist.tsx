@@ -86,12 +86,14 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [showEmptyPlaylistMessage, setShowEmptyPlaylistMessage] = useState(false);
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const playlistRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const nextCallTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const addDropdownRef = useRef<HTMLDivElement>(null);
   
   // Helper to normalize language (trim whitespace and uppercase)
   const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
@@ -165,6 +167,20 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
   useEffect(() => {
     setIsMounted(true);
   }, []);
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (addDropdownRef.current && !addDropdownRef.current.contains(event.target as Node)) {
+        setShowAddDropdown(false);
+      }
+    };
+
+    if (showAddDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showAddDropdown]);
   
   // Show empty playlist message when appropriate
   useEffect(() => {
@@ -721,13 +737,44 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
                 </div>
                 <div className="flex items-center gap-2">
                   {session && (
-                    <button
-                      onClick={() => setShowSubmitModal(true)}
-                      className="p-2 bg-green-500/20 hover:bg-green-500/30 rounded-full transition-colors text-green-400"
-                      title="Submit a YouTube song"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
+                    <div className="relative" ref={addDropdownRef}>
+                      <button
+                        onClick={() => setShowAddDropdown(!showAddDropdown)}
+                        className="flex items-center gap-2 px-3 py-2 bg-green-500/20 hover:bg-green-500/30 rounded-full transition-colors text-green-400 font-medium text-sm"
+                        title="Add songs to your playlist"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Songs
+                      </button>
+                      
+                      {showAddDropdown && (
+                        <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50">
+                          <button
+                            onClick={() => {
+                              setShowSubmitModal(true);
+                              setShowAddDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-3 text-white hover:bg-purple-600/30 transition-colors flex items-center gap-2 border-b border-gray-700 first:rounded-t-lg"
+                          >
+                            <span className="text-lg">🎵</span>
+                            <div>
+                              <p className="font-semibold text-sm">From YouTube</p>
+                              <p className="text-xs text-gray-400">Add any YouTube song or music</p>
+                            </div>
+                          </button>
+                          
+                          <div className="px-4 py-3 text-gray-500 text-sm opacity-50">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">📋</span>
+                              <div>
+                                <p className="font-semibold text-sm text-gray-400">From Linus Playlist</p>
+                                <p className="text-xs text-gray-500">Coming soon</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                   {!isEntertainmentContent && (
                     <button
