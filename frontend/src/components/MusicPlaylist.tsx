@@ -5,6 +5,7 @@ import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, 
 import type { Song } from '@/lib/api';
 import PlaylistItem from './PlaylistItem';
 import SubmitSongModal from './SubmitSongModal';
+import AddFromLinusPlaylistModal from './AddFromLinusPlaylistModal';
 import { useSession } from 'next-auth/react';
 
 interface Playlist {
@@ -87,6 +88,7 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
   const [showFilters, setShowFilters] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showAddDropdown, setShowAddDropdown] = useState(false);
+  const [showAddFromLinusModal, setShowAddFromLinusModal] = useState(false);
   const [showEmptyPlaylistMessage, setShowEmptyPlaylistMessage] = useState(false);
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -763,15 +765,19 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
                             </div>
                           </button>
                           
-                          <div className="px-4 py-3 text-gray-500 text-sm opacity-50">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">📋</span>
-                              <div>
-                                <p className="font-semibold text-sm text-gray-400">From Linus Playlist</p>
-                                <p className="text-xs text-gray-500">Coming soon</p>
-                              </div>
+                          <button
+                            onClick={() => {
+                              setShowAddFromLinusModal(true);
+                              setShowAddDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-3 text-white hover:bg-purple-600/30 transition-colors flex items-center gap-2 last:rounded-b-lg"
+                          >
+                            <span className="text-lg">📋</span>
+                            <div>
+                              <p className="font-semibold text-sm">From Linus Playlist</p>
+                              <p className="text-xs text-gray-400">Browse and add songs</p>
                             </div>
-                          </div>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -932,6 +938,13 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
             onSongSubmitted();
           }
         }}
+      />
+      
+      {/* Add From Linus Playlist Modal */}
+      <AddFromLinusPlaylistModal
+        isOpen={showAddFromLinusModal}
+        onClose={() => setShowAddFromLinusModal(false)}
+        songs={playlist.songs}
       />
     </div>
   );
