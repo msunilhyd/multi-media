@@ -72,6 +72,8 @@ interface YTPlayer {
   getPlayerState: () => number;
   setPlaybackQuality: (quality: string) => void;
   getAvailableQualityLevels: () => string[];
+  getCurrentTime: () => number;
+  getDuration: () => number;
 }
 
 export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlaylistProps) {
