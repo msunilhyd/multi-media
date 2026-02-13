@@ -1,5 +1,3 @@
-'use client';
-
 export default function JsonLd() {
   const schema = {
     '@context': 'https://schema.org',
@@ -33,6 +31,7 @@ export default function JsonLd() {
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      suppressHydrationWarning
     />
   );
 }
