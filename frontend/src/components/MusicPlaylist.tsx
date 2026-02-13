@@ -69,6 +69,7 @@ interface YTPlayer {
   pauseVideo: () => void;
   loadVideoById: (options: { videoId: string; startSeconds?: number; endSeconds?: number }) => void;
   cueVideoById: (options: { videoId: string; startSeconds?: number; endSeconds?: number }) => void;
+  seekTo: (seconds: number, allowSeekAhead?: boolean) => void;
   destroy: () => void;
   getPlayerState: () => number;
   setPlaybackQuality: (quality: string) => void;
@@ -531,6 +532,7 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
   useEffect(() => {
     if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && currentSong) {
       try {
+        // Set metadata with song info
         navigator.mediaSession.metadata = new MediaMetadata({
           title: currentSong.title,
           artist: currentSong.composer,
@@ -543,76 +545,98 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
           ]
         });
 
-        // Play action
-        try {
-          navigator.mediaSession.setActionHandler('play', () => {
-            console.log('🔊 MediaSession: Play action triggered');
-            if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
-              playerRef.current.playVideo();
-              setIsPlaying(true);
-            }
-          });
-        } catch (e) {
-          console.warn('⚠️ Play action handler not supported:', e);
-        }
+        console.log('🎵 [MediaSession] Setting up:', currentSong.title);
+
+        // Play action handler
+        navigator.mediaSession.setActionHandler('play', () => {
+          console.log('▶️ [MediaSession] Play triggered from lock screen');
+          if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+            playerRef.current.playVideo();
+            setIsPlaying(true);
+          }
+        });
         
-        // Pause action
-        try {
-          navigator.mediaSession.setActionHandler('pause', () => {
-            console.log('⏸️ MediaSession: Pause action triggered');
-            if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-              playerRef.current.pauseVideo();
-              setIsPlaying(false);
-            }
-          });
-        } catch (e) {
-          console.warn('⚠️ Pause action handler not supported:', e);
-        }
+        // Pause action handler
+        navigator.mediaSession.setActionHandler('pause', () => {
+          console.log('⏸️ [MediaSession] Pause triggered from lock screen');
+          if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+            playerRef.current.pauseVideo();
+            setIsPlaying(false);
+          }
+        });
         
-        // Previous track action
-        try {
-          navigator.mediaSession.setActionHandler('previoustrack', () => {
-            console.log('⏪ MediaSession: Previous track action triggered');
-            handlePrevious();
-          });
-        } catch (e) {
-          console.warn('⚠️ Previous track action handler not supported:', e);
-        }
+        // Previous track action handler - FOR LOCK SCREEN BUTTONS
+        navigator.mediaSession.setActionHandler('previoustrack', () => {
+          console.log('⏪ [MediaSession] PREVIOUS button pressed on lock screen');
+          handlePrevious();
+        });
         
-        // Next track action - THIS IS IMPORTANT
-        try {
-          navigator.mediaSession.setActionHandler('nexttrack', () => {
-            console.log('⏩ MediaSession: Next track action triggered');
-            handleNext(false);
-          });
-        } catch (e) {
-          console.warn('⚠️ Next track action handler not supported:', e);
-        }
+        // Next track action handler - FOR LOCK SCREEN BUTTONS
+        navigator.mediaSession.setActionHandler('nexttrack', () => {
+          console.log('⏩ [MediaSession] NEXT button pressed on lock screen');
+          handleNext(false);
+        });
+
+        // Seek backward
+        navigator.mediaSession.setActionHandler('seekbackward', ({ seekOffset = 15 }) => {
+          console.log('⏮️ [MediaSession] Seek backward:', seekOffset, 'seconds');
+          if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function' && typeof playerRef.current.seekTo === 'function') {
+            const currentTime = playerRef.current.getCurrentTime();
+            playerRef.current.seekTo(Math.max(0, currentTime - seekOffset));
+          }
+        });
+
+        // Seek forward
+        navigator.mediaSession.setActionHandler('seekforward', ({ seekOffset = 15 }) => {
+          console.log('⏭️ [MediaSession] Seek forward:', seekOffset, 'seconds');
+          if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function' && typeof playerRef.current.seekTo === 'function') {
+            const currentTime = playerRef.current.getCurrentTime();
+            playerRef.current.seekTo(currentTime + seekOffset);
+          }
+        });
 
         // Update playback state
         navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+        console.log('📱 [MediaSession] Playback state:', isPlaying ? 'playing' : 'paused');
         
-        // Log which actions are supported on this device
-        console.log('📱 MediaSession supported actions:', navigator.mediaSession.metadata?.title);
-        
-        // Try to set position state for seek bar
-        try {
-          if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
-            const currentTime = playerRef.current.getCurrentTime() || 0;
-            const duration = playerRef.current.getDuration?.() || 0;
-            if (navigator.mediaSession.setPositionState && duration > 0) {
-              navigator.mediaSession.setPositionState({
-                duration: duration,
-                playbackRate: 1,
-                position: Math.max(0, currentTime)
-              });
+        // Update position state frequently for lock screen progress bar
+        const updatePositionState = () => {
+          try {
+            if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+              const currentTime = playerRef.current.getCurrentTime() || 0;
+              const duration = playerRef.current.getDuration?.() || 0;
+              
+              if (navigator.mediaSession.setPositionState && duration > 0) {
+                navigator.mediaSession.setPositionState({
+                  duration: duration,
+                  playbackRate: 1,
+                  position: Math.max(0, currentTime)
+                });
+              }
             }
+          } catch (e) {
+            // Position state not supported silently
           }
-        } catch (e) {
-          // Position state not supported
+        };
+
+        // Update position immediately and every 500ms while playing
+        updatePositionState();
+        let positionInterval: NodeJS.Timeout | null = null;
+        
+        if (isPlaying) {
+          positionInterval = setInterval(updatePositionState, 500);
+          console.log('🔄 [MediaSession] Position updates enabled (500ms interval)');
         }
+
+        return () => {
+          if (positionInterval) {
+            clearInterval(positionInterval);
+            console.log('🔄 [MediaSession] Position updates stopped');
+          }
+        };
+        
       } catch (e) {
-        console.error('❌ Error setting up MediaSession:', e);
+        console.error('❌ [MediaSession] Setup error:', e);
       }
     }
   }, [currentSong, playlist.title, isPlaying, handlePrevious, handleNext]);
