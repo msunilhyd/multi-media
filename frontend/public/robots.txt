@@ -1,0 +1,13 @@
+# robots.txt for Linus Playlists
+# Allow search engines to crawl all pages
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemaps
+Sitemap: https://linusplaylists.com/sitemap.xml
+
+# Crawl delay (be nice to servers)
+Crawl-delay: 1
