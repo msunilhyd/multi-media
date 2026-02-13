@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, SkipForward, PlayCircle } from 'lucide-react';
+import { X, SkipForward, PlayCircle, Home, ChevronLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Highlight } from '@/lib/api';
 
 interface PlayAllModalProps {
@@ -16,6 +17,7 @@ export default function PlayAllModal({ highlights, isOpen, onClose, leagueName }
   const [showControls, setShowControls] = useState(true);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const playerRef = useRef<HTMLIFrameElement>(null);
+  const router = useRouter();
 
   const currentHighlight = highlights[currentIndex];
   const hasNext = currentIndex < highlights.length - 1;
@@ -69,6 +71,19 @@ export default function PlayAllModal({ highlights, isOpen, onClose, leagueName }
     setShowControls(true);
   };
 
+  const handleGoBack = () => {
+    console.log('🔙 [PlayAllModal] Going back to football page');
+    onClose();
+  };
+
+  const handleGoHome = () => {
+    console.log('🏠 [PlayAllModal] Going to homepage');
+    onClose();
+    setTimeout(() => {
+      router.push('/');
+    }, 300);
+  };
+
   if (!isOpen || !currentHighlight) return null;
 
   return (
@@ -77,16 +92,50 @@ export default function PlayAllModal({ highlights, isOpen, onClose, leagueName }
       onMouseMove={handleShowControls}
       onTouchStart={handleShowControls}
     >
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        className={`absolute top-4 right-4 z-50 p-2 bg-black/50 hover:bg-black/70 rounded-full transition-all ${
-          showControls ? 'opacity-100' : 'opacity-0'
-        }`}
-        aria-label="Close"
-      >
-        <X className="w-6 h-6 text-white" />
-      </button>
+      {/* Always-Visible Top Navigation Bar - Mobile Friendly */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black via-black/80 to-transparent p-3 sm:p-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Back Button - Always Visible */}
+          <button
+            onClick={handleGoBack}
+            className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-sm sm:text-base"
+            aria-label="Go back to football page"
+            title="Go back (or press Escape)"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+
+          {/* Title/League Info */}
+          <div className="flex-1 text-center px-4">
+            <p className="text-white text-sm sm:text-base font-semibold line-clamp-1">
+              {leagueName} Highlights
+            </p>
+          </div>
+
+          {/* Home & Close Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleGoHome}
+              className="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              aria-label="Go to homepage"
+              title="Go to homepage"
+            >
+              <Home className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleGoBack}
+              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              aria-label="Close video player"
+              title="Close (or press Escape)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Original Close Button - Hidden on Mobile, Visible on Desktop when hovering video */}
 
       {/* Video Player */}
       <div className="w-full h-full flex items-center justify-center">
