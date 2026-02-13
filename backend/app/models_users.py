@@ -14,6 +14,7 @@ class User(Base):
     provider = Column(String(50), default="email")  # 'email', 'google', 'github'
     provider_id = Column(String(100))  # External provider user ID
     email_verified = Column(Boolean, default=False)
+    is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
@@ -109,3 +110,27 @@ class UserPlaylistSong(Base):
     __table_args__ = (
         UniqueConstraint("playlist_id", "song_id", name="unique_playlist_song"),
     )
+
+
+class UserSubmittedSong(Base):
+    """User-submitted songs pending admin review"""
+    __tablename__ = "user_submitted_songs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    youtube_url = Column(String(500), nullable=False)
+    youtube_video_id = Column(String(50), nullable=False, index=True)
+    title = Column(String(500), nullable=False)
+    artist = Column(String(200), nullable=True)
+    duration = Column(Integer, nullable=True)  # in seconds
+    thumbnail_url = Column(String(500), nullable=True)
+    status = Column(String(20), default="pending")  # 'pending', 'approved', 'rejected'
+    admin_notes = Column(Text, nullable=True)
+    added_to_playlist = Column(Boolean, default=False)  # Whether it was already added to user's playlist
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+    reviewer = relationship("User", foreign_keys=[reviewed_by])

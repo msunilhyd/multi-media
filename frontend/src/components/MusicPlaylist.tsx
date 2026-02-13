@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search, Plus } from 'lucide-react';
 import type { Song } from '@/lib/api';
 import PlaylistItem from './PlaylistItem';
+import SubmitSongModal from './SubmitSongModal';
+import { useSession } from 'next-auth/react';
 
 interface Playlist {
   slug: string;
@@ -71,6 +73,7 @@ interface YTPlayer {
 }
 
 export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
+  const { data: session } = useSession();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -81,6 +84,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   const [yearFilter, setYearFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const playlistRef = useRef<HTMLDivElement>(null);
@@ -703,6 +707,15 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {session && (
+                    <button
+                      onClick={() => setShowSubmitModal(true)}
+                      className="p-2 bg-green-500/20 hover:bg-green-500/30 rounded-full transition-colors text-green-400"
+                      title="Submit a YouTube song"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  )}
                   {!isEntertainmentContent && (
                     <button
                       onClick={() => setShowFilters(!showFilters)}
@@ -830,6 +843,15 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
           </div>
         </div>
       </div>
+      
+      {/* Submit Song Modal */}
+      <SubmitSongModal
+        isOpen={showSubmitModal}
+        onClose={() => setShowSubmitModal(false)}
+        onSongSubmitted={() => {
+          setShowSubmitModal(false);
+        }}
+      />
     </div>
   );
 }
