@@ -34,7 +34,16 @@ export default function SelectPlaylistModal({ isOpen, onClose, onSelectPlaylist,
   const fetchPlaylists = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/playlists?playlist_type=music');
+      console.log('📋 [SelectPlaylistModal] Fetching playlists with auth headers...');
+      const response = await fetch('/api/playlists?playlist_type=music', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(session as any).accessToken || ''}`,
+        },
+      });
+      
+      console.log(`📡 [SelectPlaylistModal] Response status: ${response.status}`);
+      
       if (response.ok) {
         let data = await response.json();
         
@@ -49,7 +58,7 @@ export default function SelectPlaylistModal({ isOpen, onClose, onSelectPlaylist,
         });
         
         setPlaylists(data);
-        console.log(`📋 [SelectPlaylistModal] Loaded ${data.length} playlists`);
+        console.log(`✅ [SelectPlaylistModal] Loaded ${data.length} playlists`);
         
         // Auto-select first (default) playlist
         if (data.length > 0) {
@@ -57,7 +66,9 @@ export default function SelectPlaylistModal({ isOpen, onClose, onSelectPlaylist,
           console.log(`🎯 [SelectPlaylistModal] Auto-selected: ${data[0].title}`);
         }
       } else {
-        console.error(`[SelectPlaylistModal] Failed to fetch playlists: ${response.status}`);
+        const errorText = await response.text();
+        console.error(`❌ [SelectPlaylistModal] Failed to fetch playlists: ${response.status} - ${errorText}`);
+        setPlaylists([]);
       }
     } catch (error) {
       console.error('❌ [SelectPlaylistModal] Error fetching playlists:', error);

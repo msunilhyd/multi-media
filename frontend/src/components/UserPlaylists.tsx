@@ -28,22 +28,40 @@ export default function UserPlaylists({ onSelectPlaylist, playlistType = 'music'
   const { data: session } = useSession();
 
   const fetchPlaylists = async () => {
-    if (!session) return;
+    if (!session) {
+      console.log('⚠️ [UserPlaylists] No session, skipping fetch');
+      return;
+    }
 
     try {
+      console.log(`📋 [UserPlaylists] Fetching playlists for type: ${playlistType}`);
       const url = new URL('/api/playlists', window.location.origin);
       if (playlistType) {
         url.searchParams.append('playlist_type', playlistType);
       }
       
-      const response = await fetch(url.toString());
+      console.log(`🌐 [UserPlaylists] Fetch URL: ${url.toString()}`);
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(session as any).accessToken || ''}`,
+        },
+      });
 
+      console.log(`📡 [UserPlaylists] Response status: ${response.status}`);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log(`✅ [UserPlaylists] Fetched ${data.length} playlists:`, data);
         setPlaylists(data);
+      } else {
+        const errorText = await response.text();
+        console.error(`❌ [UserPlaylists] Failed to fetch playlists: ${response.status} - ${errorText}`);
+        setPlaylists([]);
       }
     } catch (error) {
-      console.error('Error fetching playlists:', error);
+      console.error('❌ [UserPlaylists] Network error fetching playlists:', error);
+      setPlaylists([]);
     }
     setIsLoading(false);
   };

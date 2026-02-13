@@ -80,9 +80,16 @@ export default function MusicPage() {
     
     try {
       // Fetch the full playlist with songs
-      const response = await fetch(`/api/playlists/${playlist.id}`);
+      console.log(`📋 [handleSelectUserPlaylist] Loading playlist: ${playlist.title} (ID: ${playlist.id})`);
+      const response = await fetch(`/api/playlists/${playlist.id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(session as any).accessToken || ''}`,
+        },
+      });
       if (response.ok) {
         const fullPlaylist = await response.json();
+        console.log(`✅ [handlePlaylistSongFetched] Refreshed playlist with ${fullPlaylist.songs?.length || 0} songs`);
         setSelectedUserPlaylist(fullPlaylist);
         setActiveTab('user-playlist');
       }
@@ -100,7 +107,12 @@ export default function MusicPage() {
     try {
       // Fetch the user's default music playlist
       console.log('📡 [handleRefreshDefaultPlaylist] Fetching playlists list...');
-      const response = await fetch('/api/playlists?playlist_type=music');
+      const response = await fetch('/api/playlists?playlist_type=music', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(session as any).accessToken || ''}`,
+        },
+      });
       if (response.ok) {
         const playlists = await response.json();
         console.log('✅ [handleRefreshDefaultPlaylist] Fetched playlists:', playlists);
@@ -109,7 +121,12 @@ export default function MusicPage() {
           console.log('✅ [handleRefreshDefaultPlaylist] Found music playlist:', musicPlaylist);
           // Fetch full playlist with songs
           console.log(`📡 [handleRefreshDefaultPlaylist] Fetching full playlist (ID: ${musicPlaylist.id})...`);
-          const playlistResponse = await fetch(`/api/playlists/${musicPlaylist.id}`);
+          const playlistResponse = await fetch(`/api/playlists/${musicPlaylist.id}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${(session as any).accessToken || ''}`,
+            },
+          });
           if (playlistResponse.ok) {
             const fullPlaylist = await playlistResponse.json();
             console.log('✅ [handleRefreshDefaultPlaylist] Fetched full playlist:', fullPlaylist);
@@ -159,8 +176,13 @@ export default function MusicPage() {
     }
     try {
       // Fetch the updated playlist
-      console.log(`📡 [handleRefreshSelectedPlaylist] Fetching playlist (ID: ${selectedUserPlaylist.id})...`);
-      const response = await fetch(`/api/playlists/${selectedUserPlaylist.id}`);
+      console.log(`📡 [handleRefreshSelectedPlaylist] Fetching playlist (ID: ${selectedUserPlaylist.id}) with auth headers...`);
+      const response = await fetch(`/api/playlists/${selectedUserPlaylist.id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(session as any).accessToken || ''}`,
+        },
+      });
       if (response.ok) {
         const fullPlaylist = await response.json();
         console.log('✅ [handleRefreshSelectedPlaylist] Fetched updated playlist:', fullPlaylist);
