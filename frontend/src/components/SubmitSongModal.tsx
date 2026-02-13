@@ -130,30 +130,9 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!youtubeUrl.trim()) {
-      setResponse({ success: false, message: '', error: 'Please enter a YouTube URL' });
-      return;
-    }
-
-    if (!fetchedTitle) {
-      setResponse({ success: false, message: '', error: 'Could not retrieve song title. Please verify the YouTube URL.' });
-      return;
-    }
-
-    if (!session?.user) {
-      setResponse({ success: false, message: '', error: 'Please sign in to submit songs' });
-      return;
-    }
-
-    setIsLoading(true);
-    setResponse(null);
-
+  const submitSongToPlaylist = async (playlistId: number | null) => {
     try {
-      console.log(`🎵 [SubmitSongModal] Submitting song: "${fetchedTitle}"`);
-      console.log(`📋 [SubmitSongModal] Target playlist - ID: ${userPlaylistId || 'default'}, Title: ${playlistTitle || 'Default Music'}`);
+      console.log(`🎵 [SubmitSongModal] Submitting song: "${fetchedTitle}" to playlist ID: ${playlistId || 'default'}`);
       
       const res = await fetch(`${API_BASE_URL}/api/user-songs/submit`, {
         method: 'POST',
@@ -164,7 +143,7 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
         body: JSON.stringify({
           song_name: fetchedTitle,
           youtube_url: youtubeUrl,
-          playlist_id: userPlaylistId || null,
+          playlist_id: playlistId,
         }),
       });
 
@@ -175,28 +154,17 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
       if (data.success) {
         console.log('✅ [SubmitSongModal] Song submitted successfully');
         setSelectedSongTitle(fetchedTitle || 'Unknown Song');
-        setSelectedPlaylistName(playlistTitle || 'Default Music');
         setYoutubeUrl('');
         setFetchedTitle(null);
         setSuccessFeedback(true);
         
-        // If this is a user playlist, add directly without asking
-        if (userPlaylistId) {
-          console.log(`📋 [SubmitSongModal] Direct add to user playlist ID: ${userPlaylistId}`);
-          setTimeout(() => {
-            console.log('📢 [SubmitSongModal] Calling onSongSubmitted callback after 1.5s...');
-            onClose();
-            if (onSongSubmitted) {
-              onSongSubmitted();
-            }
-          }, 1500);
-        } else {
-          // Show playlist selector for default/Linus Playlist
-          setTimeout(() => {
-            setShowPlaylistSelector(true);
-            setResponse(null);
-          }, 500);
-        }
+        setTimeout(() => {
+          console.log('📢 [SubmitSongModal] Calling onSongSubmitted callback after 1.5s...');
+          onClose();
+          if (onSongSubmitted) {
+            onSongSubmitted();
+          }
+        }, 1500);
       } else {
         console.warn('❌ [SubmitSongModal] Song submission failed:', data.error);
         setSuccessFeedback(false);
@@ -215,20 +183,49 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!youtubeUrl.trim()) {
+      setResponse({ success: false, message: '', error: 'Please enter a YouTube URL' });
+      return;
+    }
+
+    if (!fetchedTitle) {
+      setResponse({ success: false, message: '', error: 'Could not retrieve song title. Please verify the YouTube URL.' });
+      return;
+    }
+
+    if (!session?.user) {
+      setResponse({ success: false, message: '', error: 'Please sign in to submit songs' });
+      return;
+    }
+
+    // If this is a user playlist (userPlaylistId provided), submit directly
+    if (userPlaylistId) {
+      console.log(`📋 [SubmitSongModal] User playlist detected, submitting directly to ID: ${userPlaylistId}`);
+      setIsLoading(true);
+      setResponse(null);
+      setSelectedPlaylistName(playlistTitle || 'Default Music');
+      await submitSongToPlaylist(userPlaylistId);
+    } else {
+      // For Linus Playlist (no userPlaylistId), ask user to select playlist FIRST
+      console.log('🎯 [SubmitSongModal] Linus Playlist detected, showing playlist selector');
+      setShowPlaylistSelector(true);
+      setResponse(null);
+    }
+  };
+
   const handlePlaylistSelected = (playlistId: number | null, playlistTitle?: string) => {
-    console.log(`📋 [SubmitSongModal] Playlist selected: ${playlistTitle} (ID: ${playlistId})`);
+    console.log(`📋 [SubmitSongModal] User selected playlist: "${playlistTitle}" (ID: ${playlistId})`);
     setSelectedPlaylistName(playlistTitle || 'Default Playlist');
     setShowPlaylistSelector(false);
-    setSuccessFeedback(true);
     
-    // Close the entire modal after playlist selection
-    setTimeout(() => {
-      console.log('📢 [SubmitSongModal] Calling onSongSubmitted callback...');
-      onClose();
-      if (onSongSubmitted) {
-        onSongSubmitted();
-      }
-    }, 1500);
+    // Now submit the song with the selected playlist
+    console.log(`🎵 [SubmitSongModal] Now submitting song to selected playlist...`);
+    setIsLoading(true);
+    setResponse(null);
+    submitSongToPlaylist(playlistId);
   };
 
   if (!isOpen) return null;
