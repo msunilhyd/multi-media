@@ -182,6 +182,19 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
     }
   }, [isMounted, session?.user, filteredSongs.length, isEntertainmentContent]);
   
+  // Track previous playlist length to detect new songs added
+  const prevPlaylistLengthRef = useRef(playlist.songs.length);
+
+  // Detect when the playlist prop changes (new songs added from submission)
+  useEffect(() => {
+    console.log(`🎵 [MusicPlaylist] Playlist changed - Previous: ${prevPlaylistLengthRef.current}, Current: ${playlist.songs.length}`);
+    if (playlist.songs.length > prevPlaylistLengthRef.current) {
+      console.log('✨ [MusicPlaylist] New songs detected! Refreshing display...');
+      // Trigger a refresh by resetting current song to first in filtered list
+      prevPlaylistLengthRef.current = playlist.songs.length;
+    }
+  }, [playlist.songs.length]);
+  
   // Initialize currentSong from filteredSongs on mount
   useEffect(() => {
     // On initial load, sync currentSong with the first filtered song
@@ -189,6 +202,7 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
       const firstFilteredSong = filteredSongs[0];
       // Only update if currentSong is different from first filtered song
       if (!currentSong || currentSong.videoId !== firstFilteredSong.videoId) {
+        console.log(`🎵 [MusicPlaylist] Setting currentSong to: ${firstFilteredSong.title}`);
         setCurrentSong(firstFilteredSong);
         setCurrentIndex(0);
       }

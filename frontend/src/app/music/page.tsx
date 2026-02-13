@@ -165,7 +165,9 @@ export default function MusicPage() {
         const fullPlaylist = await response.json();
         console.log('✅ [handleRefreshSelectedPlaylist] Fetched updated playlist:', fullPlaylist);
         console.log('📊 [handleRefreshSelectedPlaylist] Songs in playlist:', fullPlaylist.songs?.length);
+        console.log('🎵 [handleRefreshSelectedPlaylist] Songs:', fullPlaylist.songs?.map((s: any) => `${s.title} (${s.videoId})`) || 'none');
         setSelectedUserPlaylist(fullPlaylist);
+        console.log('✨ [handleRefreshSelectedPlaylist] Playlist state updated - UI should refresh with new songs');
       } else {
         console.error('❌ [handleRefreshSelectedPlaylist] Failed to fetch playlist:', response.status);
       }

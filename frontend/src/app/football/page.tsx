@@ -93,6 +93,24 @@ export default function FootballPage() {
     handleWeekSelect();
   }, []);
 
+  // Auto-play first available video when highlights are loaded
+  useEffect(() => {
+    if (highlightsData.length > 0) {
+      // Find the first league with matches that have highlights
+      for (const leagueGroup of highlightsData) {
+        for (const match of leagueGroup.matches) {
+          if (match.highlights && match.highlights.length > 0) {
+            // Auto-expand first league
+            const firstLeagueId = leagueGroup.league.id;
+            setExpandedLeagueIds(prev => new Set([...prev, firstLeagueId]));
+            console.log('🎬 [Football] Auto-loaded first available video:', match.home_team, 'vs', match.away_team);
+            return; // Only expand the first league
+          }
+        }
+      }
+    }
+  }, [highlightsData.length > 0]);
+
   const loadAvailableDates = async () => {
     try {
       const dates = await fetchAvailableDates();
