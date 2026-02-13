@@ -98,19 +98,39 @@ export default function MusicPage() {
       const response = await fetch('/api/playlists?playlist_type=music');
       if (response.ok) {
         const playlists = await response.json();
+        console.log('[DEBUG] Fetched playlists:', playlists);
         const musicPlaylist = playlists.find((p: UserPlaylist) => p.playlist_type === 'music');
         if (musicPlaylist) {
+          console.log('[DEBUG] Found music playlist:', musicPlaylist);
           // Fetch full playlist with songs
           const playlistResponse = await fetch(`/api/playlists/${musicPlaylist.id}`);
           if (playlistResponse.ok) {
             const fullPlaylist = await playlistResponse.json();
-            // Update songs with the newly fetched songs
-            setSongs(fullPlaylist.songs || []);
+            console.log('[DEBUG] Fetched full playlist with songs:', fullPlaylist.songs);
+            console.log('[DEBUG] Song count:', fullPlaylist.songs?.length);
+            // Get the newly added song (should be at the end)
+            const newSongs = fullPlaylist.songs || [];
+            if (newSongs.length > 0) {
+              const newSong = newSongs[newSongs.length - 1];
+              console.log('[DEBUG] New song to add:', newSong);
+              // Add the new song to the beginning of the current Linus Playlist
+              setSongs(prevSongs => {
+                // Check if song already exists to avoid duplicates
+                if (prevSongs.some(s => s.id === newSong.id)) {
+                  console.log('[DEBUG] Song already exists, skipping');
+                  return prevSongs;
+                }
+                console.log('[DEBUG] Adding new song to display');
+                return [newSong, ...prevSongs];
+              });
+            }
           }
+        } else {
+          console.log('[DEBUG] No music playlist found');
         }
       }
     } catch (error) {
-      console.error('Error refreshing playlist:', error);
+      console.error('[DEBUG] Error refreshing playlist:', error);
     }
   };
 
