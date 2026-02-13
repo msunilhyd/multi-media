@@ -116,7 +116,7 @@ export default function MusicPage() {
             console.log('📊 [handleRefreshDefaultPlaylist] Total songs in playlist:', fullPlaylist.songs?.length);
             const newSongs = fullPlaylist.songs || [];
             if (newSongs.length > 0) {
-              newSongs.forEach((song: Song, idx) => {
+              newSongs.forEach((song: Song, idx: number) => {
                 console.log(`  Song ${idx + 1}: ${song.title} (ID: ${song.id}, VideoID: ${song.videoId})`);
               });
               // Get the newly added song (should be at the end)
