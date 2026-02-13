@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import httpx
 
 from ..database import get_db
-from ..models_users import User, NotificationPreference, UserFavoriteTeam, UserPlaylist
+from ..models_users import User, UserPlaylist, NotificationPreference, UserFavoriteTeam
 from ..schemas_users import UserCreate, UserResponse, UserLogin
 
 # JWT settings
@@ -103,6 +103,16 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    
+    # Create default playlist for user
+    default_playlist = UserPlaylist(
+        user_id=new_user.id,
+        title=f"{new_user.name}'s playlist",
+        description="Your personal music playlist",
+        playlist_type='music'
+    )
+    db.add(default_playlist)
+    db.commit()
     
     # Create JWT token
     access_token = create_access_token(new_user.id)

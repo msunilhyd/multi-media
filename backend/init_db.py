@@ -19,6 +19,42 @@ try:
 except ImportError:
     print("Warning: Some models could not be imported")
 
+def run_migrations():
+    """Run SQL migrations from migrations folder"""
+    from pathlib import Path
+    from sqlalchemy import text
+    
+    migrations_dir = Path(__file__).parent / 'migrations'
+    
+    # Migrations to run in order
+    migrations = [
+        'add_admin_and_submitted_songs.sql'
+    ]
+    
+    for migration_file in migrations:
+        migration_path = migrations_dir / migration_file
+        if migration_path.exists():
+            try:
+                with open(migration_path, 'r') as f:
+                    sql_script = f.read()
+                
+                connection = engine.raw_connection()
+                cursor = connection.cursor()
+                
+                # Split by semicolon and execute each statement
+                statements = [s.strip() for s in sql_script.split(';') if s.strip()]
+                for statement in statements:
+                    cursor.execute(statement)
+                
+                connection.commit()
+                cursor.close()
+                connection.close()
+                print(f"   ✅ {migration_file}")
+            except Exception as e:
+                print(f"   ⚠️  {migration_file}: {e}")
+        else:
+            print(f"   ⚠️  Migration file not found: {migration_file}")
+
 def init_database():
     """Initialize database with all tables"""
     print("🚀 Starting database initialization...")
@@ -72,6 +108,10 @@ def init_database():
                 print(f"✅ Inserted {len(default_leagues)} default leagues")
             else:
                 print(f"\n✅ Database already has {league_count} leagues")
+        
+        # Run migrations
+        print("\n🔄 Running migrations...")
+        run_migrations()
         
         print("\n✨ Database initialization completed successfully!")
         return True

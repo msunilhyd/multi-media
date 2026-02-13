@@ -85,6 +85,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showEmptyPlaylistMessage, setShowEmptyPlaylistMessage] = useState(false);
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const playlistRef = useRef<HTMLDivElement>(null);
@@ -163,6 +164,17 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+  
+  // Show empty playlist message when appropriate
+  useEffect(() => {
+    if (isMounted && session?.user && filteredSongs.length === 0 && !isEntertainmentContent) {
+      setShowEmptyPlaylistMessage(true);
+      const timer = setTimeout(() => {
+        setShowEmptyPlaylistMessage(false);
+      }, 8000); // Hide after 8 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [isMounted, session?.user, filteredSongs.length, isEntertainmentContent]);
   
   // Initialize currentSong from filteredSongs on mount
   useEffect(() => {
@@ -843,6 +855,24 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
           </div>
         </div>
       </div>
+      
+      {/* Empty Playlist Toast Message */}
+      {showEmptyPlaylistMessage && (
+        <div className="fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 sm:max-w-md bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-lg p-4 animate-fade-in-up">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <p className="font-semibold text-sm">Add songs to your playlist</p>
+              <p className="text-xs text-white/80 mt-1">Click the + button to submit YouTube songs</p>
+            </div>
+            <button
+              onClick={() => setShowEmptyPlaylistMessage(false)}
+              className="text-white/60 hover:text-white transition-colors flex-shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Submit Song Modal */}
       <SubmitSongModal
