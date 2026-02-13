@@ -532,73 +532,109 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
   useEffect(() => {
     if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && currentSong) {
       try {
-        // Set metadata with song info
+        console.log('🎵 [MediaSession] Initializing for:', currentSong.title);
+
+        // Create artwork array with valid image URL
+        const artwork = [
+          {
+            src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect fill="%238B5CF6" width="96" height="96"/><text x="50%" y="50%" font-size="48" fill="white" text-anchor="middle" dominant-baseline="central">♪</text></svg>',
+            sizes: '96x96',
+            type: 'image/svg+xml'
+          },
+          {
+            src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect fill="%238B5CF6" width="128" height="128"/><text x="50%" y="50%" font-size="64" fill="white" text-anchor="middle" dominant-baseline="central">♪</text></svg>',
+            sizes: '128x128',
+            type: 'image/svg+xml'
+          },
+          {
+            src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect fill="%238B5CF6" width="256" height="256"/><text x="50%" y="50%" font-size="128" fill="white" text-anchor="middle" dominant-baseline="central">♪</text></svg>',
+            sizes: '256x256',
+            type: 'image/svg+xml'
+          }
+        ];
+
+        // Set metadata - THIS MUST BE FIRST
         navigator.mediaSession.metadata = new MediaMetadata({
           title: currentSong.title,
-          artist: currentSong.composer,
+          artist: currentSong.composer || 'Unknown Artist',
           album: playlist.title,
-          artwork: [
-            { src: 'https://via.placeholder.com/96x96/8B5CF6/FFFFFF?text=♪', sizes: '96x96', type: 'image/png' },
-            { src: 'https://via.placeholder.com/128x128/8B5CF6/FFFFFF?text=♪', sizes: '128x128', type: 'image/png' },
-            { src: 'https://via.placeholder.com/192x192/8B5CF6/FFFFFF?text=♪', sizes: '192x192', type: 'image/png' },
-            { src: 'https://via.placeholder.com/256x256/8B5CF6/FFFFFF?text=♪', sizes: '256x256', type: 'image/png' },
-          ]
+          artwork: artwork
         });
 
-        console.log('🎵 [MediaSession] Setting up:', currentSong.title);
+        console.log('✅ [MediaSession] Metadata set for:', {
+          title: currentSong.title,
+          artist: currentSong.composer,
+          album: playlist.title
+        });
+
+        // Set initial playback state - THIS SHOULD BE BEFORE HANDLERS
+        navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+        console.log('📱 [MediaSession] Initial playback state:', isPlaying ? 'playing' : 'paused');
+
+        // NOW register action handlers
 
         // Play action handler
-        navigator.mediaSession.setActionHandler('play', () => {
+        const playHandler = () => {
           console.log('▶️ [MediaSession] Play triggered from lock screen');
           if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
             playerRef.current.playVideo();
             setIsPlaying(true);
           }
-        });
-        
+        };
+        navigator.mediaSession.setActionHandler('play', playHandler);
+        console.log('✅ [MediaSession] Play handler registered');
+
         // Pause action handler
-        navigator.mediaSession.setActionHandler('pause', () => {
+        const pauseHandler = () => {
           console.log('⏸️ [MediaSession] Pause triggered from lock screen');
           if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
             playerRef.current.pauseVideo();
             setIsPlaying(false);
           }
-        });
-        
+        };
+        navigator.mediaSession.setActionHandler('pause', pauseHandler);
+        console.log('✅ [MediaSession] Pause handler registered');
+
         // Previous track action handler - FOR LOCK SCREEN BUTTONS
-        navigator.mediaSession.setActionHandler('previoustrack', () => {
+        const previousHandler = () => {
           console.log('⏪ [MediaSession] PREVIOUS button pressed on lock screen');
           handlePrevious();
-        });
-        
+        };
+        navigator.mediaSession.setActionHandler('previoustrack', previousHandler);
+        console.log('✅ [MediaSession] Previous track handler registered');
+
         // Next track action handler - FOR LOCK SCREEN BUTTONS
-        navigator.mediaSession.setActionHandler('nexttrack', () => {
+        const nextHandler = () => {
           console.log('⏩ [MediaSession] NEXT button pressed on lock screen');
           handleNext(false);
-        });
+        };
+        navigator.mediaSession.setActionHandler('nexttrack', nextHandler);
+        console.log('✅ [MediaSession] Next track handler registered');
 
         // Seek backward
-        navigator.mediaSession.setActionHandler('seekbackward', ({ seekOffset = 15 }) => {
+        const seekBackHandler = ({ seekOffset = 15 }: { seekOffset?: number }) => {
           console.log('⏮️ [MediaSession] Seek backward:', seekOffset, 'seconds');
           if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function' && typeof playerRef.current.seekTo === 'function') {
             const currentTime = playerRef.current.getCurrentTime();
             playerRef.current.seekTo(Math.max(0, currentTime - seekOffset));
           }
-        });
+        };
+        navigator.mediaSession.setActionHandler('seekbackward', seekBackHandler as any);
+        console.log('✅ [MediaSession] Seek backward handler registered');
 
         // Seek forward
-        navigator.mediaSession.setActionHandler('seekforward', ({ seekOffset = 15 }) => {
+        const seekForwardHandler = ({ seekOffset = 15 }: { seekOffset?: number }) => {
           console.log('⏭️ [MediaSession] Seek forward:', seekOffset, 'seconds');
           if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function' && typeof playerRef.current.seekTo === 'function') {
             const currentTime = playerRef.current.getCurrentTime();
             playerRef.current.seekTo(currentTime + seekOffset);
           }
-        });
+        };
+        navigator.mediaSession.setActionHandler('seekforward', seekForwardHandler as any);
+        console.log('✅ [MediaSession] Seek forward handler registered');
 
-        // Update playback state
-        navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-        console.log('📱 [MediaSession] Playback state:', isPlaying ? 'playing' : 'paused');
-        
+        console.log('🎵 [MediaSession] All handlers registered successfully');
+
         // Update position state frequently for lock screen progress bar
         const updatePositionState = () => {
           try {
@@ -663,6 +699,14 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleNext, handlePrevious]);
+
+  // Update MediaSession playback state when isPlaying changes
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+      console.log('📱 [MediaSession] Updated playback state to:', isPlaying ? 'playing' : 'paused');
+    }
+  }, [isPlaying]);
 
   // Wake Lock API to keep screen active during playback
   useEffect(() => {
