@@ -247,22 +247,24 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
     }
   }, [currentIndex, filteredSongs]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback((isAutomatic: boolean = false) => {
     const songs = filteredSongsRef.current;
     console.log('HandleNext called - Current songs array:', songs.map(s => s.title));
     console.log('HandleNext called - Current index:', currentIndexRef.current);
     
     if (songs.length === 0) return;
     
-    // Debounce multiple rapid calls
-    if (nextCallTimeoutRef.current) {
-      console.log('Debouncing rapid handleNext call');
-      return;
+    // Only debounce manual clicks, not automatic ENDED events
+    if (!isAutomatic) {
+      if (nextCallTimeoutRef.current) {
+        console.log('Debouncing rapid handleNext call');
+        return;
+      }
+      
+      nextCallTimeoutRef.current = setTimeout(() => {
+        nextCallTimeoutRef.current = null;
+      }, 1000); // Prevent rapid calls within 1 second
     }
-    
-    nextCallTimeoutRef.current = setTimeout(() => {
-      nextCallTimeoutRef.current = null;
-    }, 1000); // Prevent rapid calls within 1 second
     
     const prevIndex = currentIndexRef.current;
     let nextIndex: number;
@@ -290,11 +292,14 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
         endSeconds: nextSong.endSeconds ?? undefined,
       });
       // Auto-play the next song after loading
+      // Use shorter timeout for automatic events to ensure smooth background playback
+      const autoplayDelay = isAutomatic ? 300 : 500;
       setTimeout(() => {
         if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
           playerRef.current.playVideo();
+          console.log('▶️ Auto-playing next song for background playback');
         }
-      }, 500);
+      }, autoplayDelay);
     }
   }, []);
 
@@ -374,6 +379,8 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
                 } catch (e) {
                   // Quality setting not supported
                 }
+                // Update playing state for MediaSession
+                setIsPlaying(true);
               }
               
               switch (event.data) {
@@ -384,8 +391,9 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
                   setIsPlaying(false);
                   break;
                 case window.YT.PlayerState.ENDED:
-                  console.log('VIDEO ENDED - calling handleNext from onStateChange');
-                  handleNext();
+                  console.log('VIDEO ENDED - calling handleNext from onStateChange for background playback');
+                  // Pass true for isAutomatic to bypass debounce and play faster
+                  handleNext(true);
                   break;
               }
             },
@@ -472,6 +480,13 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
         startSeconds: prevSong.startSeconds ?? undefined,
         endSeconds: prevSong.endSeconds ?? undefined,
       });
+      // Auto-play the previous song for continuous background playback
+      setTimeout(() => {
+        if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+          playerRef.current.playVideo();
+          console.log('▶️ Auto-playing previous song for background playback');
+        }
+      }, 300);
     }
   }, [currentIndex]);
 
@@ -490,22 +505,38 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
         ]
       });
 
+      // Play action - critical for lock screen controls
       navigator.mediaSession.setActionHandler('play', () => {
-        if (playerRef.current) {
+        console.log('🔊 MediaSession: Play action triggered');
+        if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
           playerRef.current.playVideo();
+          setIsPlaying(true);
         }
       });
       
+      // Pause action - critical for lock screen controls
       navigator.mediaSession.setActionHandler('pause', () => {
-        if (playerRef.current) {
+        console.log('⏸️ MediaSession: Pause action triggered');
+        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
           playerRef.current.pauseVideo();
+          setIsPlaying(false);
         }
       });
       
-      navigator.mediaSession.setActionHandler('previoustrack', handlePrevious);
-      navigator.mediaSession.setActionHandler('nexttrack', handleNext);
+      // Previous track action - for lock screen previous button
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        console.log('⏪ MediaSession: Previous track action triggered');
+        handlePrevious();
+      });
+      
+      // Next track action - for lock screen next button
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        console.log('⏩ MediaSession: Next track action triggered');
+        // Pass false for isAutomatic since this is a manual action from lock screen
+        handleNext(false);
+      });
 
-      // Update playback state
+      // Update playback state to enable lock screen controls
       navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
     }
   }, [currentSong, playlist.title, isPlaying, handlePrevious, handleNext]);
@@ -581,6 +612,12 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
             {/* Now Playing Info */}
             {currentSong && (
               <div className="bg-gradient-to-r from-purple-900 to-purple-800 p-4">
+                {/* Background Audio & Lock Screen Indicator */}
+                <div className="flex items-center gap-2 mb-3 text-xs text-green-300 bg-green-500/10 px-3 py-2 rounded-full w-fit">
+                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                  <span>Background audio • Lock screen controls enabled</span>
+                </div>
+                
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-white font-bold text-lg truncate">

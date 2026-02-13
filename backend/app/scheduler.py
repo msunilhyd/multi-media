@@ -114,7 +114,9 @@ async def fetch_matches_for_date(target_date: date, db: Session) -> int:
                     match_count += 1
                     
     except Exception as e:
-        print(f"[Scheduler] Error fetching matches for {target_date}: {e}")
+        print(f"[Scheduler] ❌ ERROR fetching matches for {target_date}: {e}")
+        import traceback
+        print(f"[Scheduler] Traceback: {traceback.format_exc()}")
         db.rollback()
     
     return match_count
@@ -125,6 +127,9 @@ async def prefetch_upcoming_matches():
     Daily job to pre-fetch matches for the next 7 days.
     Only fetches dates that haven't been fetched yet (smart incremental fetch).
     Also refreshes today's matches to get updated scores/status.
+    
+    FIX: Don't mark past dates as fetched if we got 0 matches (indicates potential API failure).
+    This ensures matches aren't missed due to temporary API issues.
     """
     print(f"\n[Scheduler] Starting daily match prefetch at {datetime.now()}")
     
@@ -132,6 +137,7 @@ async def prefetch_upcoming_matches():
     today = date.today()
     total_new_matches = 0
     dates_fetched = 0
+    failed_dates = []
     
     try:
         for i in range(7):
@@ -155,8 +161,29 @@ async def prefetch_upcoming_matches():
                 total_new_matches += match_count
                 dates_fetched += 1
                 
-                # Mark date as fetched
-                if not already_fetched:
+                # CRITICAL FIX: Only mark past dates as fetched if we got matches
+                # If past date has 0 matches, it might indicate API failure - don't mark as fetched
+                # This allows reconciliation job to catch it and refetch
+                should_mark_fetched = False
+                
+                if target_date > today:
+                    # Future dates: mark as fetched (matches may be added later)
+                    should_mark_fetched = True
+                elif match_count > 0:
+                    # Past/today with matches: mark as fetched
+                    should_mark_fetched = True
+                elif target_date == today:
+                    # Today with 0 matches: still mark as fetched (will update via refresh_today_scores)
+                    should_mark_fetched = True
+                else:
+                    # Past date with 0 matches: DON'T mark as fetched!
+                    # Indicates potential API issue - reconciliation will refetch
+                    should_mark_fetched = False
+                    failed_dates.append(target_date)
+                    print(f"[Scheduler] ⚠️  FLAGGED: {target_date} has 0 matches - may be API issue, not marking as fetched")
+                
+                # Mark date as fetched if appropriate
+                if not already_fetched and should_mark_fetched:
                     fetched_record = models.FetchedDate(fetch_date=target_date)
                     db.merge(fetched_record)
                     try:
@@ -164,7 +191,10 @@ async def prefetch_upcoming_matches():
                     except:
                         db.rollback()
                 
-                print(f"[Scheduler] Fetched {match_count} new matches for {target_date}")
+                if match_count > 0:
+                    print(f"[Scheduler] ✓ Fetched {match_count} new matches for {target_date}")
+                else:
+                    print(f"[Scheduler] Found 0 matches for {target_date}")
             else:
                 print(f"[Scheduler] Skipping {target_date} - already fetched")
         
@@ -178,9 +208,14 @@ async def prefetch_upcoming_matches():
         
     except Exception as e:
         print(f"[Scheduler] Error in prefetch job: {e}")
+        import traceback
+        print(f"[Scheduler] Traceback: {traceback.format_exc()}")
         db.rollback()
     finally:
         db.close()
+    
+    if failed_dates:
+        print(f"[Scheduler] ⚠️  ALERT: {len(failed_dates)} dates flagged for reconciliation: {failed_dates}")
     
     print(f"[Scheduler] Prefetch complete! Fetched {dates_fetched} dates, {total_new_matches} new matches\n")
 
@@ -607,13 +642,14 @@ async def fetch_highlights_for_matches_missing_them():
 async def reconcile_todays_matches():
     """
     Comprehensive reconciliation job that:
-    1. Re-fetches ALL of today's matches from ESPN (regardless of DB state)
-    2. Ensures all matches exist in DB and are up-to-date
-    3. Checks that all finished matches have highlights
-    4. Triggers highlight fetch for any finished matches missing highlights
+    1. Checks yesterday's matches are in DB (safety net for missed matches from prefetch)
+    2. Re-fetches ALL of today's matches from ESPN (regardless of DB state)
+    3. Ensures all matches exist in DB and are up-to-date
+    4. Checks that all finished matches have highlights
+    5. Triggers highlight fetch for any finished matches missing highlights
     
     This is a safety net to catch:
-    - Matches that were missed during morning prefetch
+    - Matches that were missed during morning prefetch (e.g., Copa del Rey Barcelona vs Atletico)
     - Status updates that were missed
     - Missing highlights for finished matches
     
@@ -624,6 +660,7 @@ async def reconcile_todays_matches():
     
     db = SessionLocal()
     today = date.today()
+    yesterday = today - timedelta(days=1)
     stats = {
         'matches_fetched': 0,
         'matches_added': 0,
@@ -635,178 +672,204 @@ async def reconcile_todays_matches():
     try:
         football_api = get_football_api()
         
+        # Step 0: CHECK YESTERDAY'S MATCHES (Safety net for missed matches)
+        # This catches matches that should have been fetched during morning prefetch but weren't
+        print(f"[Scheduler] Step 0: Checking yesterday's matches for completeness ({yesterday})...")
+        
+        yesterday_matches_db = db.query(models.Match).filter(
+            models.Match.match_date == yesterday
+        ).count()
+        
+        print(f"[Scheduler] Yesterday in DB: {yesterday_matches_db} matches")
+        
+        # Fetch yesterday from ESPN to verify we have everything
+        yesterday_espn = await football_api.get_matches_for_date(yesterday)
+        
+        if yesterday_espn:
+            yesterday_total_espn = sum(len(matches) for matches in yesterday_espn.values())
+            print(f"[Scheduler] Yesterday on ESPN: {yesterday_total_espn} matches")
+            
+            if yesterday_total_espn > yesterday_matches_db:
+                print(f"[Scheduler] ⚠️  ALERT: Missing {yesterday_total_espn - yesterday_matches_db} matches from yesterday!")
+                print(f"[Scheduler] Re-fetching yesterday from ESPN...")
+                
+                # Re-fetch yesterday to add missing matches
+                added_count = await fetch_matches_for_date(yesterday, db)
+                if added_count > 0:
+                    stats['matches_added'] += added_count
+                    print(f"[Scheduler] ✓ Added {added_count} missing matches from yesterday")
+        
         # Step 1: Fetch ALL today's matches from ESPN (fresh from source)
         print(f"[Scheduler] Step 1: Fetching all matches for {today} from ESPN API...")
         fixtures_by_league = await football_api.get_matches_for_date(today)
         
         if not fixtures_by_league:
             print(f"[Scheduler] No matches found on ESPN for {today}")
-            return
-        
-        all_espn_matches = []
-        for league_name, matches in fixtures_by_league.items():
-            all_espn_matches.extend([(league_name, match) for match in matches])
-        
-        stats['matches_fetched'] = len(all_espn_matches)
-        print(f"[Scheduler] Found {len(all_espn_matches)} matches on ESPN")
-        
-        # Step 2: Ensure all matches exist in DB and are up-to-date
-        print(f"[Scheduler] Step 2: Reconciling matches with database...")
-        
-        for league_name, match in all_espn_matches:
-            # Get or create league
-            league_info = models.LEAGUE_MAPPINGS.get(league_name, {
-                "slug": league_name.lower().replace(" ", "-"),
-                "country": "Unknown"
-            })
-            
-            db_league = db.query(models.League).filter(
-                models.League.slug == league_info["slug"]
-            ).first()
-            
-            if not db_league:
-                db_league = models.League(
-                    name=league_name,
-                    slug=league_info["slug"],
-                    country=league_info.get("country"),
-                    display_order=0
-                )
-                db.add(db_league)
-                db.commit()
-                db.refresh(db_league)
-            
-            # Find existing match
-            existing = None
-            if match.get("espn_event_id"):
-                existing = db.query(models.Match).filter(
-                    models.Match.espn_event_id == match.get("espn_event_id")
-                ).first()
-            
-            if not existing:
-                existing = db.query(models.Match).filter(
-                    models.Match.home_team == match["home_team"],
-                    models.Match.away_team == match["away_team"],
-                    models.Match.match_date == today
-                ).first()
-            
-            home_score = match.get("home_score")
-            away_score = match.get("away_score")
-            
-            # Determine status: if has scores, mark as finished
-            if home_score is not None and away_score is not None:
-                status = "finished"
-            else:
-                status = match["status"]
-            
-            if existing:
-                # Update existing match if anything changed
-                changed = False
-                if existing.status != status:
-                    existing.status = status
-                    changed = True
-                if existing.home_score != home_score:
-                    existing.home_score = home_score
-                    changed = True
-                if existing.away_score != away_score:
-                    existing.away_score = away_score
-                    changed = True
-                
-                if changed:
-                    db.commit()
-                    stats['matches_updated'] += 1
-                    print(f"[Scheduler] Updated: {match['home_team']} vs {match['away_team']} - {status} ({home_score}-{away_score})")
-            else:
-                # Add new match (this was missed during prefetch!)
-                new_match = models.Match(
-                    league_id=db_league.id,
-                    home_team=match["home_team"],
-                    away_team=match["away_team"],
-                    home_score=home_score,
-                    away_score=away_score,
-                    match_date=today,
-                    match_time=match.get("match_time"),
-                    status=status,
-                    espn_event_id=match.get("espn_event_id")
-                )
-                db.add(new_match)
-                db.commit()
-                stats['matches_added'] += 1
-                print(f"[Scheduler] ⚠️  ADDED MISSING MATCH: {match['home_team']} vs {match['away_team']}")
-        
-        # Step 3: Check all finished matches for highlights
-        print(f"[Scheduler] Step 3: Checking highlights for finished matches...")
-        
-        finished_matches = db.query(models.Match).filter(
-            models.Match.match_date == today,
-            models.Match.status == 'finished'
-        ).all()
-        
-        if not finished_matches:
-            print(f"[Scheduler] No finished matches yet today")
         else:
-            print(f"[Scheduler] Found {len(finished_matches)} finished matches")
+            all_espn_matches = []
+            for league_name, matches in fixtures_by_league.items():
+                all_espn_matches.extend([(league_name, match) for match in matches])
             
-            youtube_service = get_youtube_service()
+            stats['matches_fetched'] = len(all_espn_matches)
+            print(f"[Scheduler] Found {len(all_espn_matches)} matches on ESPN")
             
-            for match in finished_matches:
-                # Check if highlights exist
-                existing_highlight = db.query(models.Highlight).filter(
-                    models.Highlight.match_id == match.id
+            # Step 2: Ensure all matches exist in DB and are up-to-date
+            print(f"[Scheduler] Step 2: Reconciling matches with database...")
+            
+            for league_name, match in all_espn_matches:
+                # Get or create league
+                league_info = models.LEAGUE_MAPPINGS.get(league_name, {
+                    "slug": league_name.lower().replace(" ", "-"),
+                    "country": "Unknown"
+                })
+                
+                db_league = db.query(models.League).filter(
+                    models.League.slug == league_info["slug"]
                 ).first()
                 
-                if existing_highlight:
-                    stats['highlights_found'] += 1
-                    continue
-                
-                # Check if this is a match of interest
-                league_name = match.league.name if match.league else "Unknown"
-                if not match_has_team_of_interest(match.home_team, match.away_team, league_name):
-                    continue
-                
-                # Missing highlights - try to fetch now
-                print(f"[Scheduler] ⚠️  Missing highlights: {match.home_team} vs {match.away_team}")
-                stats['highlights_missing'] += 1
-                
-                try:
-                    videos = youtube_service.search_highlights(
-                        home_team=match.home_team,
-                        away_team=match.away_team,
-                        league=league_name,
-                        match_date=match.match_date,
-                        max_results=1
+                if not db_league:
+                    db_league = models.League(
+                        name=league_name,
+                        slug=league_info["slug"],
+                        country=league_info.get("country"),
+                        display_order=0
                     )
+                    db.add(db_league)
+                    db.commit()
+                    db.refresh(db_league)
+                
+                # Find existing match
+                existing = None
+                if match.get("espn_event_id"):
+                    existing = db.query(models.Match).filter(
+                        models.Match.espn_event_id == match.get("espn_event_id")
+                    ).first()
+                
+                if not existing:
+                    existing = db.query(models.Match).filter(
+                        models.Match.home_team == match["home_team"],
+                        models.Match.away_team == match["away_team"],
+                        models.Match.match_date == today
+                    ).first()
+                
+                home_score = match.get("home_score")
+                away_score = match.get("away_score")
+                
+                # Determine status: if has scores, mark as finished
+                if home_score is not None and away_score is not None:
+                    status = "finished"
+                else:
+                    status = match["status"]
+                
+                if existing:
+                    # Update existing match if anything changed
+                    changed = False
+                    if existing.status != status:
+                        existing.status = status
+                        changed = True
+                    if existing.home_score != home_score:
+                        existing.home_score = home_score
+                        changed = True
+                    if existing.away_score != away_score:
+                        existing.away_score = away_score
+                        changed = True
                     
-                    if videos:
-                        video = videos[0]
-                        highlight = models.Highlight(
-                            match_id=match.id,
-                            youtube_video_id=video['video_id'],
-                            title=video['title'],
-                            description=video.get('description', ''),
-                            thumbnail_url=video.get('thumbnail_url', ''),
-                            channel_title=video.get('channel_title', ''),
-                            published_at=video.get('published_at'),
-                            view_count=video.get('view_count', 0),
-                            duration=video.get('duration', '')
-                        )
-                        db.add(highlight)
+                    if changed:
                         db.commit()
-                        print(f"[Scheduler] ✓ Found and added highlights!")
+                        stats['matches_updated'] += 1
+                        print(f"[Scheduler] Updated: {match['home_team']} vs {match['away_team']} - {status} ({home_score}-{away_score})")
+                else:
+                    # Add new match (this was missed during prefetch!)
+                    new_match = models.Match(
+                        league_id=db_league.id,
+                        home_team=match["home_team"],
+                        away_team=match["away_team"],
+                        home_score=home_score,
+                        away_score=away_score,
+                        match_date=today,
+                        match_time=match.get("match_time"),
+                        status=status,
+                        espn_event_id=match.get("espn_event_id")
+                    )
+                    db.add(new_match)
+                    db.commit()
+                    stats['matches_added'] += 1
+                    print(f"[Scheduler] ⚠️  ADDED MISSING MATCH: {match['home_team']} vs {match['away_team']}")
+            
+            # Step 3: Check all finished matches for highlights
+            print(f"[Scheduler] Step 3: Checking highlights for finished matches...")
+            
+            finished_matches = db.query(models.Match).filter(
+                models.Match.match_date == today,
+                models.Match.status == 'finished'
+            ).all()
+            
+            if not finished_matches:
+                print(f"[Scheduler] No finished matches yet today")
+            else:
+                print(f"[Scheduler] Found {len(finished_matches)} finished matches")
+                
+                youtube_service = get_youtube_service()
+                
+                for match in finished_matches:
+                    # Check if highlights exist
+                    existing_highlight = db.query(models.Highlight).filter(
+                        models.Highlight.match_id == match.id
+                    ).first()
+                    
+                    if existing_highlight:
                         stats['highlights_found'] += 1
-                        stats['highlights_missing'] -= 1
-                    else:
-                        print(f"[Scheduler] ✗ Highlights not available yet (will retry next run)")
+                        continue
+                    
+                    # Check if this is a match of interest
+                    league_name = match.league.name if match.league else "Unknown"
+                    if not match_has_team_of_interest(match.home_team, match.away_team, league_name):
+                        continue
+                    
+                    # Missing highlights - try to fetch now
+                    print(f"[Scheduler] ⚠️  Missing highlights: {match.home_team} vs {match.away_team}")
+                    stats['highlights_missing'] += 1
+                    
+                    try:
+                        videos = youtube_service.search_highlights(
+                            home_team=match.home_team,
+                            away_team=match.away_team,
+                            league=league_name,
+                            match_date=match.match_date,
+                            max_results=1
+                        )
                         
-                except YouTubeQuotaExhaustedError:
-                    print(f"[Scheduler] YouTube quota exhausted - will retry in next reconciliation")
-                    break
-                except Exception as e:
-                    print(f"[Scheduler] Error fetching highlights: {e}")
-                    continue
+                        if videos:
+                            video = videos[0]
+                            highlight = models.Highlight(
+                                match_id=match.id,
+                                youtube_video_id=video['video_id'],
+                                title=video['title'],
+                                description=video.get('description', ''),
+                                thumbnail_url=video.get('thumbnail_url', ''),
+                                channel_title=video.get('channel_title', ''),
+                                published_at=video.get('published_at'),
+                                view_count=video.get('view_count', 0),
+                                duration=video.get('duration', '')
+                            )
+                            db.add(highlight)
+                            db.commit()
+                            print(f"[Scheduler] ✓ Found and added highlights!")
+                            stats['highlights_found'] += 1
+                            stats['highlights_missing'] -= 1
+                        else:
+                            print(f"[Scheduler] ✗ Highlights not available yet (will retry next run)")
+                            
+                    except YouTubeQuotaExhaustedError:
+                        print(f"[Scheduler] YouTube quota exhausted - will retry in next reconciliation")
+                        break
+                    except Exception as e:
+                        print(f"[Scheduler] Error fetching highlights: {e}")
+                        continue
         
         # Print summary
         print(f"\n[Scheduler] ==================== RECONCILIATION SUMMARY ====================")
-        print(f"[Scheduler] ESPN Matches Fetched: {stats['matches_fetched']}")
+        print(f"[Scheduler] ESPN Matches Fetched (today): {stats['matches_fetched']}")
         print(f"[Scheduler] DB Matches Added: {stats['matches_added']}")
         print(f"[Scheduler] DB Matches Updated: {stats['matches_updated']}")
         print(f"[Scheduler] Finished Matches with Highlights: {stats['highlights_found']}")
@@ -820,6 +883,8 @@ async def reconcile_todays_matches():
         
     except Exception as e:
         print(f"[Scheduler] Error in reconciliation job: {e}")
+        import traceback
+        print(f"[Scheduler] Traceback: {traceback.format_exc()}")
         db.rollback()
     finally:
         db.close()
@@ -834,7 +899,18 @@ def start_scheduler():
             prefetch_upcoming_matches,
             CronTrigger(hour=6, minute=0),
             id="prefetch_matches",
-            name="Daily Match Prefetch",
+            name="Daily Match Prefetch (Morning)",
+            replace_existing=True
+        )
+        
+        # Schedule SECOND prefetch at 6:00 PM to catch matches ESPN adds between 6 AM-6 PM
+        # This reduces the maximum miss window from 24 hours to 12 hours
+        # (ESPN often publishes cup match data with 3-7 day lead time, not always available at first check)
+        scheduler.add_job(
+            prefetch_upcoming_matches,
+            CronTrigger(hour=18, minute=0),
+            id="prefetch_matches_evening",
+            name="Daily Match Prefetch (Evening)",
             replace_existing=True
         )
         
@@ -890,11 +966,13 @@ def start_scheduler():
         
         scheduler.start()
         print("[Scheduler] Started! Jobs scheduled:")
-        print("  - Daily prefetch at 6:00 AM")
+        print("  - Daily prefetch at 6:00 AM (7-day lookahead)")
+        print("  - Daily prefetch at 6:00 PM (catch late ESPN data updates)")
         print("  - Score status refresh every 2 hours")
         print("  - Highlights fetch at 8 AM and 2 PM (yesterday's matches)")
         print("  - Today's highlights fetch every hour (8 AM - 11 PM)")
         print("  - Match reconciliation at 12 PM, 6 PM, 11 PM (safety net)")
+        print("[Scheduler] Note: Maximum miss window for ESPN data is now 12 hours (6 PM same day)")
     except Exception as e:
         print(f"[Scheduler] Warning: Failed to start scheduler: {e}")
         print("[Scheduler] Application will continue without scheduled jobs")

@@ -12,12 +12,15 @@ import {
   Modal,
   TextInput,
   Linking,
+  AppState,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { defaultPlaylist, Song } from '../data/playlists';
 import { useAuth } from '../contexts/AuthContext';
+import { trackPlayerService } from '../services/trackPlayerService';
+import { Audio } from 'expo-av';
 
 interface Playlist {
   id: number;
@@ -246,27 +249,59 @@ export default function MusicPlayerScreen() {
     }, [isPlaying])
   );
 
+  // Initialize TrackPlayer for background audio playback and lock screen controls
+  useEffect(() => {
+    const initTrackPlayer = async () => {
+      try {
+        await trackPlayerService.setup();
+        
+        // Register callbacks for lock screen next/previous buttons
+        trackPlayerService.setNavigationCallbacks(
+          () => {
+            console.log('🎵 Lock screen/Car play: Next button pressed');
+            playNext();
+          },
+          () => {
+            console.log('🎵 Lock screen/Car play: Previous button pressed');
+            playPrevious();
+          }
+        );
+        
+        console.log('🎵 TrackPlayer initialized - background audio ready');
+      } catch (error) {
+        console.warn('TrackPlayer initialization failed, will fallback to YouTube:', error);
+      }
+    };
+
+    initTrackPlayer();
+  }, []);
+
   const playSong = async (song: Song, filteredIndex?: number) => {
     try {
-      console.log(`🎵 Opening song in YouTube: ${song.title} (${song.videoId})`);
+      console.log(`🎵 Now playing: ${song.title} (${song.videoId})`);
       setIsLoading(true);
       
       setCurrentSong(song);
       // Find the index in the full playlist
       const fullIndex = defaultPlaylist.findIndex(s => s.id === song.id);
       setCurrentIndex(fullIndex);
-      setIsPlaying(false);
-      console.log(`✅ Ready to play in YouTube`);
       
-      // Open YouTube link
-      const youtubeUrl = `https://www.youtube.com/watch?v=${song.videoId}`;
-      await Linking.openURL(youtubeUrl);
+      // Use TrackPlayer for native audio playback with background support ✅
+      try {
+        await trackPlayerService.playSong(song);
+        setIsPlaying(true);
+        console.log(`✅ Playing with TrackPlayer - background audio enabled`);
+      } catch (error) {
+        // Fallback to YouTube if TrackPlayer fails
+        console.warn('TrackPlayer failed, falling back to YouTube:', error);
+        const youtubeUrl = `https://www.youtube.com/watch?v=${song.videoId}`;
+        await Linking.openURL(youtubeUrl);
+      }
       
       // Scroll to show the song centered in filtered list
       if (filteredIndex !== undefined && filteredIndex >= 0) {
         setTimeout(() => {
           const itemHeight = 80;
-          // Simple calculation: position song at 250px from top of visible area
           const targetPosition = Math.max(0, (filteredIndex * itemHeight) - 700);
           
           flatListRef.current?.scrollToOffset({
@@ -277,8 +312,8 @@ export default function MusicPlayerScreen() {
         }, 300);
       }
     } catch (error) {
-      console.error('❌ Error opening YouTube:', error);
-      Alert.alert('Error', `Could not open YouTube for ${song.title}`);
+      console.error('❌ Error playing song:', error);
+      Alert.alert('Error', `Could not play ${song.title}`);
     } finally {
       setIsLoading(false);
     }
@@ -291,11 +326,19 @@ export default function MusicPlayerScreen() {
         return;
       }
       
-      // When user taps play/pause, open YouTube for the current song
-      const youtubeUrl = `https://www.youtube.com/watch?v=${currentSong.videoId}`;
-      await Linking.openURL(youtubeUrl);
+      // Use TrackPlayer for native play/pause (works in background)
+      if (isPlaying) {
+        await trackPlayerService.pause();
+        setIsPlaying(false);
+        console.log('⏸️  Paused');
+      } else {
+        await trackPlayerService.play();
+        setIsPlaying(true);
+        console.log('▶️  Playing');
+      }
     } catch (error) {
       console.error('Toggle play/pause error:', error);
+      Alert.alert('Error', 'Could not toggle playback');
     }
   };
 
@@ -528,10 +571,10 @@ export default function MusicPlayerScreen() {
       {/* Bottom Player */}
       {currentSong && (
         <View style={styles.bottomPlayer}>
-          {/* YouTube Attribution */}
-          <View style={styles.youtubeAttributionBadge}>
-            <Ionicons name="logo-youtube" size={14} color="#ef4444" />
-            <Text style={styles.youtubeAttributionText}>Powered by YouTube</Text>
+          {/* Background Playback Indicator */}
+          <View style={styles.backgroundPlaybackBadge}>
+            <Ionicons name="phone-portrait-outline" size={14} color="#22c55e" />
+            <Text style={styles.backgroundPlaybackText}>Background audio enabled • Lock screen controls</Text>
           </View>
           
           <View style={styles.bottomControls}>
@@ -828,7 +871,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 30,
   },
-  youtubeAttributionBadge: {
+  backgroundPlaybackBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -836,9 +879,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingVertical: 6,
   },
-  youtubeAttributionText: {
+  backgroundPlaybackText: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: '#22c55e',
     fontWeight: '500',
   },
   bottomControls: {
