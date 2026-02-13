@@ -409,7 +409,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
               console.log('❌ VIDEO ERROR:', errorMsg, '- skipping to next song');
               // Skip to next song on any error and auto-play
               setIsPlaying(true);
-              handleNext();
+              handleNext(false);
             },
           },
         });
@@ -673,7 +673,7 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
                     )}
                   </button>
                   <button
-                    onClick={handleNext}
+                    onClick={() => handleNext(false)}
                     className="p-2 text-white hover:text-purple-300 transition-colors"
                     disabled={!isReady}
                   >
