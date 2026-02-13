@@ -17,6 +17,7 @@ interface Playlist {
 interface MusicPlaylistProps {
   playlist: Playlist;
   onSongSubmitted?: () => void;
+  userPlaylistId?: number; // If provided, this is a user playlist and should add directly
 }
 
 // YouTube IFrame API types
@@ -76,7 +77,7 @@ interface YTPlayer {
   getDuration: () => number;
 }
 
-export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlaylistProps) {
+export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistId }: MusicPlaylistProps) {
   const { data: session } = useSession();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -971,6 +972,8 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
             console.warn('⚠️ [MusicPlaylist] No onSongSubmitted callback provided by parent');
           }
         }}
+        userPlaylistId={userPlaylistId}
+        playlistTitle={userPlaylistId ? playlist.title : undefined}
       />
       
       {/* Add From Linus Playlist Modal */}

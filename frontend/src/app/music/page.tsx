@@ -234,6 +234,7 @@ export default function MusicPage() {
                 songs: selectedUserPlaylist.songs || []
               }}
               onSongSubmitted={handleRefreshSelectedPlaylist}
+              userPlaylistId={selectedUserPlaylist.id}
             />
           </div>
         );

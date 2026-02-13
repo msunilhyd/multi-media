@@ -10,6 +10,8 @@ interface SubmitSongModalProps {
   onClose: () => void;
   playlists?: Array<{ id: number; title: string }>;
   onSongSubmitted?: () => void;
+  userPlaylistId?: number; // If provided, add directly to this playlist (don't show selector)
+  playlistTitle?: string; // Title of the user playlist
 }
 
 interface SubmitResponse {
@@ -58,7 +60,7 @@ const fetchYouTubeTitle = async (videoId: string): Promise<string | null> => {
   return null;
 };
 
-export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: SubmitSongModalProps) {
+export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, userPlaylistId, playlistTitle }: SubmitSongModalProps) {
   const { data: session } = useSession();
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [fetchedTitle, setFetchedTitle] = useState<string | null>(null);
@@ -140,11 +142,23 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
         setYoutubeUrl('');
         setFetchedTitle(null);
         
-        // Show playlist selector instead of closing immediately
-        setTimeout(() => {
-          setShowPlaylistSelector(true);
-          setResponse(null);
-        }, 500);
+        // If this is a user playlist, add directly without asking
+        if (userPlaylistId) {
+          console.log(`📋 [SubmitSongModal] Direct add to user playlist ID: ${userPlaylistId}`);
+          setTimeout(() => {
+            console.log('📢 [SubmitSongModal] Calling onSongSubmitted callback...');
+            onClose();
+            if (onSongSubmitted) {
+              onSongSubmitted();
+            }
+          }, 500);
+        } else {
+          // Show playlist selector for default/Linus Playlist
+          setTimeout(() => {
+            setShowPlaylistSelector(true);
+            setResponse(null);
+          }, 500);
+        }
       } else {
         console.warn('❌ [SubmitSongModal] Song submission failed:', data.error);
       }
