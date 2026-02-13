@@ -13379,7 +13379,7 @@ export const defaultPlaylist: Song[] = [
 
 export const playlistKi: Playlist = {
   slug: "playlistKi",
-  title: "My Music Collection",
+  title: "Linus Playlist",
   songs: defaultPlaylist,
 };
 

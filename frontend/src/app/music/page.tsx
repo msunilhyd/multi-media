@@ -118,7 +118,7 @@ export default function MusicPage() {
           <MusicPlaylist 
             playlist={{
               slug: 'default',
-              title: 'My Music Collection',
+              title: 'Linus Playlist',
               songs: songs
             }} 
           />

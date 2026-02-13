@@ -81,7 +81,7 @@ tsContent += '];\n\n';
 
 tsContent += 'export const playlistKi: Playlist = {\n';
 tsContent += '  slug: "playlistKi",\n';
-tsContent += '  title: "My Music Collection",\n';
+tsContent += '  title: "Linus Playlist",\n';
 tsContent += '  songs: defaultPlaylist,\n';
 tsContent += '};\n\n';
 
