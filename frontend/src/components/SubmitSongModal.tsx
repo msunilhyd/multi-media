@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Music, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import SelectPlaylistModal from './SelectPlaylistModal';
@@ -69,8 +69,41 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
   const [response, setResponse] = useState<SubmitResponse | null>(null);
   const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
   const [selectedSongTitle, setSelectedSongTitle] = useState('');
+  const [selectedPlaylistName, setSelectedPlaylistName] = useState('');
+  const [successFeedback, setSuccessFeedback] = useState(false);
+  const urlInputRef = useRef<HTMLInputElement>(null);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+  // Auto-focus URL input when modal opens
+  useEffect(() => {
+    if (isOpen && urlInputRef.current) {
+      setTimeout(() => urlInputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      if (e.key === 'Escape') {
+        console.log('⌨️ [SubmitSongModal] Escape pressed, closing modal');
+        onClose();
+      } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        console.log('⌨️ [SubmitSongModal] Cmd+Enter pressed, submitting form');
+        const form = document.querySelector('form[data-submit-song-form]') as HTMLFormElement;
+        if (form) {
+          form.dispatchEvent(new Event('submit', { bubbles: true }));
+        }
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
 
   const handleUrlChange = async (url: string) => {
     setYoutubeUrl(url);
@@ -120,6 +153,8 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
 
     try {
       console.log(`🎵 [SubmitSongModal] Submitting song: "${fetchedTitle}"`);
+      console.log(`📋 [SubmitSongModal] Target playlist - ID: ${userPlaylistId || 'default'}, Title: ${playlistTitle || 'Default Music'}`);
+      
       const res = await fetch(`${API_BASE_URL}/api/user-songs/submit`, {
         method: 'POST',
         headers: {
@@ -129,6 +164,7 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
         body: JSON.stringify({
           song_name: fetchedTitle,
           youtube_url: youtubeUrl,
+          playlist_id: userPlaylistId || null,
         }),
       });
 
@@ -139,19 +175,21 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
       if (data.success) {
         console.log('✅ [SubmitSongModal] Song submitted successfully');
         setSelectedSongTitle(fetchedTitle || 'Unknown Song');
+        setSelectedPlaylistName(playlistTitle || 'Default Music');
         setYoutubeUrl('');
         setFetchedTitle(null);
+        setSuccessFeedback(true);
         
         // If this is a user playlist, add directly without asking
         if (userPlaylistId) {
           console.log(`📋 [SubmitSongModal] Direct add to user playlist ID: ${userPlaylistId}`);
           setTimeout(() => {
-            console.log('📢 [SubmitSongModal] Calling onSongSubmitted callback...');
+            console.log('📢 [SubmitSongModal] Calling onSongSubmitted callback after 1.5s...');
             onClose();
             if (onSongSubmitted) {
               onSongSubmitted();
             }
-          }, 500);
+          }, 1500);
         } else {
           // Show playlist selector for default/Linus Playlist
           setTimeout(() => {
@@ -161,10 +199,12 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
         }
       } else {
         console.warn('❌ [SubmitSongModal] Song submission failed:', data.error);
+        setSuccessFeedback(false);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Failed to submit song';
       console.error('❌ [SubmitSongModal] Error submitting song:', errorMsg);
+      setSuccessFeedback(false);
       setResponse({
         success: false,
         message: '',
@@ -177,7 +217,9 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
 
   const handlePlaylistSelected = (playlistId: number | null, playlistTitle?: string) => {
     console.log(`📋 [SubmitSongModal] Playlist selected: ${playlistTitle} (ID: ${playlistId})`);
+    setSelectedPlaylistName(playlistTitle || 'Default Playlist');
     setShowPlaylistSelector(false);
+    setSuccessFeedback(true);
     
     // Close the entire modal after playlist selection
     setTimeout(() => {
@@ -186,7 +228,7 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
       if (onSongSubmitted) {
         onSongSubmitted();
       }
-    }, 300);
+    }, 1500);
   };
 
   if (!isOpen) return null;
@@ -211,11 +253,17 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4" data-submit-song-form>
           {/* Info */}
-          <p className="text-sm text-gray-400">
-            Paste a YouTube link and we'll automatically fetch the song title.
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm text-gray-400">
+              Paste a YouTube link and we'll automatically fetch the song title.
+            </p>
+            <p className="text-xs text-gray-500">
+              💡 Tip: Press <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-xs">⌘ Enter</kbd> to submit,{' '}
+              <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-xs">Esc</kbd> to close
+            </p>
+          </div>
 
           {/* YouTube URL Input */}
           <div>
@@ -223,6 +271,7 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
               YouTube URL
             </label>
             <input
+              ref={urlInputRef}
               type="url"
               placeholder="https://www.youtube.com/watch?v=..."
               value={youtubeUrl}
@@ -269,6 +318,25 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
                   }`}
                 >
                   {response.message || response.error}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Success Feedback */}
+          {successFeedback && response?.success && (
+            <div className="flex items-start gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/30 animate-in">
+              <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-300">Song Added Successfully! 🎵</p>
+                <p className="text-xs text-green-200 mt-1">
+                  <span className="font-semibold">{selectedSongTitle}</span>
+                  {selectedPlaylistName && (
+                    <>
+                      <br />
+                      Added to: <span className="font-semibold">{selectedPlaylistName}</span>
+                    </>
+                  )}
                 </p>
               </div>
             </div>

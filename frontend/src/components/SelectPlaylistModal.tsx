@@ -36,19 +36,31 @@ export default function SelectPlaylistModal({ isOpen, onClose, onSelectPlaylist,
       setIsLoading(true);
       const response = await fetch('/api/playlists?playlist_type=music');
       if (response.ok) {
-        const data = await response.json();
+        let data = await response.json();
+        
+        // Sort playlists: Default first, then by name
+        data.sort((a: UserPlaylist, b: UserPlaylist) => {
+          const aIsDefault = a.title.toLowerCase().includes('default') || a.title.toLowerCase().includes('my music');
+          const bIsDefault = b.title.toLowerCase().includes('default') || b.title.toLowerCase().includes('my music');
+          
+          if (aIsDefault && !bIsDefault) return -1;
+          if (!aIsDefault && bIsDefault) return 1;
+          return a.title.localeCompare(b.title);
+        });
+        
         setPlaylists(data);
-        // Auto-select first playlist or default if only one exists
-        if (data.length === 1) {
+        console.log(`📋 [SelectPlaylistModal] Loaded ${data.length} playlists`);
+        
+        // Auto-select first (default) playlist
+        if (data.length > 0) {
           setSelectedPlaylistId(data[0].id);
-        } else if (data.length > 0) {
-          // Select "Default" or first one
-          const defaultPlaylist = data.find((p: UserPlaylist) => p.title.toLowerCase().includes('default') || p.title.toLowerCase().includes('my'));
-          setSelectedPlaylistId(defaultPlaylist?.id || data[0].id);
+          console.log(`🎯 [SelectPlaylistModal] Auto-selected: ${data[0].title}`);
         }
+      } else {
+        console.error(`[SelectPlaylistModal] Failed to fetch playlists: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error fetching playlists:', error);
+      console.error('❌ [SelectPlaylistModal] Error fetching playlists:', error);
     } finally {
       setIsLoading(false);
     }
@@ -57,6 +69,7 @@ export default function SelectPlaylistModal({ isOpen, onClose, onSelectPlaylist,
   const handleSelectPlaylist = () => {
     if (selectedPlaylistId !== null) {
       const selected = playlists.find(p => p.id === selectedPlaylistId);
+      console.log(`✅ [SelectPlaylistModal] Selected playlist: ${selected?.title} (ID: ${selectedPlaylistId})`);
       onSelectPlaylist(selectedPlaylistId, selected?.title);
     } else if (playlists.length === 0) {
       // No playlists - add to default
@@ -67,7 +80,7 @@ export default function SelectPlaylistModal({ isOpen, onClose, onSelectPlaylist,
   };
 
   const handleAddToDefault = () => {
-    console.log('✅ [SelectPlaylistModal] Adding to default music playlist');
+    console.log('✅ [SelectPlaylistModal] Adding to default music playlist (no playlist_id sent)');
     onSelectPlaylist(null, 'Default Playlist');
     onClose();
   };

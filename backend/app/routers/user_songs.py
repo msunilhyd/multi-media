@@ -38,6 +38,7 @@ class SubmittedSongResponse(BaseModel):
 class SubmitSongRequest(BaseModel):
     song_name: str
     youtube_url: str
+    playlist_id: Optional[int] = None  # If provided, add to this specific playlist
 
 
 class SubmitSongResponse(BaseModel):
@@ -71,7 +72,7 @@ async def submit_song(
     Submit a song to user's playlist.
     """
     try:
-        logger.info(f"User {current_user.id} submitting song: {request.song_name}")
+        logger.info(f"🎵 [submit_song] Starting submission - User {current_user.id}, Song: '{request.song_name}', Target Playlist ID: {request.playlist_id or 'default'}")
         
         # Extract video ID from URL
         video_id = extract_video_id_from_url(request.youtube_url)
@@ -107,30 +108,49 @@ async def submit_song(
         db.refresh(submitted_song)
         logger.info(f"✅ Created submitted song record: {submitted_song.id}")
         
-        # Automatically add to user's music playlist (or create one)
-        playlist = db.query(UserPlaylist).filter(
-            UserPlaylist.user_id == current_user.id,
-            UserPlaylist.playlist_type == 'music'
-        ).first()
-        
-        # If no music playlist exists, create one
-        if not playlist:
-            logger.info(f"📋 Creating default music playlist for user {current_user.id}")
-            playlist = UserPlaylist(
-                user_id=current_user.id,
-                title=f"{current_user.name}'s playlist",
-                description="My personal music playlist",
-                playlist_type='music'
-            )
-            db.add(playlist)
-            db.commit()
-            db.refresh(playlist)
-            logger.info(f"✅ Created new playlist with ID: {playlist.id}")
+        # Automatically add to user's selected playlist or default music playlist
+        if request.playlist_id:
+            # Use the selected playlist
+            logger.info(f"🎯 [submit_song] User selected playlist ID: {request.playlist_id}")
+            playlist = db.query(UserPlaylist).filter(
+                UserPlaylist.id == request.playlist_id,
+                UserPlaylist.user_id == current_user.id
+            ).first()
+            
+            if not playlist:
+                logger.error(f"❌ [submit_song] Playlist {request.playlist_id} not found for user {current_user.id}")
+                return SubmitSongResponse(
+                    success=False,
+                    message="",
+                    error=f"Playlist not found. It may have been deleted. Please select a different playlist."
+                )
+            logger.info(f"✅ [submit_song] Using selected playlist: {playlist.title} (ID: {playlist.id})")
         else:
-            logger.info(f"📋 Found existing playlist with ID: {playlist.id}")
+            # Use default music playlist
+            logger.info(f"📋 [submit_song] No playlist selected, using default music playlist")
+            playlist = db.query(UserPlaylist).filter(
+                UserPlaylist.user_id == current_user.id,
+                UserPlaylist.playlist_type == 'music'
+            ).first()
+            
+            # If no music playlist exists, create one
+            if not playlist:
+                logger.info(f"📋 [submit_song] Creating default music playlist for user {current_user.id}")
+                playlist = UserPlaylist(
+                    user_id=current_user.id,
+                    title=f"{current_user.name}'s Music",
+                    description="My personal music playlist",
+                    playlist_type='music'
+                )
+                db.add(playlist)
+                db.commit()
+                db.refresh(playlist)
+                logger.info(f"✅ [submit_song] Created new default playlist with ID: {playlist.id}")
+            else:
+                logger.info(f"📋 [submit_song] Using existing default music playlist with ID: {playlist.id}")
         
-        # Add to playlist
-        logger.info(f"➕ Adding submitted song {submitted_song.id} to playlist {playlist.id}")
+        # Add to selected/default playlist
+        logger.info(f"➕ [submit_song] Adding submitted song {submitted_song.id} to playlist '{playlist.title}' (ID: {playlist.id})")
         playlist_song = UserPlaylistSong(
             playlist_id=playlist.id,
             song_id=-submitted_song.id,
@@ -145,7 +165,7 @@ async def submit_song(
         submitted_song.added_to_playlist = True
         db.commit()
         db.refresh(playlist_song)
-        logger.info(f"✅ Successfully added song to playlist. PlaylistSong ID: {playlist_song.id}, Position: {playlist_song.position}")
+        logger.info(f"✅ [submit_song] Successfully added song to playlist '{playlist.title}'. PlaylistSong ID: {playlist_song.id}, Position: {playlist_song.position}")
         
         return SubmitSongResponse(
             success=True,
