@@ -90,6 +90,43 @@ export default function MusicPage() {
     }
   };
 
+  const handleRefreshDefaultPlaylist = async () => {
+    if (!session?.user) return;
+    try {
+      // Fetch the user's default music playlist
+      const response = await fetch('/api/playlists?playlist_type=music');
+      if (response.ok) {
+        const playlists = await response.json();
+        const musicPlaylist = playlists.find((p: UserPlaylist) => p.playlist_type === 'music');
+        if (musicPlaylist) {
+          // Fetch full playlist with songs
+          const playlistResponse = await fetch(`/api/playlists/${musicPlaylist.id}`);
+          if (playlistResponse.ok) {
+            const fullPlaylist = await playlistResponse.json();
+            // Update songs with the newly fetched songs
+            setSongs(fullPlaylist.songs || []);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing playlist:', error);
+    }
+  };
+
+  const handleRefreshSelectedPlaylist = async () => {
+    if (!selectedUserPlaylist) return;
+    try {
+      // Fetch the updated playlist
+      const response = await fetch(`/api/playlists/${selectedUserPlaylist.id}`);
+      if (response.ok) {
+        const fullPlaylist = await response.json();
+        setSelectedUserPlaylist(fullPlaylist);
+      }
+    } catch (error) {
+      console.error('Error refreshing user playlist:', error);
+    }
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -120,7 +157,8 @@ export default function MusicPage() {
               slug: 'default',
               title: 'Linus Playlist',
               songs: songs
-            }} 
+            }}
+            onSongSubmitted={handleRefreshDefaultPlaylist}
           />
         );
       
@@ -145,7 +183,8 @@ export default function MusicPage() {
                 slug: `user-playlist-${selectedUserPlaylist.id}`,
                 title: selectedUserPlaylist.title,
                 songs: selectedUserPlaylist.songs || []
-              }} 
+              }}
+              onSongSubmitted={handleRefreshSelectedPlaylist}
             />
           </div>
         );

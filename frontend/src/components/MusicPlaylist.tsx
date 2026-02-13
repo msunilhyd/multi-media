@@ -15,6 +15,7 @@ interface Playlist {
 
 interface MusicPlaylistProps {
   playlist: Playlist;
+  onSongSubmitted?: () => void;
 }
 
 // YouTube IFrame API types
@@ -72,7 +73,7 @@ interface YTPlayer {
   getAvailableQualityLevels: () => string[];
 }
 
-export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
+export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlaylistProps) {
   const { data: session } = useSession();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -880,6 +881,9 @@ export default function MusicPlaylist({ playlist }: MusicPlaylistProps) {
         onClose={() => setShowSubmitModal(false)}
         onSongSubmitted={() => {
           setShowSubmitModal(false);
+          if (onSongSubmitted) {
+            onSongSubmitted();
+          }
         }}
       />
     </div>
