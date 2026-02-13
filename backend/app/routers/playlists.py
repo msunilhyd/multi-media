@@ -213,6 +213,32 @@ async def get_playlist(
                     endSeconds=ent_result.endSeconds,
                     position=row.position
                 ))
+        elif row.content_type == 'submitted_song':
+            # Fetch from user_submitted_songs table
+            submitted_query = """
+                SELECT 
+                    id,
+                    title,
+                    youtube_video_id as "videoId",
+                    artist,
+                    duration
+                FROM user_submitted_songs
+                WHERE id = :item_id
+            """
+            submitted_result = db.execute(text(submitted_query), {"item_id": row.item_id}).fetchone()
+            if submitted_result:
+                songs.append(PlaylistSong(
+                    id=submitted_result.id,
+                    title=submitted_result.title,
+                    language="User Submission",  # Default for user-submitted songs
+                    year=None,
+                    composer=submitted_result.artist or "Unknown",
+                    videoId=submitted_result.videoId,
+                    movie=None,
+                    startSeconds=None,
+                    endSeconds=None,
+                    position=row.position
+                ))
         else:
             # Fetch from songs table
             song_query = """
