@@ -105,7 +105,7 @@ async def submit_song(
         db.add(submitted_song)
         db.commit()
         db.refresh(submitted_song)
-        logger.info(f"Created submitted song record: {submitted_song.id}")
+        logger.info(f"✅ Created submitted song record: {submitted_song.id}")
         
         # Automatically add to user's music playlist (or create one)
         playlist = db.query(UserPlaylist).filter(
@@ -115,7 +115,7 @@ async def submit_song(
         
         # If no music playlist exists, create one
         if not playlist:
-            logger.info(f"Creating default music playlist for user {current_user.id}")
+            logger.info(f"📋 Creating default music playlist for user {current_user.id}")
             playlist = UserPlaylist(
                 user_id=current_user.id,
                 title=f"{current_user.name}'s playlist",
@@ -125,8 +125,12 @@ async def submit_song(
             db.add(playlist)
             db.commit()
             db.refresh(playlist)
+            logger.info(f"✅ Created new playlist with ID: {playlist.id}")
+        else:
+            logger.info(f"📋 Found existing playlist with ID: {playlist.id}")
         
         # Add to playlist
+        logger.info(f"➕ Adding submitted song {submitted_song.id} to playlist {playlist.id}")
         playlist_song = UserPlaylistSong(
             playlist_id=playlist.id,
             song_id=-submitted_song.id,
@@ -140,7 +144,8 @@ async def submit_song(
         
         submitted_song.added_to_playlist = True
         db.commit()
-        logger.info(f"Added song to playlist {playlist.id}")
+        db.refresh(playlist_song)
+        logger.info(f"✅ Successfully added song to playlist. PlaylistSong ID: {playlist_song.id}, Position: {playlist_song.position}")
         
         return SubmitSongResponse(
             success=True,

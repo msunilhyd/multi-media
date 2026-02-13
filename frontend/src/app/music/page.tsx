@@ -92,59 +92,85 @@ export default function MusicPage() {
   };
 
   const handleRefreshDefaultPlaylist = async () => {
-    if (!session?.user) return;
+    console.log('🔄 [handleRefreshDefaultPlaylist] Starting playlist refresh...');
+    if (!session?.user) {
+      console.warn('⚠️ [handleRefreshDefaultPlaylist] No session user, skipping refresh');
+      return;
+    }
     try {
       // Fetch the user's default music playlist
+      console.log('📡 [handleRefreshDefaultPlaylist] Fetching playlists list...');
       const response = await fetch('/api/playlists?playlist_type=music');
       if (response.ok) {
         const playlists = await response.json();
-        console.log('[DEBUG] Fetched playlists:', playlists);
+        console.log('✅ [handleRefreshDefaultPlaylist] Fetched playlists:', playlists);
         const musicPlaylist = playlists.find((p: UserPlaylist) => p.playlist_type === 'music');
         if (musicPlaylist) {
-          console.log('[DEBUG] Found music playlist:', musicPlaylist);
+          console.log('✅ [handleRefreshDefaultPlaylist] Found music playlist:', musicPlaylist);
           // Fetch full playlist with songs
+          console.log(`📡 [handleRefreshDefaultPlaylist] Fetching full playlist (ID: ${musicPlaylist.id})...`);
           const playlistResponse = await fetch(`/api/playlists/${musicPlaylist.id}`);
           if (playlistResponse.ok) {
             const fullPlaylist = await playlistResponse.json();
-            console.log('[DEBUG] Fetched full playlist with songs:', fullPlaylist.songs);
-            console.log('[DEBUG] Song count:', fullPlaylist.songs?.length);
-            // Get the newly added song (should be at the end)
+            console.log('✅ [handleRefreshDefaultPlaylist] Fetched full playlist:', fullPlaylist);
+            console.log('📊 [handleRefreshDefaultPlaylist] Total songs in playlist:', fullPlaylist.songs?.length);
             const newSongs = fullPlaylist.songs || [];
             if (newSongs.length > 0) {
+              newSongs.forEach((song: Song, idx) => {
+                console.log(`  Song ${idx + 1}: ${song.title} (ID: ${song.id}, VideoID: ${song.videoId})`);
+              });
+              // Get the newly added song (should be at the end)
               const newSong = newSongs[newSongs.length - 1];
-              console.log('[DEBUG] New song to add:', newSong);
+              console.log('⭐ [handleRefreshDefaultPlaylist] Last song in playlist:', newSong);
               // Add the new song to the beginning of the current Linus Playlist
               setSongs(prevSongs => {
                 // Check if song already exists to avoid duplicates
                 if (prevSongs.some(s => s.id === newSong.id)) {
-                  console.log('[DEBUG] Song already exists, skipping');
+                  console.log('⚠️ [handleRefreshDefaultPlaylist] Song already in display, skipping');
                   return prevSongs;
                 }
-                console.log('[DEBUG] Adding new song to display');
-                return [newSong, ...prevSongs];
+                console.log('➕ [handleRefreshDefaultPlaylist] Adding new song to display');
+                const updatedSongs = [newSong, ...prevSongs];
+                console.log('📝 [handleRefreshDefaultPlaylist] Updated songs count:', updatedSongs.length);
+                return updatedSongs;
               });
+            } else {
+              console.warn('⚠️ [handleRefreshDefaultPlaylist] Playlist is empty');
             }
+          } else {
+            console.error('❌ [handleRefreshDefaultPlaylist] Failed to fetch full playlist:', playlistResponse.status);
           }
         } else {
-          console.log('[DEBUG] No music playlist found');
+          console.warn('⚠️ [handleRefreshDefaultPlaylist] No music playlist found');
         }
+      } else {
+        console.error('❌ [handleRefreshDefaultPlaylist] Failed to fetch playlists:', response.status);
       }
     } catch (error) {
-      console.error('[DEBUG] Error refreshing playlist:', error);
+      console.error('❌ [handleRefreshDefaultPlaylist] Error refreshing playlist:', error);
     }
   };
 
   const handleRefreshSelectedPlaylist = async () => {
-    if (!selectedUserPlaylist) return;
+    console.log('🔄 [handleRefreshSelectedPlaylist] Starting selected playlist refresh...');
+    if (!selectedUserPlaylist) {
+      console.warn('⚠️ [handleRefreshSelectedPlaylist] No selected playlist');
+      return;
+    }
     try {
       // Fetch the updated playlist
+      console.log(`📡 [handleRefreshSelectedPlaylist] Fetching playlist (ID: ${selectedUserPlaylist.id})...`);
       const response = await fetch(`/api/playlists/${selectedUserPlaylist.id}`);
       if (response.ok) {
         const fullPlaylist = await response.json();
+        console.log('✅ [handleRefreshSelectedPlaylist] Fetched updated playlist:', fullPlaylist);
+        console.log('📊 [handleRefreshSelectedPlaylist] Songs in playlist:', fullPlaylist.songs?.length);
         setSelectedUserPlaylist(fullPlaylist);
+      } else {
+        console.error('❌ [handleRefreshSelectedPlaylist] Failed to fetch playlist:', response.status);
       }
     } catch (error) {
-      console.error('Error refreshing user playlist:', error);
+      console.error('❌ [handleRefreshSelectedPlaylist] Error refreshing user playlist:', error);
     }
   };
 

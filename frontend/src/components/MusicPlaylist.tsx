@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search, Plus } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search } from 'lucide-react';
 import type { Song } from '@/lib/api';
 import PlaylistItem from './PlaylistItem';
 import SubmitSongModal from './SubmitSongModal';
@@ -87,7 +87,6 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [showAddFromLinusModal, setShowAddFromLinusModal] = useState(false);
   const [showEmptyPlaylistMessage, setShowEmptyPlaylistMessage] = useState(false);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -95,7 +94,6 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
   const playlistRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const nextCallTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const addDropdownRef = useRef<HTMLDivElement>(null);
   
   // Helper to normalize language (trim whitespace and uppercase)
   const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
@@ -170,19 +168,6 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
     setIsMounted(true);
   }, []);
   
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (addDropdownRef.current && !addDropdownRef.current.contains(event.target as Node)) {
-        setShowAddDropdown(false);
-      }
-    };
-
-    if (showAddDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showAddDropdown]);
   
   // Show empty playlist message when appropriate
   useEffect(() => {
@@ -528,53 +513,115 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
   // Media Session API for better mobile experience and background control
   useEffect(() => {
     if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && currentSong) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: currentSong.title,
-        artist: currentSong.composer,
-        album: playlist.title,
-        artwork: [
-          { src: 'https://via.placeholder.com/96x96/8B5CF6/FFFFFF?text=♪', sizes: '96x96', type: 'image/png' },
-          { src: 'https://via.placeholder.com/128x128/8B5CF6/FFFFFF?text=♪', sizes: '128x128', type: 'image/png' },
-          { src: 'https://via.placeholder.com/192x192/8B5CF6/FFFFFF?text=♪', sizes: '192x192', type: 'image/png' },
-          { src: 'https://via.placeholder.com/256x256/8B5CF6/FFFFFF?text=♪', sizes: '256x256', type: 'image/png' },
-        ]
-      });
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: currentSong.title,
+          artist: currentSong.composer,
+          album: playlist.title,
+          artwork: [
+            { src: 'https://via.placeholder.com/96x96/8B5CF6/FFFFFF?text=♪', sizes: '96x96', type: 'image/png' },
+            { src: 'https://via.placeholder.com/128x128/8B5CF6/FFFFFF?text=♪', sizes: '128x128', type: 'image/png' },
+            { src: 'https://via.placeholder.com/192x192/8B5CF6/FFFFFF?text=♪', sizes: '192x192', type: 'image/png' },
+            { src: 'https://via.placeholder.com/256x256/8B5CF6/FFFFFF?text=♪', sizes: '256x256', type: 'image/png' },
+          ]
+        });
 
-      // Play action - critical for lock screen controls
-      navigator.mediaSession.setActionHandler('play', () => {
-        console.log('🔊 MediaSession: Play action triggered');
-        if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
-          playerRef.current.playVideo();
-          setIsPlaying(true);
+        // Play action
+        try {
+          navigator.mediaSession.setActionHandler('play', () => {
+            console.log('🔊 MediaSession: Play action triggered');
+            if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+              playerRef.current.playVideo();
+              setIsPlaying(true);
+            }
+          });
+        } catch (e) {
+          console.warn('⚠️ Play action handler not supported:', e);
         }
-      });
-      
-      // Pause action - critical for lock screen controls
-      navigator.mediaSession.setActionHandler('pause', () => {
-        console.log('⏸️ MediaSession: Pause action triggered');
-        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-          playerRef.current.pauseVideo();
-          setIsPlaying(false);
+        
+        // Pause action
+        try {
+          navigator.mediaSession.setActionHandler('pause', () => {
+            console.log('⏸️ MediaSession: Pause action triggered');
+            if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+              playerRef.current.pauseVideo();
+              setIsPlaying(false);
+            }
+          });
+        } catch (e) {
+          console.warn('⚠️ Pause action handler not supported:', e);
         }
-      });
-      
-      // Previous track action - for lock screen previous button
-      navigator.mediaSession.setActionHandler('previoustrack', () => {
-        console.log('⏪ MediaSession: Previous track action triggered');
-        handlePrevious();
-      });
-      
-      // Next track action - for lock screen next button
-      navigator.mediaSession.setActionHandler('nexttrack', () => {
-        console.log('⏩ MediaSession: Next track action triggered');
-        // Pass false for isAutomatic since this is a manual action from lock screen
-        handleNext(false);
-      });
+        
+        // Previous track action
+        try {
+          navigator.mediaSession.setActionHandler('previoustrack', () => {
+            console.log('⏪ MediaSession: Previous track action triggered');
+            handlePrevious();
+          });
+        } catch (e) {
+          console.warn('⚠️ Previous track action handler not supported:', e);
+        }
+        
+        // Next track action - THIS IS IMPORTANT
+        try {
+          navigator.mediaSession.setActionHandler('nexttrack', () => {
+            console.log('⏩ MediaSession: Next track action triggered');
+            handleNext(false);
+          });
+        } catch (e) {
+          console.warn('⚠️ Next track action handler not supported:', e);
+        }
 
-      // Update playback state to enable lock screen controls
-      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+        // Update playback state
+        navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+        
+        // Log which actions are supported on this device
+        console.log('📱 MediaSession supported actions:', navigator.mediaSession.metadata?.title);
+        
+        // Try to set position state for seek bar
+        try {
+          if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+            const currentTime = playerRef.current.getCurrentTime() || 0;
+            const duration = playerRef.current.getDuration?.() || 0;
+            if (navigator.mediaSession.setPositionState && duration > 0) {
+              navigator.mediaSession.setPositionState({
+                duration: duration,
+                playbackRate: 1,
+                position: Math.max(0, currentTime)
+              });
+            }
+          }
+        } catch (e) {
+          // Position state not supported
+        }
+      } catch (e) {
+        console.error('❌ Error setting up MediaSession:', e);
+      }
     }
   }, [currentSong, playlist.title, isPlaying, handlePrevious, handleNext]);
+
+  // Keyboard controls and hardware media button support
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Media keys: MediaPlayPause, MediaNextTrack, MediaPreviousTrack
+      if (e.code === 'MediaPlayPause' || e.key === ' ') {
+        e.preventDefault();
+        console.log('⌨️ Keyboard: Play/Pause pressed');
+        handlePlayPause();
+      } else if (e.code === 'MediaNextTrack' || e.code === 'MediaTrackNext') {
+        e.preventDefault();
+        console.log('⌨️ Keyboard: Next track pressed');
+        handleNext(false);
+      } else if (e.code === 'MediaPreviousTrack' || e.code === 'MediaTrackPrevious') {
+        e.preventDefault();
+        console.log('⌨️ Keyboard: Previous track pressed');
+        handlePrevious();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [handleNext, handlePrevious]);
 
   // Wake Lock API to keep screen active during playback
   useEffect(() => {
@@ -738,50 +785,6 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {session && (
-                    <div className="relative" ref={addDropdownRef}>
-                      <button
-                        onClick={() => setShowAddDropdown(!showAddDropdown)}
-                        className="flex items-center gap-2 px-3 py-2 bg-green-500/20 hover:bg-green-500/30 rounded-full transition-colors text-green-400 font-medium text-sm"
-                        title="Add songs to your playlist"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add Songs
-                      </button>
-                      
-                      {showAddDropdown && (
-                        <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50">
-                          <button
-                            onClick={() => {
-                              setShowSubmitModal(true);
-                              setShowAddDropdown(false);
-                            }}
-                            className="w-full text-left px-4 py-3 text-white hover:bg-purple-600/30 transition-colors flex items-center gap-2 border-b border-gray-700 first:rounded-t-lg"
-                          >
-                            <span className="text-lg">🎵</span>
-                            <div>
-                              <p className="font-semibold text-sm">From YouTube</p>
-                              <p className="text-xs text-gray-400">Add any YouTube song or music</p>
-                            </div>
-                          </button>
-                          
-                          <button
-                            onClick={() => {
-                              setShowAddFromLinusModal(true);
-                              setShowAddDropdown(false);
-                            }}
-                            className="w-full text-left px-4 py-3 text-white hover:bg-purple-600/30 transition-colors flex items-center gap-2 last:rounded-b-lg"
-                          >
-                            <span className="text-lg">📋</span>
-                            <div>
-                              <p className="font-semibold text-sm">From Linus Playlist</p>
-                              <p className="text-xs text-gray-400">Browse and add songs</p>
-                            </div>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
                   {!isEntertainmentContent && (
                     <button
                       onClick={() => setShowFilters(!showFilters)}
@@ -933,9 +936,13 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
         isOpen={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
         onSongSubmitted={() => {
+          console.log('🎵 [MusicPlaylist] onSongSubmitted callback triggered');
           setShowSubmitModal(false);
           if (onSongSubmitted) {
+            console.log('📢 [MusicPlaylist] Calling parent onSongSubmitted callback...');
             onSongSubmitted();
+          } else {
+            console.warn('⚠️ [MusicPlaylist] No onSongSubmitted callback provided by parent');
           }
         }}
       />
