@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search, Plus } from 'lucide-react';
 import type { Song } from '@/lib/api';
 import PlaylistItem from './PlaylistItem';
 import SubmitSongModal from './SubmitSongModal';
@@ -787,6 +787,15 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {!isEntertainmentContent && (
+                    <button
+                      onClick={() => setShowSubmitModal(true)}
+                      className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors text-white"
+                      title="Add songs to playlist"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  )}
                   {!isEntertainmentContent && (
                     <button
                       onClick={() => setShowFilters(!showFilters)}
