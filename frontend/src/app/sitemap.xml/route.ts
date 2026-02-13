@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const BASE_URL = 'https://linusplaylists.com'; // Change to your actual domain
+const BASE_URL = 'https://www.linusplaylists.com';
 
 export async function GET() {
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

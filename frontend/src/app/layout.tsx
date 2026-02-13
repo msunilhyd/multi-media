@@ -20,13 +20,13 @@ export const metadata: Metadata = {
   robots: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
   openGraph: {
     type: 'website',
-    url: 'https://linusplaylists.com',
+    url: 'https://www.linusplaylists.com',
     title: 'LinusPlaylists - Football Highlights & Music',
     description: 'Watch football match highlights and stream music playlists',
     siteName: 'LinusPlaylists',
     images: [
       {
-        url: 'https://linusplaylists.com/icon-512x512.png',
+        url: 'https://www.linusplaylists.com/icon-512x512.png',
         width: 512,
         height: 512,
         alt: 'LinusPlaylists logo',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     creator: '@linusplaylists',
     title: 'LinusPlaylists - Football Highlights & Music',
     description: 'Watch football highlights and stream music playlists',
-    images: ['https://linusplaylists.com/icon-512x512.png'],
+    images: ['https://www.linusplaylists.com/icon-512x512.png'],
   },
   appleWebApp: {
     capable: true,

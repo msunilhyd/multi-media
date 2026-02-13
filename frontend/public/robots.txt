@@ -7,7 +7,7 @@ Disallow: /api/
 Disallow: /admin/
 
 # Sitemaps
-Sitemap: https://linusplaylists.com/sitemap.xml
+Sitemap: https://www.linusplaylists.com/sitemap.xml
 
 # Crawl delay (be nice to servers)
 Crawl-delay: 1
