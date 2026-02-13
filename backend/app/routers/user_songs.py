@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from datetime import datetime
 import yt_dlp
 import logging
+import re
 from ..database import get_db
 from ..models_users import UserSubmittedSong, User, UserPlaylistSong, UserPlaylist
 from .auth import get_current_user
@@ -49,22 +50,55 @@ class SubmitSongResponse(BaseModel):
 def extract_youtube_details(youtube_url: str) -> dict:
     """Extract video details from YouTube URL using yt-dlp"""
     try:
-        ydl_opts = {
-            'quiet': True,
-            'no_warnings': True,
-            'extract_audio': False,
-        }
+        # First, try to extract video ID from URL manually as a fallback
+        video_id = None
+        patterns = [
+            r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)',
+        ]
         
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(youtube_url, download=False)
-            
-            return {
-                'video_id': info.get('id'),
-                'title': info.get('title', 'Unknown'),
-                'duration': info.get('duration'),  # in seconds
-                'thumbnail': info.get('thumbnail'),
-                'uploader': info.get('uploader'),
+        for pattern in patterns:
+            match = re.search(pattern, youtube_url)
+            if match:
+                video_id = match.group(1)
+                break
+        
+        if not video_id:
+            raise HTTPException(status_code=400, detail="Could not extract video ID from URL. Please provide a valid YouTube URL.")
+        
+        logger.info(f"Extracted video ID: {video_id} from URL: {youtube_url}")
+        
+        # Try to extract full details using yt-dlp
+        try:
+            ydl_opts = {
+                'quiet': True,
+                'no_warnings': True,
+                'extract_audio': False,
+                'socket_timeout': 10,
             }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(youtube_url, download=False)
+                
+                return {
+                    'video_id': info.get('id', video_id),
+                    'title': info.get('title', 'Unknown Title'),
+                    'duration': info.get('duration'),
+                    'thumbnail': info.get('thumbnail'),
+                    'uploader': info.get('uploader', 'Unknown Artist'),
+                }
+        except Exception as ydl_error:
+            logger.warning(f"yt-dlp extraction failed: {str(ydl_error)}. Using fallback with extracted video ID.")
+            # Fallback: return minimum info with video_id we extracted
+            return {
+                'video_id': video_id,
+                'title': 'Unknown Title',
+                'duration': None,
+                'thumbnail': f"https://img.youtube.com/vi/{video_id}/default.jpg",
+                'uploader': 'Unknown Artist',
+            }
+            
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error extracting YouTube details: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Could not extract video details: {str(e)}")
@@ -81,6 +115,7 @@ async def submit_song(
     Users can optionally add it to their playlist immediately.
     """
     try:
+        logger.info(f"User {current_user.id} submitting song: {request.youtube_url}")
         # Extract YouTube video details
         video_details = extract_youtube_details(request.youtube_url)
         
@@ -154,7 +189,7 @@ async def submit_song(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error submitting song: {str(e)}")
+        logger.error(f"Error submitting song for user {current_user.id}: {str(e)}", exc_info=True)
         return SubmitSongResponse(
             success=False,
             message="Error submitting song",
