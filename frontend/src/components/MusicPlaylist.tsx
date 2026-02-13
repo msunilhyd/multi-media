@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search, Plus } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search, Plus, Trash2, Edit2 } from 'lucide-react';
 import type { Song } from '@/lib/api';
+import { removeSongFromPlaylist } from '@/lib/api';
 import PlaylistItem from './PlaylistItem';
 import SubmitSongModal from './SubmitSongModal';
 import AddFromLinusPlaylistModal from './AddFromLinusPlaylistModal';
@@ -93,6 +94,8 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showAddFromLinusModal, setShowAddFromLinusModal] = useState(false);
   const [showEmptyPlaylistMessage, setShowEmptyPlaylistMessage] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [removingIds, setRemovingIds] = useState<Set<number>>(new Set());
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const playlistRef = useRef<HTMLDivElement>(null);
@@ -765,6 +768,43 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
     }
   };
 
+  const handleRemoveSong = async (songId: number) => {
+    if (!userPlaylistId || !session) return;
+
+    // Add to removing set for UI feedback
+    setRemovingIds(prev => new Set([...prev, songId]));
+
+    try {
+      await removeSongFromPlaylist((session as any).accessToken, userPlaylistId, songId);
+      
+      // Remove from filteredSongs by filtering out the removed song
+      const updatedSongs = filteredSongs.filter(s => s.id !== songId);
+      
+      // Update current index if needed
+      if (currentIndex >= updatedSongs.length && updatedSongs.length > 0) {
+        setCurrentIndex(Math.max(0, updatedSongs.length - 1));
+      }
+      
+      // Update playlist to reflect the removal
+      const updatedPlaylist = {
+        ...playlist,
+        songs: updatedSongs
+      };
+      
+      // Force re-render by updating the state
+      console.log(`🗑️ Removed song ${songId} from playlist`);
+    } catch (error) {
+      console.error('Failed to remove song:', error);
+      alert('Failed to remove song from playlist');
+    } finally {
+      setRemovingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(songId);
+        return newSet;
+      });
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -870,6 +910,20 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {!isEntertainmentContent && userPlaylistId && (
+                    <button
+                      onClick={() => setIsEditMode(!isEditMode)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors text-white text-sm font-medium ${
+                        isEditMode
+                          ? 'bg-red-600 hover:bg-red-700'
+                          : 'bg-white/20 hover:bg-white/30'
+                      }`}
+                      title={isEditMode ? 'Exit edit mode' : 'Edit playlist'}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      <span>{isEditMode ? 'Done' : 'Edit'}</span>
+                    </button>
+                  )}
                   {!isEntertainmentContent && (
                     <button
                       onClick={() => setShowSubmitModal(true)}
@@ -991,15 +1045,30 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
               ) : (
                 filteredSongs.map((song, index) => {
                   return (
-                    <PlaylistItem
-                      key={song.id}
-                      song={song}
-                      index={index}
-                      isActive={index === currentIndex}
-                      isPlaying={index === currentIndex && isPlaying}
-                      onSelect={() => handleSongSelect(index)}
-                      hideLanguage={isEntertainmentContent}
-                    />
+                    <div key={song.id} className="relative">
+                      <PlaylistItem
+                        song={song}
+                        index={index}
+                        isActive={index === currentIndex}
+                        isPlaying={index === currentIndex && isPlaying}
+                        onSelect={() => handleSongSelect(index)}
+                        hideLanguage={isEntertainmentContent}
+                      />
+                      {isEditMode && userPlaylistId && (
+                        <button
+                          onClick={() => handleRemoveSong(song.id)}
+                          disabled={removingIds.has(song.id)}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-red-600/80 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all text-white"
+                          title="Remove from playlist"
+                        >
+                          {removingIds.has(song.id) ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
+                    </div>
                   );
                 })
               )}

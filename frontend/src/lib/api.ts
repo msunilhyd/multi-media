@@ -469,3 +469,25 @@ export async function fetchRecentHighlightsByLeague(leagueSlug: string, limit: n
   if (!response.ok) throw new Error('Failed to fetch recent highlights');
   return response.json();
 }
+// User Playlist API functions
+export async function removeSongFromPlaylist(token: string, playlistId: number, songId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/playlists/${playlistId}/songs/${songId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) throw new Error('Failed to remove song from playlist');
+}
+
+export async function updatePlaylistTitle(token: string, playlistId: number, title: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/playlists/${playlistId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ title }),
+  });
+  if (!response.ok) throw new Error('Failed to update playlist title');
+}
