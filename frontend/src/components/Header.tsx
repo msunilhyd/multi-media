@@ -6,6 +6,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useState } from 'react';
 import { Trophy, Music, Home, Sparkles, Disc3, User, LogOut, Settings, Smile, Mail } from 'lucide-react';
 import AuthModal from './AuthModal';
+import SessionExpiredNotice from './SessionExpiredNotice';
 
 export default function Header() {
   const pathname = usePathname();
@@ -237,6 +238,8 @@ export default function Header() {
         mode={authMode}
         onSwitchMode={handleSwitchAuthMode}
       />
+
+      <SessionExpiredNotice />
     </header>
   );
 }
