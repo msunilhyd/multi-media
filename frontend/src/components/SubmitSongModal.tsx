@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Music, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import SelectPlaylistModal from './SelectPlaylistModal';
 
 interface SubmitSongModalProps {
   isOpen: boolean;
@@ -64,6 +65,8 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
   const [isFetchingTitle, setIsFetchingTitle] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<SubmitResponse | null>(null);
+  const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
+  const [selectedSongTitle, setSelectedSongTitle] = useState('');
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -133,17 +136,15 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
 
       if (data.success) {
         console.log('✅ [SubmitSongModal] Song submitted successfully');
+        setSelectedSongTitle(fetchedTitle || 'Unknown Song');
         setYoutubeUrl('');
         setFetchedTitle(null);
         
-        // Close modal after 2 seconds
+        // Show playlist selector instead of closing immediately
         setTimeout(() => {
-          console.log('📢 [SubmitSongModal] Calling onSongSubmitted callback...');
-          onClose();
-          if (onSongSubmitted) {
-            onSongSubmitted();
-          }
-        }, 2000);
+          setShowPlaylistSelector(true);
+          setResponse(null);
+        }, 500);
       } else {
         console.warn('❌ [SubmitSongModal] Song submission failed:', data.error);
       }
@@ -158,6 +159,20 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePlaylistSelected = (playlistId: number | null, playlistTitle?: string) => {
+    console.log(`📋 [SubmitSongModal] Playlist selected: ${playlistTitle} (ID: ${playlistId})`);
+    setShowPlaylistSelector(false);
+    
+    // Close the entire modal after playlist selection
+    setTimeout(() => {
+      console.log('📢 [SubmitSongModal] Calling onSongSubmitted callback...');
+      onClose();
+      if (onSongSubmitted) {
+        onSongSubmitted();
+      }
+    }, 300);
   };
 
   if (!isOpen) return null;
@@ -274,6 +289,14 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
           </button>
         </form>
       </div>
+
+      {/* Playlist Selection Modal */}
+      <SelectPlaylistModal
+        isOpen={showPlaylistSelector}
+        onClose={() => setShowPlaylistSelector(false)}
+        onSelectPlaylist={handlePlaylistSelected}
+        songTitle={selectedSongTitle}
+      />
     </div>
   );
 }

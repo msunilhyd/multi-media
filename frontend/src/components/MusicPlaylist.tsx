@@ -804,10 +804,11 @@ export default function MusicPlaylist({ playlist, onSongSubmitted }: MusicPlayli
                   {!isEntertainmentContent && (
                     <button
                       onClick={() => setShowSubmitModal(true)}
-                      className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors text-white"
-                      title="Add songs to playlist"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full transition-colors text-white text-sm font-medium"
+                      title="Add songs from YouTube"
                     >
-                      <Plus className="w-5 h-5" />
+                      <Plus className="w-4 h-4" />
+                      <span>Add</span>
                     </button>
                   )}
                   {!isEntertainmentContent && (
