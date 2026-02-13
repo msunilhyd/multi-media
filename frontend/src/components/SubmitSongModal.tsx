@@ -46,7 +46,7 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(session.user as any).accessToken || ''}`,
+          'Authorization': `Bearer ${(session as any).accessToken || ''}`,
         },
         body: JSON.stringify({
           youtube_url: youtubeUrl,
