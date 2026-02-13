@@ -1,114 +1,123 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 export default function SessionManager() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const logoutInProgressRef = useRef(false);
+  const { data: session, status, update: updateSession } = useSession();
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const silentRefreshInProgressRef = useRef(false);
 
-  const performLogout = useCallback(async (reason: string) => {
-    if (logoutInProgressRef.current) return;
-    
-    logoutInProgressRef.current = true;
-    console.log(`🔓 [SessionManager] Auto-logging out - Reason: ${reason}`);
-    
-    // Store reason for display in SessionExpiredNotice
-    sessionStorage.setItem('logout_reason', 'session_expired');
-    
-    // Clear any intervals
-    if (checkIntervalRef.current) {
-      clearInterval(checkIntervalRef.current);
-    }
-    
-    // Perform logout with redirect
-    await signOut({ 
-      redirect: true, 
-      callbackUrl: '/?reason=session_expired' 
-    });
-  }, []);
-
-  // Check session validity periodically
-  useEffect(() => {
-    if (status !== 'authenticated' || !session) {
-      if (checkIntervalRef.current) {
-        clearInterval(checkIntervalRef.current);
-      }
-      logoutInProgressRef.current = false;
+  // Refresh session silently in the background
+  const silentRefresh = useCallback(async () => {
+    if (silentRefreshInProgressRef.current || status !== 'authenticated') {
       return;
     }
 
-    const checkSessionValidity = async () => {
-      if (logoutInProgressRef.current) return;
+    silentRefreshInProgressRef.current = true;
 
-      try {
-        // Use a simple endpoint to verify session
-        const response = await fetch('/api/user/profile', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(session as any).accessToken || ''}`,
-          },
-        });
+    try {
+      console.log('🔄 [SessionManager] Attempting silent session refresh...');
+      
+      // Call NextAuth's session endpoint to trigger token refresh
+      const response = await fetch('/api/auth/session', {
+        method: 'GET',
+        credentials: 'include', // Important: include cookies for auth
+      });
 
-        console.log(`📡 [SessionManager] Session check response: ${response.status}`);
-
-        if (response.status === 401 || response.status === 403) {
-          console.warn(`⚠️ [SessionManager] Got ${response.status} - Session likely expired`);
-          await performLogout(`API returned ${response.status}`);
-        }
-      } catch (error) {
-        // Network errors don't necessarily mean session is expired
-        // Only logout on explicit 401/403 responses
-        console.debug('[SessionManager] Session check error:', error);
+      if (response.ok) {
+        const newSession = await response.json();
+        console.log('✅ [SessionManager] Session refreshed successfully');
+        
+        // Update local session with new data
+        await updateSession(newSession);
+        
+        return true;
+      } else {
+        console.warn(`⚠️ [SessionManager] Session refresh failed with status ${response.status}`);
+        return false;
       }
+    } catch (error) {
+      console.error('❌ [SessionManager] Error refreshing session:', error);
+      return false;
+    } finally {
+      silentRefreshInProgressRef.current = false;
+    }
+  }, [status, updateSession]);
+
+  // Schedule silent refresh before token expires
+  useEffect(() => {
+    if (status !== 'authenticated' || !session) {
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      return;
+    }
+
+    // Refresh every 15 minutes to keep session fresh
+    // This prevents expiration for active users
+    const scheduleRefresh = () => {
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+      
+      refreshTimeoutRef.current = setTimeout(() => {
+        console.log('⏰ [SessionManager] Scheduled refresh interval reached');
+        silentRefresh();
+        scheduleRefresh(); // Reschedule next refresh
+      }, 15 * 60 * 1000); // 15 minutes
     };
 
-    // Check on mount
-    checkSessionValidity();
+    scheduleRefresh();
 
-    // Check every 10 minutes
-    checkIntervalRef.current = setInterval(checkSessionValidity, 10 * 60 * 1000);
+    // Also refresh on window focus (user comes back to app)
+    const handleWindowFocus = () => {
+      console.log('👁️ [SessionManager] Window focused, attempting refresh');
+      silentRefresh();
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
 
     return () => {
-      if (checkIntervalRef.current) {
-        clearInterval(checkIntervalRef.current);
-      }
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+      window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [session, status, performLogout]);
+  }, [session, status, silentRefresh]);
 
-  // Detect 401 errors from fetch calls
+  // Detect expired token on API responses and attempt refresh
   useEffect(() => {
-    if (status !== 'authenticated' || !session || logoutInProgressRef.current) return;
+    if (status !== 'authenticated' || !session) return;
 
     const originalFetch = window.fetch;
-    
+
     window.fetch = async (...args) => {
-      try {
-        const response = await originalFetch(...args);
+      const response = await originalFetch(...args);
 
-        // If we get 401 on non-auth API calls, session has expired
+      // On 401, try to refresh token
+      if (response.status === 401) {
         const urlStr = args[0]?.toString() || '';
-        const isAuthEndpoint = urlStr.includes('/auth/') || urlStr.includes('/api/auth');
-        
-        if (response.status === 401 && !isAuthEndpoint) {
-          console.warn(`⚠️ [SessionManager] Got 401 on ${urlStr} - Session expired`);
-          await performLogout('API returned 401 Unauthorized');
-        }
+        const isAuthEndpoint = urlStr.includes('/api/auth');
 
-        return response;
-      } catch (error) {
-        return originalFetch(...args);
+        if (!isAuthEndpoint) {
+          console.warn(`⚠️ [SessionManager] Got 401 on ${urlStr}, attempting token refresh...`);
+          
+          const refreshed = await silentRefresh();
+          
+          if (refreshed) {
+            // Retry the original request with new token
+            console.log('🔄 [SessionManager] Retrying request with refreshed token...');
+            return originalFetch(...args);
+          } else {
+            console.error('❌ [SessionManager] Token refresh failed, request will fail with 401');
+          }
+        }
       }
+
+      return response;
     };
 
     return () => {
       window.fetch = originalFetch;
     };
-  }, [session, status, performLogout]);
+  }, [session, status, silentRefresh]);
 
   return null;
 }
