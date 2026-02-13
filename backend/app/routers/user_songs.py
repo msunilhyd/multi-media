@@ -4,7 +4,6 @@ from sqlalchemy import text
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
-import yt_dlp
 import logging
 import re
 from ..database import get_db
@@ -37,6 +36,7 @@ class SubmittedSongResponse(BaseModel):
 
 
 class SubmitSongRequest(BaseModel):
+    song_name: str
     youtube_url: str
 
 
@@ -47,61 +47,18 @@ class SubmitSongResponse(BaseModel):
     error: Optional[str] = None
 
 
-def extract_youtube_details(youtube_url: str) -> dict:
-    """Extract video details from YouTube URL using yt-dlp"""
-    try:
-        # First, try to extract video ID from URL manually as a fallback
-        video_id = None
-        patterns = [
-            r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)',
-        ]
-        
-        for pattern in patterns:
-            match = re.search(pattern, youtube_url)
-            if match:
-                video_id = match.group(1)
-                break
-        
-        if not video_id:
-            raise HTTPException(status_code=400, detail="Could not extract video ID from URL. Please provide a valid YouTube URL.")
-        
-        logger.info(f"Extracted video ID: {video_id} from URL: {youtube_url}")
-        
-        # Try to extract full details using yt-dlp
-        try:
-            ydl_opts = {
-                'quiet': True,
-                'no_warnings': True,
-                'extract_audio': False,
-                'socket_timeout': 10,
-            }
-            
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(youtube_url, download=False)
-                
-                return {
-                    'video_id': info.get('id', video_id),
-                    'title': info.get('title', 'Unknown Title'),
-                    'duration': info.get('duration'),
-                    'thumbnail': info.get('thumbnail'),
-                    'uploader': info.get('uploader', 'Unknown Artist'),
-                }
-        except Exception as ydl_error:
-            logger.warning(f"yt-dlp extraction failed: {str(ydl_error)}. Using fallback with extracted video ID.")
-            # Fallback: return minimum info with video_id we extracted
-            return {
-                'video_id': video_id,
-                'title': 'Unknown Title',
-                'duration': None,
-                'thumbnail': f"https://img.youtube.com/vi/{video_id}/default.jpg",
-                'uploader': 'Unknown Artist',
-            }
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error extracting YouTube details: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Could not extract video details: {str(e)}")
+def extract_video_id_from_url(youtube_url: str) -> str:
+    """Extract video ID from YouTube URL"""
+    patterns = [
+        r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, youtube_url)
+        if match:
+            return match.group(1)
+    
+    raise HTTPException(status_code=400, detail="Could not extract video ID from URL. Please provide a valid YouTube URL.")
 
 
 @router.post("/submit", response_model=SubmitSongResponse)
@@ -111,43 +68,46 @@ async def submit_song(
     db: Session = Depends(get_db)
 ):
     """
-    Submit a YouTube song for admin review.
-    Users can optionally add it to their playlist immediately.
+    Submit a song to user's playlist.
     """
     try:
-        logger.info(f"User {current_user.id} submitting song: {request.youtube_url}")
-        # Extract YouTube video details
-        video_details = extract_youtube_details(request.youtube_url)
+        logger.info(f"User {current_user.id} submitting song: {request.song_name}")
         
-        # Check if already submitted
+        # Extract video ID from URL
+        video_id = extract_video_id_from_url(request.youtube_url)
+        logger.info(f"Extracted video ID: {video_id}")
+        
+        # Check if already submitted by this user
         existing = db.query(UserSubmittedSong).filter(
-            UserSubmittedSong.youtube_video_id == video_details['video_id'],
+            UserSubmittedSong.youtube_video_id == video_id,
             UserSubmittedSong.user_id == current_user.id
         ).first()
         
         if existing:
+            logger.warning(f"User {current_user.id} already submitted video {video_id}")
             return SubmitSongResponse(
                 success=False,
-                message="You have already submitted this song",
-                error="Duplicate submission"
+                message="",
+                error="You have already submitted this song"
             )
         
         # Create submitted song record
         submitted_song = UserSubmittedSong(
             user_id=current_user.id,
             youtube_url=request.youtube_url,
-            youtube_video_id=video_details['video_id'],
-            title=video_details['title'],
-            artist=video_details.get('uploader'),
-            duration=video_details.get('duration'),
-            thumbnail_url=video_details.get('thumbnail'),
+            youtube_video_id=video_id,
+            title=request.song_name,
+            artist=None,
+            duration=None,
+            thumbnail_url=f"https://img.youtube.com/vi/{video_id}/default.jpg",
         )
         
         db.add(submitted_song)
         db.commit()
         db.refresh(submitted_song)
+        logger.info(f"Created submitted song record: {submitted_song.id}")
         
-        # Automatically add to user's first playlist (or create one)
+        # Automatically add to user's music playlist (or create one)
         playlist = db.query(UserPlaylist).filter(
             UserPlaylist.user_id == current_user.id,
             UserPlaylist.playlist_type == 'music'
@@ -155,10 +115,11 @@ async def submit_song(
         
         # If no music playlist exists, create one
         if not playlist:
+            logger.info(f"Creating default music playlist for user {current_user.id}")
             playlist = UserPlaylist(
                 user_id=current_user.id,
-                title="My Music",
-                description="My personal music submissions",
+                title=f"{current_user.name}'s playlist",
+                description="My personal music playlist",
                 playlist_type='music'
             )
             db.add(playlist)
@@ -168,7 +129,7 @@ async def submit_song(
         # Add to playlist
         playlist_song = UserPlaylistSong(
             playlist_id=playlist.id,
-            song_id=-submitted_song.id,  # Negative ID to indicate submitted song
+            song_id=-submitted_song.id,
             content_type='submitted_song',
             item_id=submitted_song.id,
             position=db.query(UserPlaylistSong).filter(
@@ -179,10 +140,11 @@ async def submit_song(
         
         submitted_song.added_to_playlist = True
         db.commit()
+        logger.info(f"Added song to playlist {playlist.id}")
         
         return SubmitSongResponse(
             success=True,
-            message="Song added to your playlist! It will be reviewed by admins.",
+            message="Song added to your playlist!",
             song=SubmittedSongResponse.from_orm(submitted_song)
         )
         
@@ -192,7 +154,7 @@ async def submit_song(
         logger.error(f"Error submitting song for user {current_user.id}: {str(e)}", exc_info=True)
         return SubmitSongResponse(
             success=False,
-            message="Error submitting song",
+            message="",
             error=str(e)
         )
 

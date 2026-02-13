@@ -19,6 +19,7 @@ interface SubmitResponse {
 
 export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: SubmitSongModalProps) {
   const { data: session } = useSession();
+  const [songName, setSongName] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<SubmitResponse | null>(null);
@@ -28,6 +29,11 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!songName.trim()) {
+      setResponse({ success: false, message: '', error: 'Please enter a song name' });
+      return;
+    }
+
     if (!youtubeUrl.trim()) {
       setResponse({ success: false, message: '', error: 'Please enter a YouTube URL' });
       return;
@@ -49,6 +55,7 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
           'Authorization': `Bearer ${(session as any).accessToken || ''}`,
         },
         body: JSON.stringify({
+          song_name: songName,
           youtube_url: youtubeUrl,
         }),
       });
@@ -57,6 +64,7 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
       setResponse(data);
 
       if (data.success) {
+        setSongName('');
         setYoutubeUrl('');
         
         // Close modal after 2 seconds
@@ -103,8 +111,23 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Info */}
           <p className="text-sm text-gray-400">
-            Paste a YouTube link to add a song to your playlist. It will be reviewed by our admins.
+            Add a song to your playlist by providing the song name and YouTube link.
           </p>
+
+          {/* Song Name Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Song Name
+            </label>
+            <input
+              type="text"
+              placeholder="e.g., Bohemian Rhapsody"
+              value={songName}
+              onChange={(e) => setSongName(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+              required
+            />
+          </div>
 
           {/* YouTube URL Input */}
           <div>
@@ -150,7 +173,7 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted }: Su
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading || !youtubeUrl.trim()}
+            disabled={isLoading || !songName.trim() || !youtubeUrl.trim()}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
