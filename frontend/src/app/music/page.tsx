@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import Header from '@/components/Header';
 import MusicPlaylist from '@/components/MusicPlaylist';
 import UserPlaylists from '@/components/UserPlaylists';
+import Toast from '@/components/Toast';
 import { fetchSongs } from '@/lib/api';
 import type { Song } from '@/lib/api';
 
@@ -39,6 +40,7 @@ export default function MusicPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('default');
   const [selectedUserPlaylist, setSelectedUserPlaylist] = useState<UserPlaylist | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { data: session } = useSession();
 
   useEffect(() => {
@@ -168,6 +170,26 @@ export default function MusicPage() {
     }
   };
 
+  const handleSongSubmitted = async (songName: string, playlistName: string) => {
+    console.log(`🎉 [handleSongSubmitted] Song "${songName}" added to "${playlistName}"`);
+    // Show toast message
+    setToastMessage(`✅ "${songName}" added to ${playlistName}`);
+    
+    // Refresh the playlist
+    console.log('🔄 [handleSongSubmitted] Refreshing playlist...');
+    await handleRefreshDefaultPlaylist();
+  };
+
+  const handleSongSubmittedUserPlaylist = async (songName: string, playlistName: string) => {
+    console.log(`🎉 [handleSongSubmittedUserPlaylist] Song "${songName}" added to "${playlistName}"`);
+    // Show toast message
+    setToastMessage(`✅ "${songName}" added to ${playlistName}`);
+    
+    // Refresh the selected playlist
+    console.log('🔄 [handleSongSubmittedUserPlaylist] Refreshing user playlist...');
+    await handleRefreshSelectedPlaylist();
+  };
+
   const handleRefreshSelectedPlaylist = async () => {
     console.log('🔄 [handleRefreshSelectedPlaylist] Starting selected playlist refresh...');
     if (!selectedUserPlaylist) {
@@ -229,7 +251,7 @@ export default function MusicPage() {
               title: 'Linus Playlist',
               songs: songs
             }}
-            onSongSubmitted={handleRefreshDefaultPlaylist}
+            onSongSubmitted={handleSongSubmitted}
           />
         );
       
@@ -255,7 +277,7 @@ export default function MusicPage() {
                 title: selectedUserPlaylist.title,
                 songs: selectedUserPlaylist.songs || []
               }}
-              onSongSubmitted={handleRefreshSelectedPlaylist}
+              onSongSubmitted={handleSongSubmittedUserPlaylist}
               userPlaylistId={selectedUserPlaylist.id}
             />
           </div>
@@ -309,6 +331,15 @@ export default function MusicPage() {
           </p>
         </div>
       </footer>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <Toast 
+          message={toastMessage}
+          duration={3000}
+          onClose={() => setToastMessage(null)}
+        />
+      )}
     </div>
   );
 }

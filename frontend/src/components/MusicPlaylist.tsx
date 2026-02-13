@@ -16,7 +16,7 @@ interface Playlist {
 
 interface MusicPlaylistProps {
   playlist: Playlist;
-  onSongSubmitted?: () => void;
+  onSongSubmitted?: (songName: string, playlistName: string) => void;
   userPlaylistId?: number; // If provided, this is a user playlist and should add directly
 }
 
@@ -962,12 +962,12 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
       <SubmitSongModal
         isOpen={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
-        onSongSubmitted={() => {
-          console.log('🎵 [MusicPlaylist] onSongSubmitted callback triggered');
+        onSongSubmitted={(songName, playlistName) => {
+          console.log(`🎵 [MusicPlaylist] onSongSubmitted callback triggered - Song: ${songName}, Playlist: ${playlistName}`);
           setShowSubmitModal(false);
           if (onSongSubmitted) {
             console.log('📢 [MusicPlaylist] Calling parent onSongSubmitted callback...');
-            onSongSubmitted();
+            onSongSubmitted(songName, playlistName);
           } else {
             console.warn('⚠️ [MusicPlaylist] No onSongSubmitted callback provided by parent');
           }

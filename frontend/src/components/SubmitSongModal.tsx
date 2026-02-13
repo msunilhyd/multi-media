@@ -9,7 +9,7 @@ interface SubmitSongModalProps {
   isOpen: boolean;
   onClose: () => void;
   playlists?: Array<{ id: number; title: string }>;
-  onSongSubmitted?: () => void;
+  onSongSubmitted?: (songName: string, playlistName: string) => void;
   userPlaylistId?: number; // If provided, add directly to this playlist (don't show selector)
   playlistTitle?: string; // Title of the user playlist
 }
@@ -160,10 +160,11 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
         
         setTimeout(() => {
           console.log('📢 [SubmitSongModal] Calling onSongSubmitted callback after 1.5s...');
-          onClose();
+          const playlistNameToDisplay = selectedPlaylistName || playlistTitle || 'Music Playlist';
           if (onSongSubmitted) {
-            onSongSubmitted();
+            onSongSubmitted(selectedSongTitle, playlistNameToDisplay);
           }
+          onClose();
         }, 1500);
       } else {
         console.warn('❌ [SubmitSongModal] Song submission failed:', data.error);
@@ -218,11 +219,12 @@ export default function SubmitSongModal({ isOpen, onClose, onSongSubmitted, user
 
   const handlePlaylistSelected = (playlistId: number | null, playlistTitle?: string) => {
     console.log(`📋 [SubmitSongModal] User selected playlist: "${playlistTitle}" (ID: ${playlistId})`);
-    setSelectedPlaylistName(playlistTitle || 'Default Playlist');
+    const finalPlaylistName = playlistTitle || 'Default Music';
+    setSelectedPlaylistName(finalPlaylistName);
     setShowPlaylistSelector(false);
     
     // Now submit the song with the selected playlist
-    console.log(`🎵 [SubmitSongModal] Now submitting song to selected playlist...`);
+    console.log(`🎵 [SubmitSongModal] Now submitting song to selected playlist: ${finalPlaylistName}...`);
     setIsLoading(true);
     setResponse(null);
     submitSongToPlaylist(playlistId);
