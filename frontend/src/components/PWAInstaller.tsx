@@ -1,62 +1,74 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Download } from 'lucide-react';
 
 export default function PWAInstaller() {
-  const [showPrompt, setShowPrompt] = useState(false);
+  const [showMobilePrompt, setShowMobilePrompt] = useState(false);
+  const [showDesktopPrompt, setShowDesktopPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    // Detect mobile device
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent.toLowerCase();
-      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-      setIsMobile(isMobileDevice);
-      
-      const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-      setIsIOS(isIOSDevice);
-      
-      return isMobileDevice;
-    };
+    // Detect device type
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+    
+    setIsMobile(isMobileDevice);
+    setIsIOS(isIOSDevice);
 
-    const isMobileDevice = checkMobile();
+    // Check if already installed as PWA
+    const isPWAInstalled = (navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches;
 
-    // Only proceed if on mobile and not already installed as PWA
-    if (isMobileDevice && !(navigator as any).standalone) {
-      // Check if user has dismissed prompt recently
-      const dismissedTime = localStorage.getItem('pwaPromptDismissed');
-      if (dismissedTime) {
-        const daysSinceDismissed = (Date.now() - parseInt(dismissedTime)) / (1000 * 60 * 60 * 24);
-        if (daysSinceDismissed < 7) {
-          // Don't show if dismissed in last 7 days
-          return;
-        }
-      }
+    if (isPWAInstalled) {
+      console.log('✅ PWA: Application already installed');
+      return;
+    }
 
-      // For Android: listen for beforeinstallprompt
-      if (!isIOS) {
-        const handleBeforeInstallPrompt = (e: Event) => {
-          e.preventDefault();
-          setDeferredPrompt(e);
-          setShowPrompt(true);
-        };
-
-        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        return () => {
-          window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        };
-      } else {
-        // For iOS: show prompt immediately
-        setTimeout(() => {
-          setShowPrompt(true);
-        }, 2000); // Show after 2 seconds for better UX
+    // Check if user has dismissed prompt recently
+    const dismissedTime = localStorage.getItem('pwaPromptDismissed');
+    if (dismissedTime) {
+      const daysSinceDismissed = (Date.now() - parseInt(dismissedTime)) / (1000 * 60 * 60 * 24);
+      if (daysSinceDismissed < 2) {
+        console.log('⏭️ PWA: Prompt dismissed recently');
+        return;
       }
     }
 
-    // Register service worker
+    // Handle beforeinstallprompt event for Android and Desktop Chrome
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+
+      if (isMobileDevice && !isIOSDevice) {
+        console.log('📲 PWA: beforeinstallprompt event fired on Android');
+        setTimeout(() => {
+          setShowMobilePrompt(true);
+        }, 1500);
+      } else if (!isMobileDevice) {
+        console.log('🖥️ PWA: beforeinstallprompt event fired on desktop');
+        setShowDesktopPrompt(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // For iOS: show instructions after delay
+    if (isIOSDevice && isMobileDevice) {
+      setTimeout(() => {
+        setShowMobilePrompt(true);
+      }, 2000);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  // Register service worker
+  useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js', {
@@ -69,7 +81,7 @@ export default function PWAInstaller() {
           // Check for updates periodically
           const interval = setInterval(() => {
             registration.update();
-          }, 60000); // Check every minute
+          }, 60000);
 
           return () => clearInterval(interval);
         })
@@ -81,29 +93,6 @@ export default function PWAInstaller() {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         console.log('🔄 PWA: Service Worker updated');
       });
-
-      // Listen for messages from service worker
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        console.log('📨 PWA: Message from Service Worker:', event.data);
-      });
-    }
-
-    // Test MediaSession API support
-    if ('mediaSession' in navigator) {
-      console.log('✅ PWA: MediaSession API supported');
-      console.log('📋 Supported actions:');
-      ['play', 'pause', 'previoustrack', 'nexttrack', 'seekbackward', 'seekforward', 'skipad'].forEach(
-        (action) => {
-          try {
-            navigator.mediaSession.setActionHandler(action as any, () => {});
-            console.log(`  ✓ ${action}`);
-          } catch (e) {
-            console.log(`  ✗ ${action}`);
-          }
-        }
-      );
-    } else {
-      console.warn('⚠️ PWA: MediaSession API not supported on this browser');
     }
   }, []);
 
@@ -111,111 +100,175 @@ export default function PWAInstaller() {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to the install prompt: ${outcome}`);
-      setDeferredPrompt(null);
-      setShowPrompt(false);
+      console.log(`✅ PWA: User response: ${outcome}`);
+      
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setShowMobilePrompt(false);
+        setShowDesktopPrompt(false);
+        localStorage.setItem('pwaPromptDismissed', Date.now().toString());
+      }
     }
   };
 
   const handleDismiss = () => {
-    setShowPrompt(false);
+    setShowMobilePrompt(false);
+    setShowDesktopPrompt(false);
     localStorage.setItem('pwaPromptDismissed', Date.now().toString());
   };
 
-  if (!showPrompt) {
-    return null;
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-lg shadow-2xl max-w-sm w-full border border-purple-500">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-purple-500">
-          <div>
-            <h2 className="text-xl font-bold text-white">Install LinusPlaylists</h2>
-            <p className="text-sm text-gray-300 mt-1">Get the best experience</p>
-          </div>
-          <button
-            onClick={handleDismiss}
-            className="text-gray-400 hover:text-white transition-colors"
-            aria-label="Close"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          <div className="space-y-4">
-            {/* Icon/Emoji */}
-            <div className="text-center">
-              <span className="text-5xl">🎵</span>
+  // Mobile Prompt (Android + iOS)
+  if (showMobilePrompt && isMobile) {
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end z-50 sm:items-center sm:justify-center p-4">
+        <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm border border-purple-500 sm:mb-0 mb-0 animate-in slide-in-from-bottom-5">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-purple-500/30">
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-white">Install LinusPlaylists</h2>
+              <p className="text-sm text-gray-300 mt-1">Get the full experience</p>
             </div>
+            <button
+              onClick={handleDismiss}
+              className="text-gray-400 hover:text-white transition-colors ml-4 flex-shrink-0"
+              aria-label="Close"
+            >
+              <X size={24} />
+            </button>
+          </div>
 
-            {/* Description */}
-            <p className="text-gray-300 text-center">
-              Install LinusPlaylists on your {isIOS ? 'iPhone' : 'phone'} for:
-            </p>
-
-            {/* Features */}
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-center text-gray-300">
-                <span className="text-purple-400 mr-3">✓</span>
-                Background music playback
-              </li>
-              <li className="flex items-center text-gray-300">
-                <span className="text-purple-400 mr-3">✓</span>
-                Lock screen controls
-              </li>
-              <li className="flex items-center text-gray-300">
-                <span className="text-purple-400 mr-3">✓</span>
-                One-tap access to your home screen
-              </li>
-              <li className="flex items-center text-gray-300">
-                <span className="text-purple-400 mr-3">✓</span>
-                Works offline
-              </li>
-            </ul>
-
-            {/* Platform-specific instructions */}
-            {isIOS && (
-              <div className="bg-gray-700 rounded p-4 text-xs text-gray-300 space-y-2">
-                <p className="font-semibold text-white">How to install on iPhone:</p>
-                <ol className="list-decimal list-inside space-y-1">
-                  <li>Tap the Share button at the bottom</li>
-                  <li>Select "Add to Home Screen"</li>
-                  <li>Tap "Add" to confirm</li>
-                </ol>
+          {/* Content */}
+          <div className="p-6">
+            <div className="space-y-4">
+              {/* Icon */}
+              <div className="text-center">
+                <span className="text-6xl">⚡</span>
               </div>
+
+              {/* Description */}
+              <p className="text-gray-300 text-center font-medium">
+                Install on your {isIOS ? 'iPhone' : 'home screen'} for instant access
+              </p>
+
+              {/* Features */}
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start text-gray-300">
+                  <span className="text-purple-400 mr-3 font-bold text-lg">✓</span>
+                  <span>Fast access from home screen</span>
+                </li>
+                <li className="flex items-start text-gray-300">
+                  <span className="text-purple-400 mr-3 font-bold text-lg">✓</span>
+                  <span>Works offline</span>
+                </li>
+                <li className="flex items-start text-gray-300">
+                  <span className="text-purple-400 mr-3 font-bold text-lg">✓</span>
+                  <span>Background playback</span>
+                </li>
+                <li className="flex items-start text-gray-300">
+                  <span className="text-purple-400 mr-3 font-bold text-lg">✓</span>
+                  <span>Lock screen controls</span>
+                </li>
+              </ul>
+
+              {/* Platform-specific instructions */}
+              {isIOS && (
+                <div className="bg-blue-600/20 border border-blue-500/50 rounded-lg p-4 text-xs text-gray-200 space-y-2 mt-4">
+                  <p className="font-semibold text-blue-300">📱 How to install:</p>
+                  <ol className="list-decimal list-inside space-y-1 ml-1">
+                    <li>Tap the Share button (bottom center)</li>
+                    <li>Scroll and tap "Add to Home Screen"</li>
+                    <li>Tap "Add" to confirm</li>
+                  </ol>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 p-6 border-t border-purple-500/30 bg-gray-900/50">
+            <button
+              onClick={handleDismiss}
+              className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium text-sm"
+            >
+              Later
+            </button>
+            {!isIOS && deferredPrompt && (
+              <button
+                onClick={handleInstall}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all font-medium text-sm flex items-center justify-center gap-2"
+              >
+                <Download size={18} />
+                Install
+              </button>
+            )}
+            {isIOS && (
+              <button
+                onClick={handleDismiss}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all font-medium text-sm"
+              >
+                Got It
+              </button>
             )}
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Actions */}
-        <div className="flex gap-3 p-6 border-t border-purple-500">
-          <button
-            onClick={handleDismiss}
-            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors font-medium"
-          >
-            Not Now
-          </button>
-          {!isIOS ? (
-            <button
-              onClick={handleInstall}
-              className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors font-medium"
-            >
-              Install
-            </button>
-          ) : (
+  // Desktop Prompt
+  if (showDesktopPrompt && !isMobile && deferredPrompt) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-2xl border border-purple-500/50 max-w-sm p-4 animate-in slide-in-from-bottom-5">
+          <div className="flex items-start gap-4">
+            {/* Icon */}
+            <div className="flex-shrink-0 text-3xl">⚡</div>
+            
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-white text-sm mb-1">Install LinusPlaylists</h3>
+              <p className="text-xs text-gray-300 mb-3">
+                Install our app for faster access and offline support.
+              </p>
+              
+              {/* Benefits */}
+              <ul className="text-xs text-gray-400 space-y-1 mb-3">
+                <li>⚡ Fast app-like experience</li>
+                <li>📱 Works offline</li>
+                <li>🎵 Background playback</li>
+              </ul>
+              
+              {/* Actions */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleInstall}
+                  className="flex-1 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all font-medium text-xs flex items-center justify-center gap-1"
+                >
+                  <Download size={14} />
+                  Install
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-xs font-medium"
+                >
+                  Later
+                </button>
+              </div>
+            </div>
+            
+            {/* Close */}
             <button
               onClick={handleDismiss}
-              className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors font-medium"
+              className="flex-shrink-0 text-gray-400 hover:text-white transition-colors"
+              aria-label="Close"
             >
-              Got it!
+              <X size={18} />
             </button>
-          )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }

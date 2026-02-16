@@ -60,7 +60,8 @@ export const viewport: Viewport = {
   minimumScale: 1,
   maximumScale: 5,
   viewportFit: 'cover',
-  themeColor: '#9333EA',
+  themeColor: '#1F2937',
+  colorScheme: 'dark',
 }
 
 export default function RootLayout({
@@ -75,8 +76,15 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
-        <meta name="theme-color" content="#9333EA" />
+        <meta name="theme-color" content="#1F2937" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Linus Playlists" />
+        <meta name="application-name" content="Linus Playlists" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+        <meta name="msapplication-TileColor" content="#1F2937" />
+        <meta name="msapplication-navbutton-color" content="#1F2937" />
         <JsonLd />
       </head>
       <body className={`${inter.className} ${playfair.variable} bg-gray-900 text-white`}>

@@ -1,13 +1,13 @@
 {
-  "name": "Linus Playlists",
-  "short_name": "Linus Music",
-  "description": "Stream your favorite music from YouTube with background playback and lock screen controls",
+  "name": "Linus Playlists - Football Highlights & Music",
+  "short_name": "Linus Playlists",
+  "description": "Watch football match highlights from top leagues and stream curated music playlists. Free app with background playback.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#9333EA",
-  "background_color": "#FFFFFF",
+  "theme_color": "#1F2937",
+  "background_color": "#111827",
   "icons": [
     {
       "src": "/icon-192x192.png",
