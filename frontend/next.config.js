@@ -40,13 +40,7 @@ const nextConfig = {
     ];
   },
   async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/football',
-        permanent: true,
-      },
-    ];
+    return [];
   },
 }
 
