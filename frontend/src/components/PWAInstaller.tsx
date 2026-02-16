@@ -170,15 +170,48 @@ export default function PWAInstaller() {
                 </li>
               </ul>
 
-              {/* Platform-specific instructions */}
-              {isIOS && (
-                <div className="bg-blue-600/20 border border-blue-500/50 rounded-lg p-4 text-xs text-gray-200 space-y-2 mt-4">
-                  <p className="font-semibold text-blue-300">📱 How to install:</p>
-                  <ol className="list-decimal list-inside space-y-1 ml-1">
-                    <li>Tap the Share button (bottom center)</li>
-                    <li>Scroll and tap "Add to Home Screen"</li>
-                    <li>Tap "Add" to confirm</li>
-                  </ol>
+              {/* Platform-specific instructions and actions */}
+              {isIOS ? (
+                <>
+                  {/* iOS Step-by-step instructions */}
+                  <div className="space-y-3 mt-4">
+                    <p className="font-semibold text-blue-300 text-sm">📱 3 Simple Steps:</p>
+                    
+                    <div className="bg-blue-600/20 border border-blue-500/50 rounded-lg p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
+                        <div className="flex-1">
+                          <p className="font-medium text-white text-sm mb-1">Tap Share</p>
+                          <p className="text-xs text-gray-300">Look for the box with an arrow at the bottom of your screen</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-600/20 border border-blue-500/50 rounded-lg p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
+                        <div className="flex-1">
+                          <p className="font-medium text-white text-sm mb-1">Find "Add to Home Screen"</p>
+                          <p className="text-xs text-gray-300">Scroll down if you don't see it immediately</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-600/20 border border-blue-500/50 rounded-lg p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
+                        <div className="flex-1">
+                          <p className="font-medium text-white text-sm mb-1">Tap "Add"</p>
+                          <p className="text-xs text-gray-300">That's it! App appears on your home screen</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="bg-purple-600/20 border border-purple-500/50 rounded-lg p-4 text-sm text-gray-200">
+                  <p className="font-semibold text-purple-300 mb-2">✨ One-click installation</p>
+                  <p className="text-xs text-gray-300">Click the Install button below to add LinusPlaylists to your home screen instantly</p>
                 </div>
               )}
             </div>
@@ -190,23 +223,23 @@ export default function PWAInstaller() {
               onClick={handleDismiss}
               className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium text-sm"
             >
-              Later
+              {isIOS ? 'Ready!' : 'Later'}
             </button>
             {!isIOS && deferredPrompt && (
               <button
                 onClick={handleInstall}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all font-medium text-sm flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all font-medium text-sm flex items-center justify-center gap-2 shadow-lg"
               >
                 <Download size={18} />
-                Install
+                Install Now
               </button>
             )}
             {isIOS && (
               <button
                 onClick={handleDismiss}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all font-medium text-sm"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-all font-medium text-sm shadow-lg"
               >
-                Got It
+                Understood
               </button>
             )}
           </div>
@@ -219,37 +252,46 @@ export default function PWAInstaller() {
   if (showDesktopPrompt && !isMobile && deferredPrompt) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
-        <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-2xl border border-purple-500/50 max-w-sm p-4 animate-in slide-in-from-bottom-5">
+        <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-2xl border border-purple-500/50 max-w-sm p-5 animate-in slide-in-from-bottom-5">
           <div className="flex items-start gap-4">
             {/* Icon */}
-            <div className="flex-shrink-0 text-3xl">⚡</div>
+            <div className="flex-shrink-0 text-4xl">⚡</div>
             
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-white text-sm mb-1">Install LinusPlaylists</h3>
-              <p className="text-xs text-gray-300 mb-3">
-                Install our app for faster access and offline support.
+              <h3 className="font-bold text-white text-base mb-2">Install LinusPlaylists</h3>
+              <p className="text-sm text-gray-300 mb-4">
+                Add to your desktop for instant access, offline support, and background playback.
               </p>
               
               {/* Benefits */}
-              <ul className="text-xs text-gray-400 space-y-1 mb-3">
-                <li>⚡ Fast app-like experience</li>
-                <li>📱 Works offline</li>
-                <li>🎵 Background playback</li>
+              <ul className="text-xs text-gray-400 space-y-1.5 mb-4">
+                <li className="flex items-center gap-2">
+                  <span className="text-purple-400">✓</span>
+                  <span>App-like experience</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-purple-400">✓</span>
+                  <span>Works offline</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-purple-400">✓</span>
+                  <span>Background playback</span>
+                </li>
               </ul>
               
               {/* Actions */}
               <div className="flex gap-2">
                 <button
                   onClick={handleInstall}
-                  className="flex-1 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all font-medium text-xs flex items-center justify-center gap-1"
+                  className="flex-1 px-3 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all font-semibold text-sm flex items-center justify-center gap-2 shadow-lg"
                 >
-                  <Download size={14} />
+                  <Download size={16} />
                   Install
                 </button>
                 <button
                   onClick={handleDismiss}
-                  className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-xs font-medium"
+                  className="px-3 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-medium text-sm"
                 >
                   Later
                 </button>
@@ -262,7 +304,7 @@ export default function PWAInstaller() {
               className="flex-shrink-0 text-gray-400 hover:text-white transition-colors"
               aria-label="Close"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
         </div>
