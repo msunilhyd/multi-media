@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Eye, Clock, CheckCircle, X, Calendar } from 'lucide-react';
+import { Play, Eye, Clock, CheckCircle, X, Calendar, Home } from 'lucide-react';
+import Link from 'next/link';
 import { Highlight } from '@/lib/api';
 
 interface VideoCardProps {
@@ -97,24 +98,7 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
     }, 100);
   };
 
-  // Handle fullscreen exit
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
-        setIsPlaying(false);
-      }
-    };
-    
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-    };
-  }, []);
-
-  const handleClose = async () => {
+  const handleClose = useCallback(async () => {
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
@@ -125,7 +109,32 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
       console.log('Could not exit fullscreen');
     }
     setIsPlaying(false);
-  };
+  }, []);
+
+  // Handle fullscreen exit
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+        setIsPlaying(false);
+      }
+    };
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isPlaying && e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isPlaying, handleClose]);
 
   // Show controls on mouse/touch movement, hide after 3 seconds
   const handleShowControls = useCallback(() => {
@@ -168,38 +177,67 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
             style={{ pointerEvents: showControls ? 'none' : 'auto' }}
           />
           
-          {/* Close button - shown on mouse/touch activity */}
-          <button
-            onClick={handleClose}
-            className={`absolute top-4 right-4 z-[60] bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-all shadow-lg ${
-              showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-            aria-label="Close video"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          
-          {/* Hint text for desktop users - shown on mouse activity */}
-          <div className={`absolute top-4 left-4 z-[60] bg-black/70 text-white/80 px-3 py-2 rounded-lg text-sm hidden sm:block transition-opacity ${
-            showControls ? 'opacity-100' : 'opacity-0'
+          {/* Top Control Bar - Always visible */}
+          <div className={`absolute top-0 left-0 right-0 z-[60] bg-gradient-to-b from-black/70 to-transparent p-4 flex items-center justify-between transition-opacity ${
+            showControls || true ? 'opacity-100' : 'opacity-0'
           }`}>
-            Press <kbd className="bg-white/20 px-2 py-0.5 rounded mx-1">ESC</kbd> or tap <X className="w-4 h-4 inline" /> to close
+            {/* Hint text for mobile users */}
+            <div className={`text-white/70 text-xs px-2 py-1 rounded-lg sm:hidden`}>
+              Tap controls to manage playback
+            </div>
+            
+            {/* Home button */}
+            <Link
+              href="/football"
+              className="absolute left-4 top-4 z-[70] bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-all shadow-lg flex items-center justify-center"
+              aria-label="Go to football highlights"
+              title="Back to highlights"
+            >
+              <Home className="w-5 h-5" />
+            </Link>
+            
+            {/* Close button */}
+            <button
+              onClick={handleClose}
+              className={`absolute right-4 top-4 z-[70] bg-red-600 hover:bg-red-700 text-white p-3 rounded-full transition-all shadow-lg flex items-center justify-center`}
+              aria-label="Close video"
+              title="Close video (ESC or tap)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            {/* Hint text for desktop users */}
+            <div className={`absolute left-1/2 transform -translate-x-1/2 text-white/70 text-xs px-3 py-1 rounded-lg hidden sm:block`}>
+              Press <kbd className="bg-white/20 px-2 py-0.5 rounded mx-1">ESC</kbd> to close
+            </div>
           </div>
           
-          {/* Hint text for mobile users - shown on touch activity */}
-          <div className={`absolute top-4 left-4 z-[60] bg-black/70 text-white/80 px-3 py-2 rounded-lg text-sm sm:hidden transition-opacity ${
-            showControls ? 'opacity-100' : 'opacity-0'
-          }`}>
-            Tap <X className="w-4 h-4 inline" /> to close
+          {/* Bottom Control Bar - Mobile only */}
+          <div className="absolute bottom-0 left-0 right-0 z-[60] bg-gradient-to-t from-black/70 to-transparent p-4 sm:hidden flex items-center justify-center gap-2">
+            <Link
+              href="/football"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg flex items-center gap-2"
+              title="Back to highlights"
+            >
+              <Home className="w-4 h-4" />
+              Back
+            </Link>
+            <Link
+              href="/"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg"
+              title="Go to home"
+            >
+              Home
+            </Link>
           </div>
           
           <iframe
             ref={iframeRef}
-            src={`https://www.youtube.com/embed/${youtube_video_id}?autoplay=1&rel=0&fs=1`}
+            src={`https://www.youtube.com/embed/${youtube_video_id}?autoplay=1&mute=1&rel=0&fs=1&modestbranding=1`}
             title={title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen
-            className="w-full h-full"
+            className="w-full h-full relative z-[51]"
           />
         </div>
       </>
