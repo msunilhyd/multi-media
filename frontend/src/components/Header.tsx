@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Trophy, Music, Home, Sparkles, Disc3, User, LogOut, Settings, Smile, Mail } from 'lucide-react';
 import AuthModal from './AuthModal';
 
@@ -14,6 +14,7 @@ export default function Header() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
@@ -28,6 +29,25 @@ export default function Header() {
   const handleSwitchAuthMode = () => {
     setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
   };
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   return (
     <header 
@@ -60,7 +80,7 @@ export default function Header() {
             {status === 'loading' ? (
               <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
             ) : session ? (
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2 bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-blue-500/50 rounded-xl transition-all text-xs sm:text-sm"
