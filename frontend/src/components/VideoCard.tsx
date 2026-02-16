@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Eye, Clock, CheckCircle, X, Calendar, Home } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Play, Eye, Clock, CheckCircle, X, Calendar, Home, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Highlight } from '@/lib/api';
 
@@ -11,6 +12,7 @@ interface VideoCardProps {
 }
 
 export default function VideoCard({ highlight, showMatchInfo = false }: VideoCardProps) {
+  const router = useRouter();
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -186,15 +188,15 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
               Tap controls to manage playback
             </div>
             
-            {/* Home button */}
-            <Link
-              href="/football"
+            {/* Back button */}
+            <button
+              onClick={() => router.back()}
               className="absolute left-4 top-4 z-[70] bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-all shadow-lg flex items-center justify-center"
-              aria-label="Go to football highlights"
-              title="Back to highlights"
+              aria-label="Go back"
+              title="Go back to previous page"
             >
-              <Home className="w-5 h-5" />
-            </Link>
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             
             {/* Close button */}
             <button
@@ -214,18 +216,18 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
           
           {/* Bottom Control Bar - Mobile only */}
           <div className="absolute bottom-0 left-0 right-0 z-[60] bg-gradient-to-t from-black/70 to-transparent p-4 sm:hidden flex items-center justify-center gap-2">
-            <Link
-              href="/football"
+            <button
+              onClick={() => router.back()}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg flex items-center gap-2"
-              title="Back to highlights"
+              title="Go back to previous page"
             >
-              <Home className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" />
               Back
-            </Link>
+            </button>
             <Link
               href="/"
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg"
-              title="Go to home"
+              title="Go to home page"
             >
               Home
             </Link>
