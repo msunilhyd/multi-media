@@ -244,17 +244,27 @@ class YouTubeService:
             home_unique = self._get_unique_team_identifier(home_team)
             away_unique = self._get_unique_team_identifier(away_team)
             
-            # Date filtering: highlights usually uploaded within 24-48 hours after match
-            # Keep tight window (1-2 days) to avoid showing old videos as highlights
+            # Date filtering: highlights for recent matches are usually uploaded within 24-48 hours.
+            # For archival matches (e.g., 1+ year old), many channels re-upload historic highlights
+            # much later — treat those as "recent uploads" and search a recent window instead.
             earliest_date = None
             latest_date = None
             if match_date:
-                # Always use tight window: 1 day before to 2 days after match
-                # This ensures we only show fresh highlights, never 30-day-old videos
-                earliest_date = match_date - timedelta(days=1)
-                latest_date = match_date + timedelta(days=2)
-                
-                print(f"[YouTube] Searching {playlist_id} for videos between {earliest_date} and {latest_date}")
+                today = datetime.utcnow().date()
+
+                # Archival matches (older than 1 year): search recent uploads around the
+                # job run but keep the window tight (yesterday..tomorrow). This catches
+                # historic clips that were just uploaded without scanning a large range.
+                if match_date <= today - timedelta(days=365):
+                    earliest_date = today - timedelta(days=1)
+                    latest_date = today + timedelta(days=1)
+                    print(f"[YouTube] Archival match detected; searching recent uploads between {earliest_date} and {latest_date}")
+                else:
+                    # Recent matches: search from match date onwards (highlights can't be
+                    # uploaded before the match happens). Use +2 day buffer for late uploads.
+                    earliest_date = match_date
+                    latest_date = match_date + timedelta(days=2)
+                    print(f"[YouTube] Searching {playlist_id} for videos between {earliest_date} and {latest_date}")
             
             # Paginate through playlist to find videos (up to 150 videos = 3 pages)
             # With tight 1-2 day window, 3 pages should be sufficient
