@@ -40,9 +40,9 @@ export async function GET() {
     <priority>0.7</priority>
   </url>
 
-  <!-- About/Help -->
+  <!-- Contact -->
   <url>
-    <loc>${BASE_URL}/about</loc>
+    <loc>${BASE_URL}/contact</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

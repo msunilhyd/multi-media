@@ -15,7 +15,7 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: 'LinusPlaylists - Football Highlights & Music Streaming',
   description: 'Watch football match highlights from top leagues (Premier League, La Liga, Serie A) and stream curated music playlists. Free football highlights and music app.',
-  keywords: 'football highlights, music streaming, football clips, live football, music playlists, youtube streaming, football videos',
+  keywords: 'football highlights, music streaming, football clips, live football, music playlists, youtube streaming, football videos, bollywood songs, tamil music',
   manifest: '/manifest.json',
   robots: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
   openGraph: {
@@ -48,6 +48,9 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
+  },
+  alternates: {
+    canonical: 'https://www.linusplaylists.com',
   },
   verification: {
     google: 'YOUR_GOOGLE_VERIFICATION_CODE_HERE', // Add after setting up Google Search Console
