@@ -235,8 +235,32 @@ export default function MusicPage() {
     if (error) {
       return (
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <p className="text-red-600 dark:text-red-400">{error}</p>
+          <div className="text-center max-w-2xl mx-auto px-4">
+            <Music className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              Music Player Temporarily Unavailable
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              We're having trouble loading the music playlist right now. Please try refreshing the page or check back in a few moments.
+            </p>
+            <div className="bg-gray-200 dark:bg-gray-800 rounded-lg p-6 mb-6">
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-3">
+                Available Music Features:
+              </h3>
+              <ul className="text-left text-gray-600 dark:text-gray-400 space-y-2">
+                <li>• Stream over 1000+ curated songs</li>
+                <li>• Bollywood, Tamil, Telugu, Hindi, and English music</li>
+                <li>• Songs from top composers: A.R. Rahman, Pritam, Anirudh, Yuvan Shankar Raja</li>
+                <li>• Create and save custom playlists</li>
+                <li>• Discover new music from various movies and albums</li>
+              </ul>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       );
@@ -293,6 +317,20 @@ export default function MusicPage() {
       <Header />
       
       <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        {/* SEO Content - Always Visible */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4">
+            Music Playlists
+          </h1>
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-4">
+            Stream curated music playlists featuring Bollywood hits, Tamil songs, Telugu music, and international tracks. 
+            Discover songs from legendary composers like A.R. Rahman, Pritam, Anirudh Ravichander, Yuvan Shankar Raja, and more.
+          </p>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-500">
+            Free music streaming • Create custom playlists • Discover new songs • Available on web and mobile
+          </p>
+        </div>
+
         {/* Tab Navigation */}
         <div className="mb-8">
           <div className="border-b border-gray-200 dark:border-gray-700">
