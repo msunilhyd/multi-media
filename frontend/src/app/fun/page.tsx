@@ -118,9 +118,33 @@ export default function FunPage() {
 
     if (error) {
       return (
-        <div className="text-center py-12">
-          <div className="text-center">
-            <p className="text-red-600 dark:text-red-400">{error}</p>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center max-w-2xl mx-auto px-4">
+            <Laugh className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              Fun Content Temporarily Unavailable
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              We're having trouble loading the entertainment videos right now. Please try refreshing the page or check back in a few moments.
+            </p>
+            <div className="bg-gray-200 dark:bg-gray-800 rounded-lg p-6 mb-6">
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-3">
+                Available Fun Content:
+              </h3>
+              <ul className="text-left text-gray-600 dark:text-gray-400 space-y-2">
+                <li>• Comedy skits and funny videos</li>
+                <li>• Short films and creative content</li>
+                <li>• Viral entertainment clips</li>
+                <li>• Hilarious moments from popular creators</li>
+                <li>• Create and save custom fun playlists</li>
+              </ul>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg font-medium"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       );
@@ -174,13 +198,20 @@ export default function FunPage() {
       <Header />
       
       <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
-        {/* Page Header */}
+        {/* SEO Content - Always Visible */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4 flex items-center justify-center gap-3">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4 flex items-center justify-center gap-3">
             <Laugh className="w-8 h-8 text-pink-500" />
             Fun Zone
             <Laugh className="w-8 h-8 text-pink-500" />
           </h1>
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-4">
+            Discover entertaining videos, comedy skits, funny clips, and short films. 
+            Watch viral content, hilarious moments, and creative entertainment from popular creators.
+          </p>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-500">
+            Free entertainment • Funny videos • Comedy content • Short films • Viral clips
+          </p>
         </div>
 
         {/* Tab Navigation */}

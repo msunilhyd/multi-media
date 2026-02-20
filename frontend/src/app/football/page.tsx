@@ -627,6 +627,21 @@ export default function FootballPage() {
       <Header />
       
       <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        {/* SEO Content - Always Visible */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4 flex items-center justify-center gap-3">
+            <Trophy className="w-8 h-8 text-yellow-500" />
+            Football Highlights
+          </h1>
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-4">
+            Watch free football match highlights from top leagues worldwide. Premier League, La Liga, Serie A, Bundesliga, 
+            Ligue 1, Champions League, Europa League, and more. Updated daily with the latest match videos and replays.
+          </p>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-500">
+            Free highlights • All major leagues • Daily updates • Full HD quality • No subscription required
+          </p>
+        </div>
+
         {error && (
           <div className="mb-6 bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
