@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     canonical: 'https://www.linusplaylists.com',
   },
   verification: {
-    google: 'YOUR_GOOGLE_VERIFICATION_CODE_HERE', // Add after setting up Google Search Console
+    google: 'AOEM14Fp2Cbn4JQCR7Fwb5x3ku0XUVH0egeHvAbUYS8',
   },
 }
 
