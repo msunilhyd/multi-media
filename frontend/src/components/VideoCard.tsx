@@ -190,10 +190,10 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
             
             {/* Back button */}
             <button
-              onClick={() => router.back()}
+              onClick={handleClose}
               className="absolute left-4 top-4 z-[70] bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-all shadow-lg flex items-center justify-center"
               aria-label="Go back"
-              title="Go back to previous page"
+              title="Go back to highlights"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -217,9 +217,9 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
           {/* Bottom Control Bar - Mobile only */}
           <div className="absolute bottom-0 left-0 right-0 z-[60] bg-gradient-to-t from-black/70 to-transparent p-4 sm:hidden flex items-center justify-center gap-2">
             <button
-              onClick={() => router.back()}
+              onClick={handleClose}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-lg flex items-center gap-2"
-              title="Go back to previous page"
+              title="Go back to highlights"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
