@@ -13,6 +13,7 @@ from .database import SessionLocal
 from . import models
 from .football_api import get_football_api
 from .youtube_service import get_youtube_service, YouTubeQuotaExhaustedError
+from .youtube_rss_service import get_rss_service
 from .email_service import send_missing_highlights_notification
 from .config import match_has_team_of_interest, get_settings
 
@@ -890,6 +891,131 @@ async def reconcile_todays_matches():
         db.close()
 
 
+async def poll_rss_feeds_for_highlights():
+    """
+    Poll YouTube RSS feeds for recent highlights (runs every 10 minutes).
+    This is FAST and FREE - no API quota used!
+    
+    Checks recent finished matches (last 48 hours) and searches RSS feeds
+    for highlight videos. Much faster than hourly API-based search.
+    """
+    print(f"\n[RSS Poller] ==================== RSS FEED POLL ====================")
+    print(f"[RSS Poller] Starting RSS feed polling at {datetime.now()}")
+    
+    db = SessionLocal()
+    highlights_found = 0
+    matches_checked = 0
+    
+    try:
+        # Get finished matches from the last 48 hours without highlights
+        lookback_date = date.today() - timedelta(days=2)
+        
+        finished_matches = db.query(models.Match).filter(
+            models.Match.match_date >= lookback_date,
+            models.Match.status == 'finished'
+        ).all()
+        
+        if not finished_matches:
+            print(f"[RSS Poller] No finished matches in the last 48 hours")
+            return
+        
+        # Filter to matches without highlights and teams of interest
+        matches_to_check = []
+        for match in finished_matches:
+            # Skip if already has highlights
+            existing_highlight = db.query(models.Highlight).filter(
+                models.Highlight.match_id == match.id
+            ).first()
+            
+            if existing_highlight:
+                continue
+            
+            # Check if it's a team of interest
+            league_name = match.league.name if match.league else "Unknown"
+            if match_has_team_of_interest(match.home_team, match.away_team, league_name):
+                matches_to_check.append(match)
+        
+        if not matches_to_check:
+            with_highlights = sum(1 for m in finished_matches if db.query(models.Highlight).filter(models.Highlight.match_id == m.id).first())
+            print(f"[RSS Poller] All recent finished matches have highlights ({with_highlights}/{len(finished_matches)})")
+            return
+        
+        print(f"[RSS Poller] Checking {len(matches_to_check)} matches needing highlights")
+        
+        rss_service = await get_rss_service()
+        
+        try:
+            for match in matches_to_check:
+                matches_checked += 1
+                league_name = match.league.name if match.league else None
+                
+                if not league_name:
+                    continue
+                
+                try:
+                    print(f"[RSS Poller] Searching RSS: {match.home_team} vs {match.away_team} ({league_name})")
+                    
+                    # Search RSS feeds for this match (24 hour lookback)
+                    videos = await rss_service.find_recent_highlights_for_match(
+                        home_team=match.home_team,
+                        away_team=match.away_team,
+                        league_name=league_name,
+                        match_date=match.match_date,
+                        hours_lookback=24
+                    )
+                    
+                    if videos:
+                        video = videos[0]  # Take the first/best match
+                        
+                        # Check if this highlight already exists
+                        existing = db.query(models.Highlight).filter(
+                            models.Highlight.youtube_video_id == video['youtube_video_id']
+                        ).first()
+                        
+                        if not existing:
+                            # Create new highlight
+                            highlight = models.Highlight(
+                                match_id=match.id,
+                                youtube_video_id=video['youtube_video_id'],
+                                title=video['title'],
+                                description=video.get('description'),
+                                thumbnail_url=video.get('thumbnail_url'),
+                                channel_title=video.get('channel_title'),
+                                is_official=video.get('is_official', True),
+                                published_at=video.get('published_at')
+                            )
+                            
+                            db.add(highlight)
+                            db.commit()
+                            db.refresh(highlight)
+                            
+                            highlights_found += 1
+                            print(f"[RSS Poller] ✅ Added highlight: {video['title']}")
+                        else:
+                            print(f"[RSS Poller] ℹ️  Highlight already exists")
+                    else:
+                        print(f"[RSS Poller] ❌ No highlights found yet")
+                
+                except Exception as e:
+                    print(f"[RSS Poller] Error processing match {match.id}: {e}")
+                    continue
+        finally:
+            await rss_service.close()
+        
+        print(f"[RSS Poller] ==================== RSS POLL COMPLETE ====================")
+        print(f"[RSS Poller] Matches Checked: {matches_checked}")
+        print(f"[RSS Poller] New Highlights Found: {highlights_found}")
+        print(f"[RSS Poller] ===========================================================\n")
+    
+    except Exception as e:
+        print(f"[RSS Poller] Error in RSS polling: {e}")
+        import traceback
+        print(f"[RSS Poller] Traceback: {traceback.format_exc()}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 def start_scheduler():
     """Start the scheduler with configured jobs"""
     
@@ -964,6 +1090,17 @@ def start_scheduler():
             replace_existing=True
         )
         
+        # RSS Feed Polling - FAST and FREE highlight discovery
+        # Polls YouTube RSS feeds every 10 minutes for instant highlight detection
+        # No API quota used, gives us highlights within 10-15 minutes of upload!
+        scheduler.add_job(
+            poll_rss_feeds_for_highlights,
+            CronTrigger(minute='*/10'),  # Every 10 minutes
+            id="rss_feed_polling",
+            name="RSS Feed Polling (Every 10 min)",
+            replace_existing=True
+        )
+        
         scheduler.start()
         print("[Scheduler] Started! Jobs scheduled:")
         print("  - Daily prefetch at 6:00 AM (7-day lookahead)")
@@ -972,7 +1109,8 @@ def start_scheduler():
         print("  - Highlights fetch at 8 AM and 2 PM (yesterday's matches)")
         print("  - Today's highlights fetch every hour (8 AM - 11 PM)")
         print("  - Match reconciliation at 12 PM, 6 PM, 11 PM (safety net)")
-        print("[Scheduler] Note: Maximum miss window for ESPN data is now 12 hours (6 PM same day)")
+        print("  - 🚀 RSS feed polling every 10 minutes (FAST & FREE!)")
+        print("[Scheduler] Note: RSS polling provides highlights 10-15 min after upload!")
     except Exception as e:
         print(f"[Scheduler] Warning: Failed to start scheduler: {e}")
         print("[Scheduler] Application will continue without scheduled jobs")
