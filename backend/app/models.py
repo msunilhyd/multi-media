@@ -88,6 +88,8 @@ LEAGUE_MAPPINGS = {
     "EFL Cup": {"slug": "efl-cup", "country": "England"},
     "English League Cup": {"slug": "efl-cup", "country": "England"},
     "Scottish Premiership": {"slug": "scottish-premiership", "country": "Scotland"},
+    "Indian Super League": {"slug": "indian-super-league", "country": "India"},
+    "ISL": {"slug": "indian-super-league", "country": "India"},
     "MLS": {"slug": "mls", "country": "USA"},
     "World Cup": {"slug": "world-cup", "country": "International"},
     "Euro": {"slug": "euro", "country": "Europe"},

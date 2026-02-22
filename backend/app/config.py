@@ -64,6 +64,7 @@ TEAMS_OF_INTEREST: Dict[str, Set[str]] = {
 # Leagues where we want ALL matches (no team filtering)
 LEAGUES_ALL_MATCHES: Set[str] = {
     "Champions League",
+    "Indian Super League",
 }
 
 # European competitions that should filter by ALL teams of interest across all leagues
