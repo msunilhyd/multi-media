@@ -48,6 +48,7 @@ const leagueColors: Record<string, { colors: string[]; }> = {
   'dfb-pokal': { colors: ['#1e40af', '#2563eb'] },
   'coppa-italia': { colors: ['#1d4ed8', '#3b82f6'] },
   'afcon': { colors: ['#15803d', '#22c55e'] },
+  'indian-super-league': { colors: ['#ea580c', '#fb923c'] },
   'default': { colors: ['#1d4ed8', '#3b82f6'] },
 };
 
