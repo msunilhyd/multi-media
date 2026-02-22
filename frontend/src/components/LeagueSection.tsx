@@ -28,6 +28,7 @@ const leagueColors: Record<string, string> = {
   'dfb-pokal': 'from-blue-800 to-blue-600',
   'coppa-italia': 'from-blue-700 to-blue-500',
   'afcon': 'from-green-700 to-green-500',
+  'indian-super-league': 'from-orange-600 to-orange-400',
   'default': 'from-blue-700 to-blue-500',
 };
 
