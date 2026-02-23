@@ -100,9 +100,9 @@ export default function FunPage() {
         return result;
         
       default:
-        // Return all entertainment content (all should be type 'fun'), sorted by ID
-        const allItems = entertainmentItems.sort((a, b) => a.id - b.id);
-        return entertainmentToSongs(allItems);
+        // Return all entertainment content (all should be type 'fun')
+        // Backend already sorts by created_at DESC (newest first)
+        return entertainmentToSongs(entertainmentItems);
     }
   };
 
