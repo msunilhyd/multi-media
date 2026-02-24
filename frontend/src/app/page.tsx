@@ -2,12 +2,50 @@
 
 import Link from 'next/link';
 import { Trophy, Music, Play, ChevronRight } from 'lucide-react';
+import Script from 'next/script';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 export default function Home() {
+  // Enhanced homepage structured data
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'LinusPlaylists',
+    alternateName: 'Linus Playlists',
+    url: 'https://www.linusplaylists.com',
+    description: 'Watch football match highlights from top leagues (Premier League, La Liga, Serie A) and stream curated music playlists. Free football highlights and music app.',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: 'https://www.linusplaylists.com/music?search={search_term_string}'
+      },
+      'query-input': 'required name=search_term_string'
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'LinusPlaylists',
+      url: 'https://www.linusplaylists.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://www.linusplaylists.com/icon-512x512.png',
+        width: 512,
+        height: 512
+      },
+      sameAs: [
+        'https://twitter.com/linusplaylists'
+      ]
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      <Script
+        id="homepage-structured-data"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Header />
       
       <main className="container mx-auto px-3 sm:px-4 py-8 sm:py-12">
@@ -132,6 +170,24 @@ export default function Home() {
                 Seamless playback with automatic video advancement
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* SEO Content Section */}
+        <div className="mt-16 max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4 text-center">
+            About LinusPlaylists
+          </h2>
+          <div className="text-gray-600 dark:text-gray-400 space-y-4 text-sm sm:text-base">
+            <p>
+              <strong className="text-gray-800 dark:text-white">LinusPlaylists</strong> (also known as Linus Playlists) is your premier destination for free football highlights, music streaming, and entertainment videos. Whether you're searching for <strong>linusplaylists.com</strong>, <strong>linus playlists</strong>, or <strong>Linus Playlists</strong>, you've found the right place for all your entertainment needs.
+            </p>
+            <p>
+              Watch the latest <strong>football match highlights</strong> from top leagues including Premier League, La Liga, Serie A, Bundesliga, and more. Stream curated <strong>music playlists</strong> featuring Hindi songs, Tamil music, Telugu songs, Bollywood hits, and English tracks. Enjoy <strong>fun entertainment videos</strong> including comedy skits, short films, and viral content.
+            </p>
+            <p>
+              <strong>LinusPlaylists.com</strong> offers seamless playback, automatic video advancement, and a user-friendly interface across all devices. Create custom playlists, save your favorites, and enjoy uninterrupted entertainment streaming. Join thousands of users who trust LinusPlaylists for their daily dose of football action and music entertainment.
+            </p>
           </div>
         </div>
       </main>
