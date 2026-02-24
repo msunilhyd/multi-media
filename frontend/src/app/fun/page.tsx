@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Smile, Laugh } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import Script from 'next/script';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import MusicPlaylist from '@/components/MusicPlaylist';
 import UserPlaylists from '@/components/UserPlaylists';
 import { fetchEntertainment, type Entertainment } from '@/lib/api';
@@ -193,8 +195,31 @@ export default function FunPage() {
     }
   };
 
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'Fun Videos - Comedy & Entertainment',
+    description: 'Watch entertaining videos including comedy skits, short films, funny clips, and viral content. Free entertainment videos updated regularly.',
+    url: 'https://www.linusplaylists.com/fun',
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'LinusPlaylists',
+      url: 'https://www.linusplaylists.com'
+    },
+    mainEntity: {
+      '@type': 'VideoGallery',
+      name: 'Fun Entertainment Videos',
+      description: 'Collection of comedy skits, short films, and entertaining videos'
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      <Script
+        id="fun-structured-data"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Header />
       
       <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
@@ -247,13 +272,7 @@ export default function FunPage() {
         {renderContent()}
       </main>
       
-      <footer className="bg-gray-800 text-white py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-400">
-            Fun Zone
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

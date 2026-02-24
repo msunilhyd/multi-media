@@ -2,10 +2,37 @@
 
 import { Mail, Send } from 'lucide-react';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import Script from 'next/script';
 
 export default function ContactPage() {
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'ContactPage',
+    name: 'Contact Us - LinusPlaylists',
+    description: 'Contact LinusPlaylists for feedback, suggestions, or questions about football highlights and music playlists.',
+    url: 'https://www.linusplaylists.com/contact',
+    mainEntity: {
+      '@type': 'Organization',
+      name: 'LinusPlaylists',
+      url: 'https://www.linusplaylists.com',
+      email: 'msunilhyd@gmail.com',
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'Customer Support',
+        email: 'msunilhyd@gmail.com',
+        url: 'https://www.linusplaylists.com/contact'
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      <Script
+        id="contact-structured-data"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Header />
       
       <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-12">
@@ -91,13 +118,7 @@ export default function ContactPage() {
         </div>
       </main>
 
-      <footer className="bg-gray-800 text-white py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-400">
-            @LinusPlaylists.com
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

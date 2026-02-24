@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Trophy, Music, Play, ChevronRight } from 'lucide-react';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 export default function Home() {
   return (
@@ -135,13 +136,7 @@ export default function Home() {
         </div>
       </main>
       
-      <footer className="bg-gray-800 text-white py-6 mt-12">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-400">
-            LinusPlaylists • Football Highlights, Music Playlists & Fun Entertainment
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
