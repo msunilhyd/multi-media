@@ -927,11 +927,11 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
                   {!isEntertainmentContent && (
                     <button
                       onClick={() => setShowSubmitModal(true)}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full transition-colors text-white text-sm font-medium"
-                      title="Add songs from YouTube"
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-full transition-all text-white text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                      title="Add your songs from YouTube"
                     >
                       <Plus className="w-4 h-4" />
-                      <span>Add</span>
+                      <span>Add Songs</span>
                     </button>
                   )}
                   {!isEntertainmentContent && (
@@ -1031,6 +1031,18 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
               )}
             </div>
             
+            {/* Feature Hint Banner */}
+            {!isEntertainmentContent && userPlaylistId && filteredSongs.length < 5 && (
+              <div className="mx-4 mt-4 mb-2 p-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg">
+                <div className="flex items-center gap-2 text-sm">
+                  <Music className="w-4 h-4 text-green-400 flex-shrink-0" />
+                  <p className="text-green-100">
+                    <span className="font-semibold">Pro Tip:</span> Click the green <span className="font-semibold">"+ Add Songs"</span> button above to add your favorite YouTube songs!
+                  </p>
+                </div>
+              </div>
+            )}
+            
             <div ref={playlistRef} className="max-h-[500px] overflow-y-auto">
               {filteredSongs.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -1079,11 +1091,20 @@ export default function MusicPlaylist({ playlist, onSongSubmitted, userPlaylistI
       
       {/* Empty Playlist Toast Message */}
       {showEmptyPlaylistMessage && (
-        <div className="fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 sm:max-w-md bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-lg p-4 animate-fade-in-up">
-          <div className="flex items-center justify-between gap-4">
+        <div className="fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 sm:max-w-md bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-2xl p-5 animate-fade-in-up border-2 border-white/20">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+              <Music className="w-5 h-5" />
+            </div>
             <div className="flex-1">
-              <p className="font-semibold text-sm">Add songs to your playlist</p>
-              <p className="text-xs text-white/80 mt-1">Click the + button to submit YouTube songs</p>
+              <p className="font-bold text-base mb-1">Your Playlist is Empty 🎵</p>
+              <p className="text-sm text-white/90 mb-3">Start building your collection! Click the green "+ Add Songs" button to submit your favorite YouTube songs.</p>
+              <button
+                onClick={() => setShowSubmitModal(true)}
+                className="px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold text-sm hover:bg-white/90 transition-colors"
+              >
+                Add Your First Song
+              </button>
             </div>
             <button
               onClick={() => setShowEmptyPlaylistMessage(false)}

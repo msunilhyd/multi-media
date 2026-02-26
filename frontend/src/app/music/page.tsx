@@ -331,6 +331,24 @@ export default function MusicPage() {
           </p>
         </div>
 
+        {/* Feature Highlight Banner */}
+        {session?.user && (
+          <div className="mb-6 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-4 sm:p-6 text-white shadow-lg">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <Music className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-base sm:text-lg mb-1">Add Your Own Songs from YouTube! 🎵</h3>
+                <p className="text-sm sm:text-base text-white/90">
+                  Click the <span className="font-semibold">"+ Add"</span> button in any playlist to submit your favorite YouTube songs. 
+                  Build your personalized music collection!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tab Navigation */}
         <div className="mb-8">
           <div className="border-b border-gray-200 dark:border-gray-700">
