@@ -46,9 +46,7 @@ class YouTubeRSSService:
             "UC6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
         ],
         "Champions League": [
-            "UCyGa1YEx9ST66rYrJTGIKOw",   # UEFA Official
             "UCET00YnetHT7tOpu12v8jxg",   # CBS Sports Golazo
-            "UC4i_9WvfPRTuRWEaWyfKuFw",   # TNT Sports Football
         ],
         "Europa League": [
             "UCyGa1YEx9ST66rYrJTGIKOw",   # UEFA Official
