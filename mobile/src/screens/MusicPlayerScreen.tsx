@@ -13,6 +13,7 @@ import {
   TextInput,
   Linking,
   AppState,
+  RefreshControl,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -52,6 +53,7 @@ export default function MusicPlayerScreen() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Helper to normalize language
   const normalizeLanguage = (lang: string) => lang?.trim().toUpperCase() || '';
@@ -89,6 +91,14 @@ export default function MusicPlayerScreen() {
     setComposerFilter('');
     setYearFilter('');
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    if (activeTab === 'playlists') {
+      await fetchPlaylists();
+    }
+    setRefreshing(false);
+  }, [activeTab, token]);
 
   // Fetch user's playlists
   const fetchPlaylists = async () => {
@@ -550,6 +560,14 @@ export default function MusicPlayerScreen() {
           keyExtractor={(item) => item.id.toString()}
           style={styles.songList}
           contentContainerStyle={{ paddingBottom: 120 }}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              tintColor="#8B5CF6"
+              colors={['#8B5CF6']}
+            />
+          }
           getItemLayout={(data, index) => ({
             length: 80,
             offset: 80 * index,
@@ -661,7 +679,17 @@ export default function MusicPlayerScreen() {
               </View>
 
               {/* User's Playlists */}
-              <ScrollView style={styles.playlistsScrollView}>
+              <ScrollView 
+                style={styles.playlistsScrollView}
+                refreshControl={
+                  <RefreshControl 
+                    refreshing={refreshing} 
+                    onRefresh={onRefresh}
+                    tintColor="#8B5CF6"
+                    colors={['#8B5CF6']}
+                  />
+                }
+              >
                 {playlists.length === 0 ? (
                   <View style={styles.centerContainer}>
                     <Ionicons name="musical-notes-outline" size={48} color="#64748b" />

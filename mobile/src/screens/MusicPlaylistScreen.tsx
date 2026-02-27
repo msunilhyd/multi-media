@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
@@ -48,6 +49,7 @@ export default function MusicPlaylistScreen() {
   const [languageFilter, setLanguageFilter] = useState<string>('');
   const [composerFilter, setComposerFilter] = useState<string>('');
   const [yearFilter, setYearFilter] = useState<string>('');
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'default' | 'user-playlists'>('default');
   const [isScreenFocused, setIsScreenFocused] = useState(true);
 
@@ -87,6 +89,13 @@ export default function MusicPlaylistScreen() {
     setComposerFilter('');
     setYearFilter('');
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // Simulate a refresh - in a real app, you'd reload data from API
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setRefreshing(false);
+  }, []);
 
   const scrollToTop = () => {
     flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -492,6 +501,14 @@ export default function MusicPlaylistScreen() {
           renderItem={renderSongItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              tintColor="#8B5CF6"
+              colors={['#8B5CF6']}
+            />
+          }
           onScrollToIndexFailed={(info) => {
             setTimeout(() => {
               flatListRef.current?.scrollToIndex({

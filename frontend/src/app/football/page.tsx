@@ -351,6 +351,11 @@ export default function FootballPage() {
           )
         })).filter(league => league.matches.length > 0);
       }
+      // Ensure matches are only from the selected date (filter out any other dates)
+      filteredData = filteredData.map(league => ({
+        ...league,
+        matches: league.matches.filter(match => match.match_date === date)
+      })).filter(league => league.matches.length > 0);
       // Sort leagues by priority
       filteredData = sortLeaguesByPriority(filteredData);
       // If loading more, append new highlights to existing data (deduplicated)
@@ -908,9 +913,10 @@ export default function FootballPage() {
               // Find the earliest and latest match dates in the highlightsData
               const allMatchDates = highlightsData.flatMap(l => l.matches.map(m => m.match_date));
               const uniqueDates = Array.from(new Set(allMatchDates));
-              const isToday = selectedDate === getTodayString() && uniqueDates.length === 1 && uniqueDates[0] === getTodayString();
-              const isYesterday = selectedDate === getYesterdayString() && uniqueDates.length === 1 && uniqueDates[0] === getYesterdayString();
-              const isWeek = showWeek && uniqueDates.length > 0 && uniqueDates.some(d => true); // always show for week if any
+              const isToday = selectedDate === getTodayString();
+              const isYesterday = selectedDate === getYesterdayString();
+              const isWeek = showWeek && uniqueDates.length > 0;
+              // Show heading if we have a date selected or showing week view
               if ((isToday && selectedDate) || (isYesterday && selectedDate) || (isWeek && showWeek)) {
                 return (
                   <div className="mb-6 flex items-center justify-between">
