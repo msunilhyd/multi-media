@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, ArrowUp, Filter, X, Search, Plus, Trash2, Edit2, Music } from 'lucide-react';
 import type { Song } from '@/lib/api';
 import { removeSongFromPlaylist } from '@/lib/api';
 import PlaylistItem from './PlaylistItem';
