@@ -233,7 +233,7 @@ class YouTubeRSSService:
         # Positive indicators
         highlight_keywords = [
             'highlight', 'highlights', 'recap', 'extended highlights',
-            'full highlights', 'match highlights', 'goals', 'best moments',
+            'full highlights', 'full match highlights', 'match highlights', 'goals', 'best moments',
             'all goals', 'résumé', 'resumen', 'zusammenfassung'
         ]
         
@@ -244,15 +244,16 @@ class YouTubeRSSService:
             'build-up', 'warm up', 'training'
         ]
         
-        # Check for negative keywords first
-        for keyword in negative_keywords:
-            if keyword in title_lower:
-                return False
-        
-        # Check for positive keywords
+        # Check positive keywords FIRST — a title like "Full Match Highlights" should
+        # pass even though it also contains "full match" (a negative keyword).
         for keyword in highlight_keywords:
             if keyword in title_lower:
                 return True
+        
+        # Check for negative keywords only if no positive match was found
+        for keyword in negative_keywords:
+            if keyword in title_lower:
+                return False
         
         return False
     
