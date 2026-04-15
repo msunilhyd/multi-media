@@ -184,6 +184,54 @@ export default function Header() {
               <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
             )}
           </Link>
+
+          <Link
+            href="/nfl"
+            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
+              isActive('/nfl')
+                ? 'bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white shadow-xl shadow-red-500/40'
+                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-red-500/50 hover:shadow-lg hover:shadow-red-500/20'
+            }`}
+            title="NFL Highlights"
+          >
+            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
+              isActive('/nfl')
+                ? 'bg-white/20'
+                : 'bg-red-500/20 group-hover:bg-red-500/30'
+            }`}>
+              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
+                isActive('/nfl') ? 'text-yellow-300' : 'text-red-400'
+              }`} />
+            </div>
+            <span className="font-bold tracking-wide text-center sm:text-left">NFL</span>
+            {isActive('/nfl') && (
+              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
+            )}
+          </Link>
+
+          <Link
+            href="/mlb"
+            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
+              isActive('/mlb')
+                ? 'bg-gradient-to-r from-green-600 via-emerald-500 to-teal-500 text-white shadow-xl shadow-green-500/40'
+                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/20'
+            }`}
+            title="MLB Highlights"
+          >
+            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
+              isActive('/mlb')
+                ? 'bg-white/20'
+                : 'bg-green-500/20 group-hover:bg-green-500/30'
+            }`}>
+              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
+                isActive('/mlb') ? 'text-yellow-300' : 'text-green-400'
+              }`} />
+            </div>
+            <span className="font-bold tracking-wide text-center sm:text-left">MLB</span>
+            {isActive('/mlb') && (
+              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
+            )}
+          </Link>
           
           <Link
             href="/music"

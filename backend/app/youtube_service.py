@@ -37,6 +37,8 @@ class YouTubeService:
         "Indian Super League": "UUSQ8md_xMUPrIxiH-lT2-xw",       # Indian Super League Official
         "MLS": "UUSZbXT5TLLW_i-5W8FZpFsg",                   # Major League Soccer Official
         "Süper Lig": "UU0YatYmg5JRYzXJPxIdRd8g",              # beIN SPORTS USA (Türkiye coverage)
+        "NFL": "UU-nPjZYcQj-sSikSESYytwA",                    # NFL Official
+        "MLB": "UUNUYZLuoy1rq1aVMwx4aTzw",                    # MLB Official
     }
     
     # Additional channels to search for each league (fallback) - ordered by priority
@@ -117,6 +119,17 @@ class YouTubeService:
             "UU0YatYmg5JRYzXJPxIdRd8g",   # beIN SPORTS USA
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC
             "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports Football
+        ],
+        "NFL": [
+            "UU-nPjZYcQj-sSikSESYytwA",   # NFL Official
+            "UUqZQlzSHbVJrwrn5XvzrzcA",   # NBC Sports (NFL broadcaster)
+            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (NFL broadcaster)
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (NFL coverage)
+        ],
+        "MLB": [
+            "UUNUYZLuoy1rq1aVMwx4aTzw",   # MLB Official
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (MLB coverage)
+            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (MLB broadcaster)
         ],
     }
     

@@ -102,6 +102,8 @@ def init_database():
                     League(name='FA Cup', slug='fa-cup', country='England', display_order=9),
                     League(name='EFL Cup', slug='efl-cup', country='England', display_order=10),
                     League(name='Supercopa de España', slug='supercoca-de-espana', country='Spain', display_order=11),
+                    League(name='NFL', slug='nfl', country='USA', display_order=12),
+                    League(name='MLB', slug='mlb', country='USA', display_order=13),
                 ]
                 session.add_all(default_leagues)
                 session.commit()
