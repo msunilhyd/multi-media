@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Trophy, Music, Play, ChevronRight } from 'lucide-react';
+import { Trophy, Music, Play, ChevronRight, Zap } from 'lucide-react';
 import Script from 'next/script';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -60,7 +60,7 @@ export default function Home() {
         </div>
         
         {/* Cards Section */}
-        <div className="grid md:grid-cols-3 gap-4 sm:gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8 max-w-6xl mx-auto">
           {/* Football Card */}
           <Link href="/football" className="group">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
@@ -79,6 +79,50 @@ export default function Home() {
                   <span>Premier League, La Liga, Serie A & more</span>
                 </div>
                 <ChevronRight className="w-6 h-6 text-blue-600 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </Link>
+
+          {/* NFL Card */}
+          <Link href="/nfl" className="group">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
+              <div className="bg-gradient-to-br from-red-600 to-red-700 p-8">
+                <Zap className="w-16 h-16 text-white mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  NFL Highlights
+                </h2>
+                <p className="text-red-100">
+                  Watch the latest American football game highlights and replays
+                </p>
+              </div>
+              <div className="p-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Play className="w-5 h-5" />
+                  <span>All NFL Teams & Playoffs</span>
+                </div>
+                <ChevronRight className="w-6 h-6 text-red-600 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </Link>
+
+          {/* MLB Card */}
+          <Link href="/mlb" className="group">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
+              <div className="bg-gradient-to-br from-green-600 to-green-700 p-8">
+                <Trophy className="w-16 h-16 text-white mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  MLB Highlights
+                </h2>
+                <p className="text-green-100">
+                  Watch the latest baseball game highlights and match replays
+                </p>
+              </div>
+              <div className="p-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Play className="w-5 h-5" />
+                  <span>All MLB Teams & Playoffs</span>
+                </div>
+                <ChevronRight className="w-6 h-6 text-green-600 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </Link>
@@ -108,12 +152,12 @@ export default function Home() {
           {/* Fun Card */}
           <Link href="/fun" className="group">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
-              <div className="bg-gradient-to-br from-green-600 to-green-700 p-8">
+              <div className="bg-gradient-to-br from-orange-600 to-orange-700 p-8">
                 <Play className="w-16 h-16 text-white mb-4" />
                 <h2 className="text-2xl font-bold text-white mb-2">
                   Fun Videos
                 </h2>
-                <p className="text-green-100">
+                <p className="text-orange-100">
                   Enjoy entertaining video segments and funny moments
                 </p>
               </div>
@@ -122,7 +166,7 @@ export default function Home() {
                   <Play className="w-5 h-5" />
                   <span>Comedy, Entertainment & More</span>
                 </div>
-                <ChevronRight className="w-6 h-6 text-green-600 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight className="w-6 h-6 text-orange-600 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </Link>
