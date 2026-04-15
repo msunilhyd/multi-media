@@ -9,6 +9,10 @@ import os
 # Add the backend directory to the path so we can import app
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 from app.database import engine, Base
 from app.models import League, Match, Highlight, FetchedDate
 from app.models_users import User, UserFavoriteTeam, NotificationPreference, Notification

@@ -11,6 +11,10 @@ import asyncio
 # Add the backend directory to the path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 from app.database import engine, SessionLocal
 from app import models
 from app.youtube_service import get_youtube_service
