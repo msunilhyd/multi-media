@@ -17,6 +17,7 @@ async def get_highlights_grouped(
     request: Request,
     match_date: Optional[date] = Query(default=None),
     teams: Optional[str] = Query(default=None, description="Comma-separated list of team names to filter"),
+    league_slug: Optional[str] = Query(default=None, description="Filter by league slug (e.g., 'nfl', 'mlb', 'premier-league')"),
     db: Session = Depends(get_db)
 ):
     """Get highlights grouped by league with optional team filtering and geo-filtering"""
@@ -36,9 +37,15 @@ async def get_highlights_grouped(
     if teams:
         team_filter = set(t.strip() for t in teams.split(",") if t.strip())
     
-    leagues = db.query(models.League).options(
+    # Query leagues with optional league_slug filter
+    query = db.query(models.League).options(
         joinedload(models.League.matches).joinedload(models.Match.highlights)
-    ).order_by(models.League.display_order).all()
+    )
+    
+    if league_slug:
+        query = query.filter(models.League.slug == league_slug)
+    
+    leagues = query.order_by(models.League.display_order).all()
     
     result = []
     for league in leagues:

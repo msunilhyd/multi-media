@@ -295,7 +295,7 @@ export default function NFLPage() {
         setCurrentSearchIndex(0);
       }
 
-      const data = await fetchHighlightsGroupedByDate(date);
+      const data = await fetchHighlightsGroupedByDate(date, 'nfl');
       let filteredData = data;
       if (league) {
         filteredData = data.filter(l => l.league.slug === league || l.league.name === league);
@@ -407,7 +407,7 @@ export default function NFLPage() {
       const leagueMap = new Map<string, any>();
 
       for (const date of dates) {
-        const data = await fetchHighlightsGroupedByDate(date);
+        const data = await fetchHighlightsGroupedByDate(date, 'nfl');
         for (const league of data) {
           if (!leagueMap.has(league.league.name)) {
             leagueMap.set(league.league.name, {

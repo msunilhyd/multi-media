@@ -216,9 +216,13 @@ export async function scrapeMatchesRangePast(days: number = 7): Promise<ScrapeRe
   return response.json();
 }
 
-export async function fetchHighlightsGroupedByDate(date: string): Promise<HighlightsGroupedByLeague[]> {
+export async function fetchHighlightsGroupedByDate(date: string, leagueSlug?: string): Promise<HighlightsGroupedByLeague[]> {
   // Use local API proxy to avoid CORS issues
-  const response = await fetch(`/api/highlights?match_date=${date}`);
+  const params = new URLSearchParams();
+  params.append('match_date', date);
+  if (leagueSlug) params.append('league_slug', leagueSlug);
+  
+  const response = await fetch(`/api/highlights?${params.toString()}`);
   if (!response.ok) throw new Error('Failed to fetch highlights');
   return response.json();
 }
