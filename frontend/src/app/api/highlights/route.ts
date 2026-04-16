@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const matchDate = searchParams.get('match_date');
   const teams = searchParams.get('teams');
+  const leagueSlug = searchParams.get('league_slug');
   
   // Require match_date parameter - no "show all" functionality
   if (!matchDate) {
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
   const params = new URLSearchParams();
   params.append('match_date', matchDate);
   if (teams) params.append('teams', teams);
+  if (leagueSlug) params.append('league_slug', leagueSlug);
   
   const url = `${BACKEND_URL}/api/highlights?${params}`;
   
