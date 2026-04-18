@@ -62,9 +62,8 @@ export default function MusicPage() {
           offset += limit;
         }
 
-        // Shuffle songs on first load
-        const shuffledSongs = shuffleArray(allSongs);
-        setSongs(shuffledSongs);
+        // Load songs without shuffling - shuffle only when user clicks shuffle button
+        setSongs(allSongs);
         setError(null);
       } catch (err) {
         console.error('Error loading songs:', err);
