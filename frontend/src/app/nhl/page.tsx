@@ -118,71 +118,54 @@ export default function NHLPage() {
           </p>
         </div>
 
-        {/* Filter Buttons */}
-        <div className="mb-8 flex flex-wrap items-center gap-3">
-          <button
-            onClick={handleTodayClick}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filterMode === 'today'
-                ? 'bg-cyan-600 text-white shadow-lg'
-                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700'
-            }`}
-          >
-            Today
-          </button>
-          <button
-            onClick={handleYesterdayClick}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filterMode === 'yesterday'
-                ? 'bg-cyan-600 text-white shadow-lg'
-                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700'
-            }`}
-          >
-            Yesterday
-          </button>
-          <button
-            onClick={handleWeekClick}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filterMode === 'week'
-                ? 'bg-cyan-600 text-white shadow-lg'
-                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700'
-            }`}
-          >
-            This Week
-          </button>
-
-          {/* Date Navigation */}
-          <div className="flex items-center gap-2 ml-auto">
+        {/* Select Date Section */}
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Select Date</h3>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={handlePreviousDay}
-              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-gray-300"
-              title="Previous day"
+              onClick={handleTodayClick}
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                filterMode === 'today'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
             >
-              <ChevronLeft className="w-5 h-5" />
+              Today
             </button>
-            <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
-              <Calendar className="w-5 h-5 text-cyan-400" />
+            <button
+              onClick={handleYesterdayClick}
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                filterMode === 'yesterday'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              Yesterday
+            </button>
+            <button
+              onClick={handleWeekClick}
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                filterMode === 'week'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              This Week
+            </button>
+            <div className="flex items-center gap-2">
               <input
                 type="date"
                 value={selectedDate}
                 onChange={handleDateChange}
-                className="bg-transparent text-white outline-none w-32"
+                className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <button
-              onClick={handleNextDay}
-              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-gray-300"
-              title="Next day"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
           </div>
-        </div>
-
-        {/* Powered By */}
-        <div className="mb-6 flex items-center gap-2 text-slate-400 text-sm">
-          <Zap className="w-4 h-4 text-cyan-400" />
-          <span>Powered by House of Highlights</span>
         </div>
 
         {/* Error Message */}
