@@ -109,18 +109,22 @@ export default function NHLPage() {
                 <h2 className="text-2xl font-bold text-white mb-6">
                   {leagueGroup.league.name}
                 </h2>
-                {leagueGroup.matches.map((match) => (
-                  <div key={match.id} className="mb-8">
-                    <h3 className="text-lg font-semibold text-slate-300 mb-4">
-                      {match.home_team} vs {match.away_team}
-                    </h3>
-                    {match.highlights.length > 0 ? (
-                      <HighlightsGrid highlights={match.highlights} />
-                    ) : (
-                      <p className="text-slate-500">No highlights available for this match</p>
-                    )}
-                  </div>
-                ))}
+                {leagueGroup.matches.length > 0 ? (
+                  leagueGroup.matches.map((match) => (
+                    <div key={match.id} className="mb-8">
+                      <h3 className="text-lg font-semibold text-slate-300 mb-4">
+                        {match.home_team} vs {match.away_team}
+                      </h3>
+                      {match.highlights && match.highlights.length > 0 ? (
+                        <HighlightsGrid highlights={match.highlights} />
+                      ) : (
+                        <p className="text-slate-500">No highlights available for this match</p>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500">No matches available for this date</p>
+                )}
               </div>
             ))}
           </div>
