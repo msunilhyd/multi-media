@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Calendar, Filter } from 'lucide-react';
+import { Calendar, Zap } from 'lucide-react';
 import Header from '@/components/Header';
 import HighlightsGrid from '@/components/HighlightsGrid';
 import Toast from '@/components/Toast';
 import { fetchHighlightsGroupedByDate } from '@/lib/api';
-import type { Highlight } from '@/lib/api';
+import type { HighlightsGroupedByLeague } from '@/lib/api';
 
 export default function IPLPage() {
-  const [highlights, setHighlights] = useState<{ [key: string]: Highlight[] }>({});
+  const [highlights, setHighlights] = useState<HighlightsGroupedByLeague[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -22,7 +22,7 @@ export default function IPLPage() {
         const today = new Date().toISOString().split('T')[0];
         setSelectedDate(today);
         
-        const data = await fetchHighlightsGroupedByDate(today, undefined, 'ipl');
+        const data = await fetchHighlightsGroupedByDate(today, 'ipl');
         setHighlights(data);
         setError(null);
       } catch (err) {
@@ -42,7 +42,7 @@ export default function IPLPage() {
     
     try {
       setLoading(true);
-      const data = await fetchHighlightsGroupedByDate(newDate, undefined, 'ipl');
+      const data = await fetchHighlightsGroupedByDate(newDate, 'ipl');
       setHighlights(data);
       setError(null);
     } catch (err) {
@@ -98,19 +98,29 @@ export default function IPLPage() {
         )}
 
         {/* Highlights Grid */}
-        {!loading && Object.keys(highlights).length > 0 ? (
+        {!loading && highlights.length > 0 ? (
           <div>
-            {Object.entries(highlights).map(([date, dateHighlights]) => (
-              <div key={date} className="mb-12">
+            {highlights.map((leagueGroup) => (
+              <div key={leagueGroup.league.id} className="mb-12">
                 <h2 className="text-2xl font-bold text-white mb-6">
-                  {new Date(date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
+                  {leagueGroup.league.name}
                 </h2>
-                <HighlightsGrid highlights={dateHighlights} />
+                {leagueGroup.matches.length > 0 ? (
+                  leagueGroup.matches.map((match) => (
+                    <div key={match.id} className="mb-8">
+                      <h3 className="text-lg font-semibold text-slate-300 mb-4">
+                        {match.home_team} vs {match.away_team}
+                      </h3>
+                      {match.highlights && match.highlights.length > 0 ? (
+                        <HighlightsGrid highlights={match.highlights} />
+                      ) : (
+                        <p className="text-slate-500">No highlights available for this match</p>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500">No matches available for this date</p>
+                )}
               </div>
             ))}
           </div>
