@@ -1269,6 +1269,16 @@ def start_scheduler():
             replace_existing=True
         )
         
+        # Aggressive highlight retry - every 30 minutes for matches missing highlights
+        # This ensures we catch highlights even if they're delayed
+        scheduler.add_job(
+            fetch_highlights_for_matches_missing_them,
+            CronTrigger(minute='*/30'),  # Every 30 minutes
+            id="aggressive_highlight_retry",
+            name="Aggressive Highlight Retry (Every 30 min)",
+            replace_existing=True
+        )
+        
         scheduler.start()
         print("[Scheduler] Started! Jobs scheduled:")
         print("  - Daily prefetch at 6:00 AM (7-day lookahead)")
@@ -1278,6 +1288,7 @@ def start_scheduler():
         print("  - Today's highlights fetch every hour (8 AM - 11 PM)")
         print("  - Match reconciliation at 12 PM, 6 PM, 11 PM (safety net)")
         print("  - 🚀 RSS feed polling every 10 minutes (FAST & FREE!)")
+        print("  - ⚡ Aggressive highlight retry every 30 minutes (catch delayed uploads)")
         print("[Scheduler] Note: RSS polling provides highlights 10-15 min after upload!")
     except Exception as e:
         print(f"[Scheduler] Warning: Failed to start scheduler: {e}")
