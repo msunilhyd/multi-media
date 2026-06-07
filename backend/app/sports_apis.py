@@ -71,18 +71,160 @@ class NBAApi:
 
 
 class TennisApi:
-    """Tennis matches from ATP/WTA data"""
-    BASE_URL = "https://www.tennis-explorer.com"
+    """Tennis matches from ATP/WTA using free public APIs"""
     
     async def get_matches(self, target_date: Optional[date] = None) -> List[Dict]:
-        """Fetch Tennis matches - using public tournament data"""
+        """Fetch Tennis matches from multiple reliable sources"""
         try:
-            # For now, return empty - Tennis API requires scraping
-            # In production, use dedicated tennis API or scraping
-            return []
+            all_matches = []
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                # Source 1: Tennis Data API (free tier)
+                try:
+                    response = await client.get(
+                        "https://api.tennisdata.com/v1/matches",
+                        params={"status": "completed", "limit": 50},
+                        timeout=15.0
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get("matches"):
+                            for match in data["matches"]:
+                                parsed = self._parse_match(match)
+                                if parsed:
+                                    all_matches.append(parsed)
+                except Exception as e:
+                    print(f"[Tennis API] Tennis Data API error: {e}")
+                
+                # Source 2: Rapid API Tennis Data (free tier available)
+                try:
+                    response = await client.get(
+                        "https://api.api-tennis.com/tennis",
+                        params={"method": "get_matches"},
+                        timeout=15.0
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get("result"):
+                            for match in data["result"]:
+                                parsed = self._parse_rapid_api_match(match)
+                                if parsed:
+                                    all_matches.append(parsed)
+                except Exception as e:
+                    print(f"[Tennis API] Rapid API error: {e}")
+                
+                # Source 3: ESPN Tennis API (reliable fallback)
+                try:
+                    response = await client.get(
+                        "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard",
+                        timeout=15.0
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get("events"):
+                            for event in data["events"]:
+                                parsed = self._parse_espn_tennis_match(event)
+                                if parsed:
+                                    all_matches.append(parsed)
+                except Exception as e:
+                    print(f"[Tennis API] ESPN Tennis API error: {e}")
+            
+            if all_matches:
+                print(f"[Tennis API] Found {len(all_matches)} tennis matches")
+            else:
+                print(f"[Tennis API] No live data available from any source")
+            
+            return all_matches
+            
         except Exception as e:
             print(f"Error fetching Tennis matches: {e}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
             return []
+    
+    def _parse_match(self, match: Dict) -> Optional[Dict]:
+        """Parse Tennis Data API match format"""
+        try:
+            match_date_str = match.get("date", "") or match.get("match_date", "")
+            if match_date_str:
+                match_date = datetime.fromisoformat(match_date_str.replace("Z", "+00:00")).date()
+            else:
+                match_date = date.today()
+            
+            status = match.get("status", "scheduled")
+            status_map = {
+                "scheduled": "scheduled",
+                "live": "live", 
+                "completed": "finished",
+                "finished": "finished"
+            }
+            
+            return {
+                "home_team": match.get("player1", "") or match.get("home_player", ""),
+                "away_team": match.get("player2", "") or match.get("away_player", ""),
+                "match_date": match_date,
+                "match_time": match.get("time", "20:00"),
+                "status": status_map.get(status, "scheduled"),
+                "home_score": match.get("score1") or match.get("home_score"),
+                "away_score": match.get("score2") or match.get("away_score")
+            }
+        except Exception as e:
+            print(f"Error parsing Tennis match: {e}")
+            return None
+    
+    def _parse_rapid_api_match(self, match: Dict) -> Optional[Dict]:
+        """Parse Rapid API Tennis match format"""
+        try:
+            match_date_str = match.get("match_date", "")
+            if match_date_str:
+                match_date = datetime.fromisoformat(match_date_str).date()
+            else:
+                match_date = date.today()
+            
+            return {
+                "home_team": match.get("player1", ""),
+                "away_team": match.get("player2", ""),
+                "match_date": match_date,
+                "match_time": match.get("match_time", "20:00"),
+                "status": "finished" if match.get("status") == "Finished" else "scheduled",
+                "home_score": match.get("score1"),
+                "away_score": match.get("score2")
+            }
+        except Exception as e:
+            print(f"Error parsing Rapid API Tennis match: {e}")
+            return None
+    
+    def _parse_espn_tennis_match(self, event: Dict) -> Optional[Dict]:
+        """Parse ESPN Tennis match format"""
+        try:
+            competitions = event.get("competitions", [{}])
+            if not competitions:
+                return None
+            
+            comp = competitions[0]
+            competitors = comp.get("competitors", [])
+            
+            if len(competitors) < 2:
+                return None
+            
+            match_date_str = event.get("date", "")
+            match_date = datetime.fromisoformat(match_date_str.replace("Z", "+00:00")).date() if match_date_str else date.today()
+            
+            status = comp.get("status", {}).get("type", "")
+            status_map = {"pre": "scheduled", "in": "live", "post": "finished"}
+            
+            return {
+                "home_team": competitors[0].get("athlete", [{}])[0].get("displayName", "") if competitors[0].get("athlete") else competitors[0].get("displayName", ""),
+                "away_team": competitors[1].get("athlete", [{}])[0].get("displayName", "") if competitors[1].get("athlete") else competitors[1].get("displayName", ""),
+                "match_date": match_date,
+                "match_time": match_date_str.split("T")[1][:5] if "T" in match_date_str else "20:00",
+                "status": status_map.get(status, "scheduled"),
+                "home_score": competitors[0].get("score"),
+                "away_score": competitors[1].get("score")
+            }
+        except Exception as e:
+            print(f"Error parsing ESPN Tennis match: {e}")
+            return None
 
 
 class NHLApi:
