@@ -104,13 +104,18 @@ export default function NBAPage() {
       <Header />
       
       <main className="container mx-auto px-4 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
+        {/* SEO Content - Always Visible */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
             <div className="text-4xl">🏀</div>
-            <h1 className="text-4xl font-bold text-white">NBA Highlights</h1>
-          </div>
-          <p className="text-slate-400">Watch the latest NBA game highlights from House of Highlights</p>
+            NBA Highlights
+          </h1>
+          <p className="text-lg text-slate-300 max-w-3xl mx-auto mb-4">
+            Watch free NBA basketball game highlights from all teams. Regular season, playoffs, and championship matches. Updated daily with the latest match videos and replays.
+          </p>
+          <p className="text-sm text-slate-400">
+            Free highlights • All NBA teams • Daily updates • Full HD quality • No subscription required
+          </p>
         </div>
 
         {/* Filter Buttons */}
