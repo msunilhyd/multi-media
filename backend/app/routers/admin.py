@@ -386,6 +386,24 @@ async def trigger_fetch_missing_highlights(background_tasks: BackgroundTasks):
     }
 
 
+@router.post("/prefetch-matches")
+async def trigger_prefetch_matches(background_tasks: BackgroundTasks):
+    """
+    Manually trigger the prefetch_upcoming_matches job.
+    This fetches matches from all sports APIs (Football, IPL, NBA, Tennis, NHL, NFL, MLB, FIFA).
+    Runs in background.
+    """
+    from ..scheduler import prefetch_upcoming_matches
+    
+    background_tasks.add_task(prefetch_upcoming_matches)
+    
+    return {
+        "success": True,
+        "message": "Prefetch job started in background",
+        "note": "This will fetch matches from all sports APIs (Football, IPL, NBA, Tennis, NHL, NFL, MLB, FIFA)"
+    }
+
+
 @router.post("/add-sample-matches")
 async def add_sample_matches(db: Session = Depends(get_db), fetch_highlights: bool = True) -> Dict[str, Any]:
     """
