@@ -39,6 +39,9 @@ class YouTubeService:
         "Süper Lig": "UU0YatYmg5JRYzXJPxIdRd8g",              # beIN SPORTS USA (Türkiye coverage)
         "NFL": "UU-nPjZYcQj-sSikSESYytwA",                    # NFL Official
         "MLB": "UUNUYZLuoy1rq1aVMwx4aTzw",                    # MLB Official
+        "NBA": "UUqQo7ewe87aYAe7ub5UqXMw",                    # House of Highlights (Bleacher Report - official distributor)
+        "Tennis": "UUqQo7ewe87aYAe7ub5UqXMw",                 # House of Highlights (ATP/WTA coverage)
+        "NHL": "UUqQo7ewe87aYAe7ub5UqXMw",                    # House of Highlights (official NHL distributor)
     }
     
     # Additional channels to search for each league (fallback) - ordered by priority
@@ -130,6 +133,23 @@ class YouTubeService:
             "UUNUYZLuoy1rq1aVMwx4aTzw",   # MLB Official
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (MLB coverage)
             "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (MLB broadcaster)
+        ],
+        "NBA": [
+            "UUqQo7ewe87aYAe7ub5UqXMw",   # House of Highlights (primary - Bleacher Report)
+            "UU-nPjZYcQj-sSikSESYytwA",   # NBA Official
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (NBA coverage)
+            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (NBA broadcaster)
+        ],
+        "Tennis": [
+            "UUqQo7ewe87aYAe7ub5UqXMw",   # House of Highlights (primary)
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (Tennis coverage)
+            "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports (Tennis coverage)
+        ],
+        "NHL": [
+            "UUqQo7ewe87aYAe7ub5UqXMw",   # House of Highlights (primary)
+            "UU-nPjZYcQj-sSikSESYytwA",   # NHL Official
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (NHL coverage)
+            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (NHL broadcaster)
         ],
     }
     
