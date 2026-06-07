@@ -1,16 +1,13 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import AuthProvider from '@/components/AuthProvider'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
 import PWAInstaller from '@/components/PWAInstaller'
 import JsonLd from '@/components/JsonLd'
 
-const inter = Inter({ subsets: ['latin'] })
-const playfair = Playfair_Display({ 
-  subsets: ['latin'],
-  variable: '--font-playfair',
-})
+// Use system fonts as fallback to avoid CDN issues during deployment
+const inter = { className: '' }
+const playfair = { variable: '--font-playfair' }
 
 export const metadata: Metadata = {
   title: 'LinusPlaylists - Football Highlights & Music Streaming',

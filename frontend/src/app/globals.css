@@ -12,6 +12,9 @@
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
   --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  
+  /* System font stack as fallback */
+  --font-playfair: Georgia, 'Times New Roman', serif;
 }
 
 @media (prefers-color-scheme: dark) {
