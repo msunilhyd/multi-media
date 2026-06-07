@@ -157,6 +157,11 @@ class YouTubeService:
             "UUVHFbqXqj2qkaq69JjJ2-Aw",   # Star Sports (IPL broadcaster in India)
             "UUkzU2fwjKVp0xJ-5X5X5X5X",   # Cricket Highlights House (backup)
         ],
+        "FIFA World Cup": [
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC (primary for FIFA)
+            "UUqZQlzSHbVJrwrn5XvzrzcA",   # FOX Sports (US broadcaster)
+            "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (US broadcaster)
+        ],
     }
     
     def __init__(self):
