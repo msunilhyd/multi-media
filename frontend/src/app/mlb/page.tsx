@@ -592,69 +592,6 @@ export default function MLBPage() {
           </div>
         )}
 
-        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Trophy className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              <h3 className="font-semibold text-gray-700 dark:text-gray-300">Filters</h3>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <TeamSelector selectedTeams={selectedTeams} onTeamsChange={handleTeamsChange} onDone={handleTeamSelectionDone} />
-            {selectedTeams.length > 0 && (
-              <>
-                <button
-                  onClick={() => {
-                    setSelectedTeams([]);
-                    if (showWeek) {
-                      handleWeekSelect();
-                    } else if (selectedDate) {
-                      loadHighlights(selectedDate, undefined, undefined);
-                    }
-                  }}
-                  className="px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800 transition-colors text-sm font-medium"
-                >
-                  Clear Filters
-                </button>
-                {selectedTeams.map((team) => (
-                  <span
-                    key={team}
-                    className="flex items-center bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded ml-2 text-sm"
-                    style={{ gap: '0.25rem' }}
-                  >
-                    {team}
-                    <button
-                      onClick={() => {
-                        const newTeams = selectedTeams.filter((t) => t !== team);
-                        setSelectedTeams(newTeams);
-                        if (newTeams.length === 0) {
-                          if (selectedDate) {
-                            loadHighlights(selectedDate, undefined, undefined);
-                          }
-                        } else {
-                          if (selectedDate) {
-                            loadHighlights(selectedDate, newTeams, undefined);
-                          }
-                        }
-                      }}
-                      className="ml-1 text-green-700 dark:text-green-300 hover:text-red-600 focus:outline-none"
-                      aria-label={`Remove ${team}`}
-                      title={`Remove ${team}`}
-                      type="button"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </>
-            )}
-          </div>
-          {selectedTeams.length > 0 && (
-            <div className="flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <span className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded">{selectedTeams.length} team(s) selected</span>
-            </div>
-          )}
-        </div>
 
         <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-center justify-between mb-3">
