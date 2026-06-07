@@ -387,12 +387,18 @@ async def trigger_fetch_missing_highlights(background_tasks: BackgroundTasks):
 
 
 @router.post("/add-sample-matches")
-def add_sample_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
-    """Add sample matches for all sports (NBA, Tennis, NHL, NFL, MLB, FIFA) for testing"""
+async def add_sample_matches(db: Session = Depends(get_db), fetch_highlights: bool = True) -> Dict[str, Any]:
+    """
+    Add sample matches for all sports (NBA, Tennis, NHL, NFL, MLB, FIFA) for testing.
+    
+    Args:
+        fetch_highlights: If True, immediately fetch highlights for the created matches
+    """
     
     result = {
         "message": "Sample matches added for all sports",
         "matches_created": 0,
+        "highlights_found": 0,
         "details": []
     }
     
@@ -505,4 +511,68 @@ def add_sample_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
                 })
     
     db.commit()
+    
+    # Fetch highlights for the newly created matches if requested
+    if fetch_highlights:
+        print(f"[Admin] Fetching highlights for {result['matches_created']} newly created matches...")
+        try:
+            from ..youtube_service import get_youtube_service, YouTubeQuotaExhaustedError
+            
+            youtube_service = get_youtube_service()
+            highlights_found = 0
+            
+            # Get all newly created matches without highlights
+            matches_without_highlights = db.query(models.Match).filter(
+                models.Match.status == 'finished',
+                ~models.Match.highlights.any()
+            ).all()
+            
+            for match in matches_without_highlights:
+                league_name = match.league.name if match.league else None
+                
+                try:
+                    print(f"[Admin] Searching highlights: {match.home_team} vs {match.away_team}")
+                    
+                    videos = youtube_service.search_highlights(
+                        home_team=match.home_team,
+                        away_team=match.away_team,
+                        league=league_name,
+                        match_date=match.match_date,
+                        max_results=5
+                    )
+                    
+                    if videos:
+                        for video in videos:
+                            highlight = models.Highlight(
+                                match_id=match.id,
+                                youtube_video_id=video['video_id'],
+                                title=video['title'],
+                                description=video.get('description', ''),
+                                thumbnail_url=video.get('thumbnail_url', ''),
+                                channel_title=video.get('channel_title', ''),
+                                published_at=video.get('published_at'),
+                                view_count=video.get('view_count', 0),
+                                duration=video.get('duration', '')
+                            )
+                            db.add(highlight)
+                        db.commit()
+                        highlights_found += len(videos)
+                        print(f"[Admin] ✓ Found {len(videos)} highlights for {match.home_team} vs {match.away_team}")
+                    else:
+                        print(f"[Admin] ✗ No highlights found for {match.home_team} vs {match.away_team}")
+                        
+                except YouTubeQuotaExhaustedError:
+                    print(f"[Admin] YouTube quota exhausted - stopping highlight fetch")
+                    break
+                except Exception as e:
+                    print(f"[Admin] Error fetching highlight for {match.home_team} vs {match.away_team}: {e}")
+                    continue
+            
+            result["highlights_found"] = highlights_found
+            print(f"[Admin] Highlight fetch complete! Found {highlights_found} highlights")
+            
+        except Exception as e:
+            print(f"[Admin] Error during highlight fetch: {e}")
+            result["highlight_fetch_error"] = str(e)
+    
     return result
