@@ -13,6 +13,10 @@ from .database import SessionLocal
 from . import models
 from .football_api import get_football_api
 from .cricket_api import CricketAPI
+from .sports_apis import (
+    get_nba_api, get_tennis_api, get_nhl_api, 
+    get_nfl_api, get_mlb_api, get_fifa_api
+)
 from .youtube_service import get_youtube_service, YouTubeQuotaExhaustedError
 from .youtube_rss_service import get_rss_service
 from .email_service import send_missing_highlights_notification
@@ -192,6 +196,88 @@ async def fetch_ipl_matches(db: Session) -> int:
     return match_count
 
 
+async def fetch_multi_sport_matches(db: Session) -> int:
+    """
+    Fetch matches from all sports APIs (NBA, Tennis, NHL, NFL, MLB, FIFA)
+    Returns total number of new matches stored.
+    """
+    total_matches = 0
+    
+    # Define sports and their API getters
+    sports_config = [
+        ("NBA", "nba", get_nba_api),
+        ("Tennis", "tennis", get_tennis_api),
+        ("NHL", "nhl", get_nhl_api),
+        ("NFL", "nfl", get_nfl_api),
+        ("MLB", "mlb", get_mlb_api),
+        ("FIFA World Cup", "fifa-world-cup", get_fifa_api),
+    ]
+    
+    for sport_name, sport_slug, api_getter in sports_config:
+        try:
+            print(f"[Scheduler] Fetching {sport_name} matches...")
+            api = api_getter()
+            matches = await api.get_matches()
+            
+            if not matches:
+                print(f"[Scheduler] No {sport_name} matches found")
+                continue
+            
+            # Get or create league
+            db_league = db.query(models.League).filter(
+                models.League.slug == sport_slug
+            ).first()
+            
+            if not db_league:
+                db_league = models.League(
+                    name=sport_name,
+                    slug=sport_slug,
+                    country="International",
+                    display_order=0
+                )
+                db.add(db_league)
+                db.commit()
+                db.refresh(db_league)
+            
+            # Add matches
+            sport_match_count = 0
+            for match in matches:
+                existing = db.query(models.Match).filter(
+                    models.Match.league_id == db_league.id,
+                    models.Match.home_team == match.get("home_team"),
+                    models.Match.away_team == match.get("away_team"),
+                    models.Match.match_date == match.get("match_date")
+                ).first()
+                
+                if not existing:
+                    new_match = models.Match(
+                        league_id=db_league.id,
+                        home_team=match.get("home_team", ""),
+                        away_team=match.get("away_team", ""),
+                        match_date=match.get("match_date"),
+                        match_time=match.get("match_time", "20:00"),
+                        status=match.get("status", "scheduled"),
+                        home_score=match.get("home_score"),
+                        away_score=match.get("away_score")
+                    )
+                    db.add(new_match)
+                    sport_match_count += 1
+            
+            if sport_match_count > 0:
+                db.commit()
+                total_matches += sport_match_count
+                print(f"[Scheduler] ✓ Added {sport_match_count} {sport_name} matches")
+            
+        except Exception as e:
+            print(f"[Scheduler] Error fetching {sport_name} matches: {e}")
+            import traceback
+            print(f"[Scheduler] Traceback: {traceback.format_exc()}")
+            db.rollback()
+            continue
+    
+    return total_matches
+
+
 async def prefetch_upcoming_matches():
     """
     Daily job to pre-fetch matches for the next 7 days.
@@ -215,6 +301,12 @@ async def prefetch_upcoming_matches():
         ipl_matches = await fetch_ipl_matches(db)
         total_new_matches += ipl_matches
         print(f"[Scheduler] ✓ Fetched {ipl_matches} IPL matches")
+        
+        # Fetch multi-sport matches (NBA, Tennis, NHL, NFL, MLB, FIFA)
+        print(f"[Scheduler] Fetching multi-sport matches...")
+        multi_sport_matches = await fetch_multi_sport_matches(db)
+        total_new_matches += multi_sport_matches
+        print(f"[Scheduler] ✓ Fetched {multi_sport_matches} multi-sport matches")
         
         # Then fetch football matches for next 7 days
         for i in range(7):
