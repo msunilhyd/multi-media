@@ -384,3 +384,125 @@ async def trigger_fetch_missing_highlights(background_tasks: BackgroundTasks):
         "message": "Highlight fetch job started in background. Check server logs for details.",
         "note": "This job searches for highlights for all finished matches without highlights"
     }
+
+
+@router.post("/add-sample-matches")
+def add_sample_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Add sample matches for all sports (NBA, Tennis, NHL, NFL, MLB, FIFA) for testing"""
+    
+    result = {
+        "message": "Sample matches added for all sports",
+        "matches_created": 0,
+        "details": []
+    }
+    
+    # Sample matches data for all sports
+    sample_data = [
+        # NBA
+        {
+            "league_name": "NBA",
+            "league_slug": "nba",
+            "matches": [
+                {"home": "Los Angeles Lakers", "away": "Boston Celtics", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": 110, "away_score": 105},
+                {"home": "Golden State Warriors", "away": "Denver Nuggets", "date": date.today() - timedelta(days=2), "status": "finished", "home_score": 115, "away_score": 120},
+            ]
+        },
+        # Tennis
+        {
+            "league_name": "ATP",
+            "league_slug": "atp",
+            "matches": [
+                {"home": "Novak Djokovic", "away": "Carlos Alcaraz", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": 2, "away_score": 1},
+                {"home": "Rafael Nadal", "away": "Jannik Sinner", "date": date.today() - timedelta(days=2), "status": "finished", "home_score": 1, "away_score": 2},
+            ]
+        },
+        # NHL
+        {
+            "league_name": "NHL",
+            "league_slug": "nhl",
+            "matches": [
+                {"home": "Toronto Maple Leafs", "away": "Montreal Canadiens", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": 4, "away_score": 3},
+                {"home": "New York Rangers", "away": "Boston Bruins", "date": date.today() - timedelta(days=2), "status": "finished", "home_score": 3, "away_score": 2},
+            ]
+        },
+        # NFL
+        {
+            "league_name": "NFL",
+            "league_slug": "nfl",
+            "matches": [
+                {"home": "Kansas City Chiefs", "away": "Buffalo Bills", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": 27, "away_score": 24},
+                {"home": "Dallas Cowboys", "away": "Philadelphia Eagles", "date": date.today() - timedelta(days=2), "status": "finished", "home_score": 28, "away_score": 23},
+            ]
+        },
+        # MLB
+        {
+            "league_name": "MLB",
+            "league_slug": "mlb",
+            "matches": [
+                {"home": "New York Yankees", "away": "Boston Red Sox", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": 5, "away_score": 3},
+                {"home": "Los Angeles Dodgers", "away": "San Francisco Giants", "date": date.today() - timedelta(days=2), "status": "finished", "home_score": 4, "away_score": 2},
+            ]
+        },
+        # FIFA
+        {
+            "league_name": "FIFA World Cup",
+            "league_slug": "fifa-world-cup",
+            "matches": [
+                {"home": "Argentina", "away": "France", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": 3, "away_score": 2},
+                {"home": "England", "away": "Brazil", "date": date.today() - timedelta(days=2), "status": "finished", "home_score": 2, "away_score": 1},
+            ]
+        },
+    ]
+    
+    for sport_data in sample_data:
+        league_name = sport_data["league_name"]
+        league_slug = sport_data["league_slug"]
+        
+        # Get or create league
+        db_league = db.query(models.League).filter(
+            models.League.slug == league_slug
+        ).first()
+        
+        if not db_league:
+            db_league = models.League(
+                name=league_name,
+                slug=league_slug,
+                country="International",
+                display_order=0
+            )
+            db.add(db_league)
+            db.commit()
+            db.refresh(db_league)
+        
+        # Add matches
+        for match_data in sport_data["matches"]:
+            # Check if match already exists
+            existing = db.query(models.Match).filter(
+                models.Match.league_id == db_league.id,
+                models.Match.home_team == match_data["home"],
+                models.Match.away_team == match_data["away"],
+                models.Match.match_date == match_data["date"]
+            ).first()
+            
+            if not existing:
+                new_match = models.Match(
+                    league_id=db_league.id,
+                    home_team=match_data["home"],
+                    away_team=match_data["away"],
+                    match_date=match_data["date"],
+                    match_time="20:00",
+                    status=match_data["status"],
+                    home_score=match_data.get("home_score"),
+                    away_score=match_data.get("away_score")
+                )
+                db.add(new_match)
+                result["matches_created"] += 1
+                result["details"].append({
+                    "league": league_name,
+                    "match": f"{match_data['home']} vs {match_data['away']}",
+                    "date": str(match_data["date"]),
+                    "status": match_data["status"]
+                })
+    
+    db.commit()
+    return result
