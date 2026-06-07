@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from .database import SessionLocal
 from . import models
 from .football_api import get_football_api
+from .cricket_api import CricketAPI
 from .youtube_service import get_youtube_service, YouTubeQuotaExhaustedError
 from .youtube_rss_service import get_rss_service
 from .email_service import send_missing_highlights_notification
@@ -123,6 +124,74 @@ async def fetch_matches_for_date(target_date: date, db: Session) -> int:
     return match_count
 
 
+async def fetch_ipl_matches(db: Session) -> int:
+    """
+    Fetch IPL matches from Cricket API and store in database.
+    Returns the number of new matches stored.
+    """
+    cricket_api = CricketAPI()
+    match_count = 0
+    
+    try:
+        ipl_matches = await cricket_api.get_ipl_matches()
+        
+        # Get or create IPL league
+        league_info = {
+            "slug": "ipl",
+            "country": "India"
+        }
+        
+        db_league = db.query(models.League).filter(
+            models.League.slug == league_info["slug"]
+        ).first()
+        
+        if not db_league:
+            db_league = models.League(
+                name="Indian Premier League",
+                slug=league_info["slug"],
+                country=league_info.get("country"),
+                display_order=0
+            )
+            db.add(db_league)
+            db.commit()
+            db.refresh(db_league)
+        
+        for match in ipl_matches:
+            # Check if match already exists
+            existing = db.query(models.Match).filter(
+                models.Match.home_team == match.get("home_team"),
+                models.Match.away_team == match.get("away_team"),
+                models.Match.match_date == match.get("match_date")
+            ).first()
+            
+            if not existing:
+                # Create new match
+                new_match = models.Match(
+                    league_id=db_league.id,
+                    home_team=match.get("home_team", ""),
+                    away_team=match.get("away_team", ""),
+                    match_date=match.get("match_date"),
+                    match_time=match.get("match_time"),
+                    status=match.get("status", "scheduled"),
+                    home_score=match.get("home_score"),
+                    away_score=match.get("away_score")
+                )
+                db.add(new_match)
+                match_count += 1
+        
+        if match_count > 0:
+            db.commit()
+            print(f"[Scheduler] ✓ Added {match_count} new IPL matches")
+        
+    except Exception as e:
+        print(f"[Scheduler] Error fetching IPL matches: {e}")
+        import traceback
+        print(f"[Scheduler] Traceback: {traceback.format_exc()}")
+        db.rollback()
+    
+    return match_count
+
+
 async def prefetch_upcoming_matches():
     """
     Daily job to pre-fetch matches for the next 7 days.
@@ -141,6 +210,13 @@ async def prefetch_upcoming_matches():
     failed_dates = []
     
     try:
+        # Fetch IPL matches first
+        print(f"[Scheduler] Fetching IPL matches...")
+        ipl_matches = await fetch_ipl_matches(db)
+        total_new_matches += ipl_matches
+        print(f"[Scheduler] ✓ Fetched {ipl_matches} IPL matches")
+        
+        # Then fetch football matches for next 7 days
         for i in range(7):
             target_date = today + timedelta(days=i)
             
@@ -152,7 +228,7 @@ async def prefetch_upcoming_matches():
             # Always refresh today (to get score updates)
             # For other days, only fetch if not already in DB
             if i == 0 or not already_fetched:
-                print(f"[Scheduler] Fetching matches for {target_date}...")
+                print(f"[Scheduler] Fetching football matches for {target_date}...")
                 
                 # If it's today and already fetched, we're just updating
                 if i == 0 and already_fetched:
