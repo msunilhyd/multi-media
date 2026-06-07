@@ -70,6 +70,40 @@ class FetchedDate(Base):
     fetched_at = Column(DateTime, server_default=func.now())
 
 
+class SamplePlaylist(Base):
+    """Sample playlists for curating songs before adding to main playlist"""
+    __tablename__ = "sample_playlists"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    songs = relationship("SamplePlaylistSong", back_populates="playlist", cascade="all, delete-orphan")
+
+
+class SamplePlaylistSong(Base):
+    """Songs in sample playlists"""
+    __tablename__ = "sample_playlist_songs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    playlist_id = Column(Integer, ForeignKey("sample_playlists.id"), nullable=False)
+    title = Column(String(500), nullable=False)
+    artist = Column(String(200), nullable=True)
+    youtube_video_id = Column(String(50), nullable=False)
+    description = Column(Text, nullable=True)
+    thumbnail_url = Column(String(500), nullable=True)
+    channel_title = Column(String(200), nullable=True)
+    published_at = Column(DateTime, nullable=True)
+    view_count = Column(Integer, nullable=True)
+    duration = Column(String(20), nullable=True)
+    position = Column(Integer, nullable=False)  # Order in playlist
+    created_at = Column(DateTime, server_default=func.now())
+    
+    playlist = relationship("SamplePlaylist", back_populates="songs")
+
+
 LEAGUE_MAPPINGS = {
     "Premier League": {"slug": "premier-league", "country": "England"},
     "English Premier League": {"slug": "premier-league", "country": "England"},

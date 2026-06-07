@@ -240,8 +240,11 @@ export default function MusicPage() {
               Music Player Temporarily Unavailable
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              We're having trouble loading the music playlist right now. Please try refreshing the page or check back in a few moments.
+              We're having trouble loading the music playlist right now. Please try again in a few moments.
             </p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm text-red-700 dark:text-red-400 font-mono">{error}</p>
+            </div>
             <div className="bg-gray-200 dark:bg-gray-800 rounded-lg p-6 mb-6">
               <h3 className="font-semibold text-gray-800 dark:text-white mb-3">
                 Available Music Features:
@@ -254,8 +257,35 @@ export default function MusicPage() {
                 <li>• Discover new music from various movies and albums</li>
               </ul>
             </div>
-            <button 
-              onClick={() => window.location.reload()}
+            <button
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+                // Re-trigger the loadSongs effect by unmounting via key trick is not available here,
+                // so we call the load function directly
+                const loadSongs = async () => {
+                  try {
+                    const allSongs: Song[] = [];
+                    let offset = 0;
+                    const limit = 2000;
+                    let hasMoreSongs = true;
+                    while (hasMoreSongs) {
+                      const data = await fetchSongs(undefined, undefined, undefined, undefined, limit, offset);
+                      allSongs.push(...data);
+                      hasMoreSongs = data.length === limit;
+                      offset += limit;
+                    }
+                    setSongs(allSongs);
+                    setError(null);
+                  } catch (err: any) {
+                    console.error('Error loading songs:', err);
+                    setError(err?.message || 'Failed to load songs. Please try again later.');
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+                loadSongs();
+              }}
               className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium"
             >
               Try Again

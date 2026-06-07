@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .routers import leagues, matches, highlights, admin, audio, teams, auth, music, playlists, entertainment, favorites, standings, user_songs
+from .routers import leagues, matches, highlights, admin, audio, teams, auth, music, playlists, entertainment, favorites, standings, user_songs, sample_playlists
 from .config import get_settings
 from .scheduler import start_scheduler, shutdown_scheduler
 
@@ -51,6 +51,7 @@ app.include_router(entertainment.router)
 app.include_router(favorites.router)
 app.include_router(standings.router)
 app.include_router(user_songs.router)
+app.include_router(sample_playlists.router)
 
 
 @app.get("/")

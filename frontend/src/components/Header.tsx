@@ -232,6 +232,54 @@ export default function Header() {
               <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
             )}
           </Link>
+
+          <Link
+            href="/fifa"
+            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
+              isActive('/fifa')
+                ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 text-white shadow-xl shadow-amber-500/40'
+                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/20'
+            }`}
+            title="FIFA World Cup"
+          >
+            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
+              isActive('/fifa')
+                ? 'bg-white/20'
+                : 'bg-amber-500/20 group-hover:bg-amber-500/30'
+            }`}>
+              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
+                isActive('/fifa') ? 'text-yellow-300' : 'text-amber-400'
+              }`} />
+            </div>
+            <span className="font-bold tracking-wide text-center sm:text-left">FIFA</span>
+            {isActive('/fifa') && (
+              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
+            )}
+          </Link>
+
+          <Link
+            href="/ipl"
+            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
+              isActive('/ipl')
+                ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-500 text-white shadow-xl shadow-indigo-500/40'
+                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/20'
+            }`}
+            title="IPL Cricket"
+          >
+            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
+              isActive('/ipl')
+                ? 'bg-white/20'
+                : 'bg-indigo-500/20 group-hover:bg-indigo-500/30'
+            }`}>
+              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
+                isActive('/ipl') ? 'text-yellow-300' : 'text-indigo-400'
+              }`} />
+            </div>
+            <span className="font-bold tracking-wide text-center sm:text-left">IPL</span>
+            {isActive('/ipl') && (
+              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
+            )}
+          </Link>
           
           <Link
             href="/music"
