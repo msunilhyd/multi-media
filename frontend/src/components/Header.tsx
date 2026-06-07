@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
-import { Trophy, Music, Home, Sparkles, Disc3, User, LogOut, Settings, Smile, Mail } from 'lucide-react';
+import { Trophy, Music, Home, Sparkles, Disc3, User, LogOut, Settings, Smile, Mail, ChevronDown } from 'lucide-react';
 import AuthModal from './AuthModal';
 
 export default function Header() {
@@ -14,7 +14,9 @@ export default function Header() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSportsMenu, setShowSportsMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const sportsMenuRef = useRef<HTMLDivElement>(null);
   
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
@@ -30,15 +32,18 @@ export default function Header() {
     setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
   };
 
-  // Close user menu when clicking outside
+  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
+      if (sportsMenuRef.current && !sportsMenuRef.current.contains(event.target as Node)) {
+        setShowSportsMenu(false);
+      }
     };
 
-    if (showUserMenu) {
+    if (showUserMenu || showSportsMenu) {
       document.addEventListener('mousedown', handleClickOutside as EventListener);
       document.addEventListener('touchstart', handleClickOutside as EventListener);
     }
@@ -47,7 +52,7 @@ export default function Header() {
       document.removeEventListener('mousedown', handleClickOutside as EventListener);
       document.removeEventListener('touchstart', handleClickOutside as EventListener);
     };
-  }, [showUserMenu]);
+  }, [showUserMenu, showSportsMenu]);
 
   return (
     <header 
@@ -159,199 +164,55 @@ export default function Header() {
           </div>
         </div>
         
-        {/* Navigation Links - Full width on mobile, inline on desktop */}
-        <nav className="flex items-center gap-2 sm:gap-4 justify-center overflow-x-auto sm:overflow-visible pointer-events-auto scrollbar-hide">
-          <Link
-            href="/football"
-            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
-              isActive('/football')
-                ? 'bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 text-white shadow-xl shadow-blue-500/40'
-                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/20'
-            }`}
-            title="Football Highlights"
-          >
-            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
-              isActive('/football')
-                ? 'bg-white/20'
-                : 'bg-blue-500/20 group-hover:bg-blue-500/30'
-            }`}>
-              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
-                isActive('/football') ? 'text-yellow-300' : 'text-blue-400'
-              }`} />
-            </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">Football</span>
-            {isActive('/football') && (
-              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
-            )}
-          </Link>
+        {/* Navigation Links - Compact design with dropdown for sports */}
+        <nav className="flex items-center gap-2 sm:gap-3 justify-center flex-wrap pointer-events-auto">
+          {/* Sports Dropdown Menu */}
+          <div className="relative" ref={sportsMenuRef}>
+            <button
+              onClick={() => setShowSportsMenu(!showSportsMenu)}
+              className={`group relative flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm ${
+                showSportsMenu || ['football', 'nfl', 'mlb', 'fifa', 'ipl', 'nba', 'tennis', 'nhl'].some(sport => isActive(`/${sport}`))
+                  ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/40'
+                  : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20'
+              }`}
+              title="All Sports"
+            >
+              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${showSportsMenu ? 'scale-110' : ''}`} />
+              <span className="font-bold tracking-wide hidden sm:inline">Sports</span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${showSportsMenu ? 'rotate-180' : ''}`} />
+            </button>
 
-          <Link
-            href="/nfl"
-            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
-              isActive('/nfl')
-                ? 'bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white shadow-xl shadow-red-500/40'
-                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-red-500/50 hover:shadow-lg hover:shadow-red-500/20'
-            }`}
-            title="NFL Highlights"
-          >
-            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
-              isActive('/nfl')
-                ? 'bg-white/20'
-                : 'bg-red-500/20 group-hover:bg-red-500/30'
-            }`}>
-              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
-                isActive('/nfl') ? 'text-yellow-300' : 'text-red-400'
-              }`} />
-            </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">NFL</span>
-            {isActive('/nfl') && (
-              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
+            {/* Dropdown Menu */}
+            {showSportsMenu && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="grid grid-cols-2 gap-1 p-2">
+                  {[
+                    { name: 'Football', path: '/football', color: 'blue' },
+                    { name: 'NFL', path: '/nfl', color: 'red' },
+                    { name: 'MLB', path: '/mlb', color: 'green' },
+                    { name: 'FIFA', path: '/fifa', color: 'amber' },
+                    { name: 'IPL', path: '/ipl', color: 'indigo' },
+                    { name: 'NBA', path: '/nba', color: 'orange' },
+                    { name: 'Tennis', path: '/tennis', color: 'green' },
+                    { name: 'NHL', path: '/nhl', color: 'cyan' },
+                  ].map((sport) => (
+                    <Link
+                      key={sport.path}
+                      href={sport.path}
+                      onClick={() => setShowSportsMenu(false)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all text-center ${
+                        isActive(sport.path)
+                          ? `bg-${sport.color}-600 text-white`
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      }`}
+                    >
+                      {sport.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             )}
-          </Link>
-
-          <Link
-            href="/mlb"
-            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
-              isActive('/mlb')
-                ? 'bg-gradient-to-r from-green-600 via-emerald-500 to-teal-500 text-white shadow-xl shadow-green-500/40'
-                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/20'
-            }`}
-            title="MLB Highlights"
-          >
-            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
-              isActive('/mlb')
-                ? 'bg-white/20'
-                : 'bg-green-500/20 group-hover:bg-green-500/30'
-            }`}>
-              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
-                isActive('/mlb') ? 'text-yellow-300' : 'text-green-400'
-              }`} />
-            </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">MLB</span>
-            {isActive('/mlb') && (
-              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
-            )}
-          </Link>
-
-          <Link
-            href="/fifa"
-            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
-              isActive('/fifa')
-                ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 text-white shadow-xl shadow-amber-500/40'
-                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/20'
-            }`}
-            title="FIFA World Cup"
-          >
-            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
-              isActive('/fifa')
-                ? 'bg-white/20'
-                : 'bg-amber-500/20 group-hover:bg-amber-500/30'
-            }`}>
-              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
-                isActive('/fifa') ? 'text-yellow-300' : 'text-amber-400'
-              }`} />
-            </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">FIFA</span>
-            {isActive('/fifa') && (
-              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
-            )}
-          </Link>
-
-          <Link
-            href="/ipl"
-            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
-              isActive('/ipl')
-                ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-500 text-white shadow-xl shadow-indigo-500/40'
-                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/20'
-            }`}
-            title="IPL Cricket"
-          >
-            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
-              isActive('/ipl')
-                ? 'bg-white/20'
-                : 'bg-indigo-500/20 group-hover:bg-indigo-500/30'
-            }`}>
-              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
-                isActive('/ipl') ? 'text-yellow-300' : 'text-indigo-400'
-              }`} />
-            </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">IPL</span>
-            {isActive('/ipl') && (
-              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
-            )}
-          </Link>
-
-          <Link
-            href="/nba"
-            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
-              isActive('/nba')
-                ? 'bg-gradient-to-r from-orange-600 via-orange-500 to-red-500 text-white shadow-xl shadow-orange-500/40'
-                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/20'
-            }`}
-            title="NBA Basketball"
-          >
-            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
-              isActive('/nba')
-                ? 'bg-white/20'
-                : 'bg-orange-500/20 group-hover:bg-orange-500/30'
-            }`}>
-              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
-                isActive('/nba') ? 'text-yellow-300' : 'text-orange-400'
-              }`} />
-            </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">NBA</span>
-            {isActive('/nba') && (
-              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
-            )}
-          </Link>
-
-          <Link
-            href="/tennis"
-            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
-              isActive('/tennis')
-                ? 'bg-gradient-to-r from-green-600 via-emerald-500 to-teal-500 text-white shadow-xl shadow-green-500/40'
-                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/20'
-            }`}
-            title="Tennis"
-          >
-            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
-              isActive('/tennis')
-                ? 'bg-white/20'
-                : 'bg-green-500/20 group-hover:bg-green-500/30'
-            }`}>
-              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
-                isActive('/tennis') ? 'text-yellow-300' : 'text-green-400'
-              }`} />
-            </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">Tennis</span>
-            {isActive('/tennis') && (
-              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
-            )}
-          </Link>
-
-          <Link
-            href="/nhl"
-            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
-              isActive('/nhl')
-                ? 'bg-gradient-to-r from-cyan-600 via-blue-500 to-indigo-500 text-white shadow-xl shadow-cyan-500/40'
-                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/20'
-            }`}
-            title="NHL Hockey"
-          >
-            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
-              isActive('/nhl')
-                ? 'bg-white/20'
-                : 'bg-cyan-500/20 group-hover:bg-cyan-500/30'
-            }`}>
-              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
-                isActive('/nhl') ? 'text-yellow-300' : 'text-cyan-400'
-              }`} />
-            </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">NHL</span>
-            {isActive('/nhl') && (
-              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
-            )}
-          </Link>
+          </div>
           
           <Link
             href="/music"
