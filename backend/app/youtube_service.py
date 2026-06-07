@@ -42,6 +42,7 @@ class YouTubeService:
         "NBA": "UUqQo7ewe87aYAe7ub5UqXMw",                    # House of Highlights (Bleacher Report - official distributor)
         "Tennis": "UUqQo7ewe87aYAe7ub5UqXMw",                 # House of Highlights (ATP/WTA coverage)
         "NHL": "UUqQo7ewe87aYAe7ub5UqXMw",                    # House of Highlights (official NHL distributor)
+        "IPL": "UUSQ8md_xMUPrIxiH-lT2-xw",                     # IPL Official Channel
     }
     
     # Additional channels to search for each league (fallback) - ordered by priority
@@ -150,6 +151,11 @@ class YouTubeService:
             "UU-nPjZYcQj-sSikSESYytwA",   # NHL Official
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (NHL coverage)
             "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (NHL broadcaster)
+        ],
+        "IPL": [
+            "UUSQ8md_xMUPrIxiH-lT2-xw",   # IPL Official (primary)
+            "UUVHFbqXqj2qkaq69JjJ2-Aw",   # Star Sports (IPL broadcaster in India)
+            "UUkzU2fwjKVp0xJ-5X5X5X5X",   # Cricket Highlights House (backup)
         ],
     }
     
