@@ -1,12 +1,29 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Calendar, Zap } from 'lucide-react';
+import { Calendar, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from '@/components/Header';
 import HighlightsGrid from '@/components/HighlightsGrid';
 import Toast from '@/components/Toast';
 import { fetchHighlightsGroupedByDate } from '@/lib/api';
 import type { HighlightsGroupedByLeague } from '@/lib/api';
+
+const getTodayString = () => {
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
+};
+
+const getYesterdayString = () => {
+  const today = new Date();
+  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+  return yesterday.toISOString().split('T')[0];
+};
+
+const getLastSevenDaysRange = () => {
+  const today = new Date();
+  const sevenDaysAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
+  return sevenDaysAgo.toISOString().split('T')[0];
+};
 
 export default function IPLPage() {
   const [highlights, setHighlights] = useState<HighlightsGroupedByLeague[]>([]);
@@ -14,35 +31,12 @@ export default function IPLPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [filterMode, setFilterMode] = useState<'today' | 'yesterday' | 'week' | 'custom'>('today');
 
-  useEffect(() => {
-    const loadHighlights = async () => {
-      try {
-        setLoading(true);
-        const today = new Date().toISOString().split('T')[0];
-        setSelectedDate(today);
-        
-        const data = await fetchHighlightsGroupedByDate(today, 'ipl');
-        setHighlights(data);
-        setError(null);
-      } catch (err) {
-        console.error('Error loading IPL highlights:', err);
-        setError('Failed to load IPL highlights. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadHighlights();
-  }, []);
-
-  const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDate = e.target.value;
-    setSelectedDate(newDate);
-    
+  const loadHighlights = async (date: string) => {
     try {
       setLoading(true);
-      const data = await fetchHighlightsGroupedByDate(newDate, 'ipl');
+      const data = await fetchHighlightsGroupedByDate(date, 'ipl');
       setHighlights(data);
       setError(null);
     } catch (err) {
@@ -51,6 +45,58 @@ export default function IPLPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const today = getTodayString();
+    setSelectedDate(today);
+    loadHighlights(today);
+  }, []);
+
+  const handleTodayClick = () => {
+    const today = getTodayString();
+    setSelectedDate(today);
+    setFilterMode('today');
+    loadHighlights(today);
+  };
+
+  const handleYesterdayClick = () => {
+    const yesterday = getYesterdayString();
+    setSelectedDate(yesterday);
+    setFilterMode('yesterday');
+    loadHighlights(yesterday);
+  };
+
+  const handleWeekClick = () => {
+    const sevenDaysAgo = getLastSevenDaysRange();
+    setSelectedDate(sevenDaysAgo);
+    setFilterMode('week');
+    loadHighlights(sevenDaysAgo);
+  };
+
+  const handleDateChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    setSelectedDate(newDate);
+    setFilterMode('custom');
+    await loadHighlights(newDate);
+  };
+
+  const handlePreviousDay = () => {
+    const current = new Date(selectedDate);
+    const previous = new Date(current.getFullYear(), current.getMonth(), current.getDate() - 1);
+    const previousStr = previous.toISOString().split('T')[0];
+    setSelectedDate(previousStr);
+    setFilterMode('custom');
+    loadHighlights(previousStr);
+  };
+
+  const handleNextDay = () => {
+    const current = new Date(selectedDate);
+    const next = new Date(current.getFullYear(), current.getMonth(), current.getDate() + 1);
+    const nextStr = next.toISOString().split('T')[0];
+    setSelectedDate(nextStr);
+    setFilterMode('custom');
+    loadHighlights(nextStr);
   };
 
   return (
@@ -67,17 +113,71 @@ export default function IPLPage() {
           <p className="text-slate-400">Watch the latest IPL match highlights</p>
         </div>
 
-        {/* Date Filter */}
-        <div className="mb-8 flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
-            <Calendar className="w-5 h-5 text-blue-400" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={handleDateChange}
-              className="bg-transparent text-white outline-none"
-            />
+        {/* Filter Buttons */}
+        <div className="mb-8 flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleTodayClick}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filterMode === 'today'
+                ? 'bg-indigo-600 text-white shadow-lg'
+                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700'
+            }`}
+          >
+            Today
+          </button>
+          <button
+            onClick={handleYesterdayClick}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filterMode === 'yesterday'
+                ? 'bg-indigo-600 text-white shadow-lg'
+                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700'
+            }`}
+          >
+            Yesterday
+          </button>
+          <button
+            onClick={handleWeekClick}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              filterMode === 'week'
+                ? 'bg-indigo-600 text-white shadow-lg'
+                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700'
+            }`}
+          >
+            This Week
+          </button>
+
+          {/* Date Navigation */}
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={handlePreviousDay}
+              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-gray-300"
+              title="Previous day"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
+              <Calendar className="w-5 h-5 text-indigo-400" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={handleDateChange}
+                className="bg-transparent text-white outline-none w-32"
+              />
+            </div>
+            <button
+              onClick={handleNextDay}
+              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 text-gray-300"
+              title="Next day"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
+        </div>
+
+        {/* Powered By */}
+        <div className="mb-6 flex items-center gap-2 text-slate-400 text-sm">
+          <Zap className="w-4 h-4 text-indigo-400" />
+          <span>Powered by Willow Highlights</span>
         </div>
 
         {/* Error Message */}
