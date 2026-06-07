@@ -126,6 +126,116 @@ export default function Home() {
               </div>
             </div>
           </Link>
+
+          {/* NBA Card */}
+          <Link href="/nba" className="group">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
+              <div className="bg-gradient-to-br from-orange-600 to-orange-700 p-8">
+                <Trophy className="w-16 h-16 text-white mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  NBA Highlights
+                </h2>
+                <p className="text-orange-100">
+                  Watch the latest basketball game highlights and match replays
+                </p>
+              </div>
+              <div className="p-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Play className="w-5 h-5" />
+                  <span>All NBA Teams & Playoffs</span>
+                </div>
+                <ChevronRight className="w-6 h-6 text-orange-600 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </Link>
+
+          {/* Tennis Card */}
+          <Link href="/tennis" className="group">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
+              <div className="bg-gradient-to-br from-green-500 to-green-600 p-8">
+                <Trophy className="w-16 h-16 text-white mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  Tennis Highlights
+                </h2>
+                <p className="text-green-100">
+                  Watch ATP and WTA tournament highlights and match replays
+                </p>
+              </div>
+              <div className="p-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Play className="w-5 h-5" />
+                  <span>Grand Slams & Masters</span>
+                </div>
+                <ChevronRight className="w-6 h-6 text-green-600 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </Link>
+
+          {/* NHL Card */}
+          <Link href="/nhl" className="group">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
+              <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 p-8">
+                <Trophy className="w-16 h-16 text-white mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  NHL Highlights
+                </h2>
+                <p className="text-cyan-100">
+                  Watch the latest hockey game highlights and match replays
+                </p>
+              </div>
+              <div className="p-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Play className="w-5 h-5" />
+                  <span>All NHL Teams & Playoffs</span>
+                </div>
+                <ChevronRight className="w-6 h-6 text-cyan-600 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </Link>
+
+          {/* FIFA Card */}
+          <Link href="/fifa" className="group">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
+              <div className="bg-gradient-to-br from-amber-600 to-amber-700 p-8">
+                <Trophy className="w-16 h-16 text-white mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  FIFA World Cup
+                </h2>
+                <p className="text-amber-100">
+                  Watch international football tournament and friendly match highlights
+                </p>
+              </div>
+              <div className="p-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Play className="w-5 h-5" />
+                  <span>International Matches</span>
+                </div>
+                <ChevronRight className="w-6 h-6 text-amber-600 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </Link>
+
+          {/* IPL Card */}
+          <Link href="/ipl" className="group">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
+              <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-8">
+                <Trophy className="w-16 h-16 text-white mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  IPL Highlights
+                </h2>
+                <p className="text-indigo-100">
+                  Watch Indian Premier League cricket match highlights and replays
+                </p>
+              </div>
+              <div className="p-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Play className="w-5 h-5" />
+                  <span>All IPL Teams & Playoffs</span>
+                </div>
+                <ChevronRight className="w-6 h-6 text-indigo-600 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </Link>
           
           {/* Music Card */}
           <Link href="/music" className="group">

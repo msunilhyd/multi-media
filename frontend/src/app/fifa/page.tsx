@@ -100,7 +100,7 @@ export default function FIFAPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       
       <main className="container mx-auto px-4 py-8">
