@@ -352,16 +352,19 @@ class YouTubeService:
                             # If date parsing fails, include the video (don't filter)
                             pass
                     
-                    # STRICT MATCHING: Check if BOTH teams are clearly mentioned
+                    # FLEXIBLE MATCHING: Check if teams are mentioned
                     home_match = self._team_matches_title(home_team, home_unique, title_lower)
                     away_match = self._team_matches_title(away_team, away_unique, title_lower)
                     
                     # Check for highlight-related keywords
-                    highlight_keywords = ['highlight', 'extended', 'recap', 'goals', 'summary', 'resumen']
+                    highlight_keywords = ['highlight', 'extended', 'recap', 'goals', 'summary', 'resumen', 'full match', 'match highlights', 'vs', 'vs.']
                     has_highlight = any(kw in title_lower for kw in highlight_keywords)
                     
-                    # REQUIRE BOTH teams AND highlight keyword
-                    if home_match and away_match and has_highlight:
+                    # FLEXIBLE MATCHING: Accept if:
+                    # 1. Both teams mentioned + highlight keyword, OR
+                    # 2. Both teams mentioned (even without keyword), OR
+                    # 3. At least one team + strong highlight keyword
+                    if (home_match and away_match) or (has_highlight and (home_match or away_match)):
                         videos.append({
                             'video_id': snippet['resourceId']['videoId'],
                             'title': snippet['title'],
