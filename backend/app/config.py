@@ -1,9 +1,12 @@
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from functools import lru_cache
 from typing import List, Dict, Set
 
 
 class Settings(BaseSettings):
+    model_config = ConfigDict(env_file=".env", extra="ignore")
+    
     app_name: str = "Football Highlights API"
     database_url: str = "postgresql://localhost:5432/football_highlights"
     youtube_api_keys: str = ""  # Comma-separated list - optional for audio streaming
@@ -15,9 +18,6 @@ class Settings(BaseSettings):
     smtp_user: str = ""  # Your email address
     smtp_password: str = ""  # App password (not regular password)
     notification_email: str = ""  # Email to receive notifications
-    
-    class Config:
-        env_file = ".env"
     
     def get_youtube_keys_list(self) -> List[str]:
         """Parse comma-separated YouTube API keys"""
