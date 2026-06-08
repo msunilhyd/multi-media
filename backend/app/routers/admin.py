@@ -386,6 +386,23 @@ async def trigger_fetch_missing_highlights(background_tasks: BackgroundTasks):
     }
 
 
+@router.get("/debug-youtube-keys")
+def debug_youtube_keys():
+    """Debug endpoint to check if YouTube API keys are loaded"""
+    from ..youtube_service import get_youtube_service
+    from ..config import get_settings
+    
+    settings = get_settings()
+    keys = settings.get_youtube_keys_list()
+    
+    return {
+        "youtube_api_keys_configured": len(keys) > 0,
+        "number_of_keys": len(keys),
+        "keys_preview": [f"{k[:10]}...{k[-5:]}" for k in keys] if keys else [],
+        "raw_env_value": settings.youtube_api_keys[:50] + "..." if settings.youtube_api_keys else "NOT SET"
+    }
+
+
 @router.post("/prefetch-matches")
 async def trigger_prefetch_matches(background_tasks: BackgroundTasks):
     """
