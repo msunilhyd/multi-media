@@ -45,8 +45,8 @@ class YouTubeService:
         "NHL": "UUqQo7ewe87aYAe7ub5UqXMw",                    # House of Highlights (official NHL distributor)
         "IPL": "UUSQ8md_xMUPrIxiH-lT2-xw",                     # IPL Official Channel
         "FIFA World Cup": "UUqZQlzSHbVJrwrn5XvzrzcA",        # NBC Sports (FIFA coverage)
-        "PGA": "UUqZQlzSHbVJrwrn5XvzrzcA",                    # NBC Sports (PGA coverage)
-        "UFC": "UU-nPjZYcQj-sSikSESYytwA",                    # ESPN (UFC coverage)
+        "PGA": "UUNUYZLuoy1rq1aVMwx4aTzw",                    # PGA Tour Official Channel
+        "UFC": "UUe8nCkqNmjlqtfiMIXrsTQA",                    # UFC Official Channel
     }
     
     # Additional channels to search for each league (fallback) - ordered by priority
@@ -172,12 +172,14 @@ class YouTubeService:
             "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (US broadcaster)
         ],
         "PGA": [
-            "UUqZQlzSHbVJrwrn5XvzrzcA",   # NBC Sports (primary for PGA)
+            "UUNUYZLuoy1rq1aVMwx4aTzw",   # PGA Tour Official (primary)
+            "UUqZQlzSHbVJrwrn5XvzrzcA",   # NBC Sports (PGA broadcaster)
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (PGA coverage)
             "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (PGA broadcaster)
         ],
         "UFC": [
-            "UU-nPjZYcQj-sSikSESYytwA",   # ESPN (primary for UFC)
+            "UUe8nCkqNmjlqtfiMIXrsTQA",   # UFC Official (primary)
+            "UU-nPjZYcQj-sSikSESYytwA",   # ESPN (UFC coverage)
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (UFC coverage)
             "UUqZQlzSHbVJrwrn5XvzrzcA",   # NBC Sports (UFC broadcaster)
         ],
