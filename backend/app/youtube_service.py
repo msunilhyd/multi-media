@@ -41,8 +41,10 @@ class YouTubeService:
         "MLB": "UUNUYZLuoy1rq1aVMwx4aTzw",                    # MLB Official
         "NBA": "UUqQo7ewe87aYAe7ub5UqXMw",                    # House of Highlights (Bleacher Report - official distributor)
         "Tennis": "UUqQo7ewe87aYAe7ub5UqXMw",                 # House of Highlights (ATP/WTA coverage)
+        "ATP": "UUqQo7ewe87aYAe7ub5UqXMw",                    # House of Highlights (ATP coverage)
         "NHL": "UUqQo7ewe87aYAe7ub5UqXMw",                    # House of Highlights (official NHL distributor)
         "IPL": "UUSQ8md_xMUPrIxiH-lT2-xw",                     # IPL Official Channel
+        "FIFA World Cup": "UUqZQlzSHbVJrwrn5XvzrzcA",        # NBC Sports (FIFA coverage)
     }
     
     # Additional channels to search for each league (fallback) - ordered by priority
@@ -142,6 +144,11 @@ class YouTubeService:
             "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (NBA broadcaster)
         ],
         "Tennis": [
+            "UUqQo7ewe87aYAe7ub5UqXMw",   # House of Highlights (primary)
+            "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (Tennis coverage)
+            "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports (Tennis coverage)
+        ],
+        "ATP": [
             "UUqQo7ewe87aYAe7ub5UqXMw",   # House of Highlights (primary)
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN (Tennis coverage)
             "UUKy1dAqELo0zrOtPkf0eTMw",   # Sky Sports (Tennis coverage)
