@@ -261,8 +261,18 @@ class YouTubeService:
             ranked_videos = self._rank_videos(unique_videos, home_team, away_team)
             return ranked_videos[:max_results]
         
-        # No highlights found in any channel
-        print(f"No highlights found for {home_team} vs {away_team} in {len(channels_tried)} channels")
+        # No highlights found in channels - try YouTube search as fallback
+        print(f"No highlights found in {len(channels_tried)} channels, trying YouTube search...")
+        try:
+            search_videos = self._search_youtube_direct(home_team, away_team, match_date, max_results)
+            if search_videos:
+                print(f"Found {len(search_videos)} videos via YouTube search")
+                return search_videos[:max_results]
+        except Exception as e:
+            print(f"YouTube search fallback failed: {e}")
+        
+        # No highlights found in any channel or search
+        print(f"No highlights found for {home_team} vs {away_team}")
         return []
     
     def _search_channel_playlist(self, playlist_id: str, home_team: str, away_team: str, match_date: date = None, max_results: int = 10) -> Optional[List[Dict]]:
@@ -710,6 +720,64 @@ class YouTubeService:
             video.pop('_score', None)
         
         return filtered_videos
+    
+    def _search_youtube_direct(self, home_team: str, away_team: str, match_date: date = None, max_results: int = 5) -> List[Dict]:
+        """
+        Fallback: Search YouTube directly using the search API (100 units per search).
+        Only used if channel playlists don't find anything.
+        """
+        try:
+            # Build search query
+            query = f"{home_team} vs {away_team} highlights"
+            
+            print(f"[YouTube] Searching YouTube for: {query}")
+            
+            request = self.youtube.search().list(
+                part='snippet',
+                q=query,
+                type='video',
+                maxResults=min(max_results * 2, 50),  # Get more to filter
+                order='relevance',
+                relevanceLanguage='en'
+            )
+            
+            response = request.execute()
+            videos = []
+            
+            for item in response.get('items', []):
+                snippet = item['snippet']
+                video_id = item['id']['videoId']
+                title_lower = snippet['title'].lower()
+                
+                # Basic filtering: both teams should be mentioned
+                home_in_title = home_team.lower() in title_lower or self._get_unique_team_identifier(home_team) in title_lower
+                away_in_title = away_team.lower() in title_lower or self._get_unique_team_identifier(away_team) in title_lower
+                
+                if home_in_title and away_in_title:
+                    videos.append({
+                        'video_id': video_id,
+                        'title': snippet['title'],
+                        'description': snippet.get('description', ''),
+                        'thumbnail_url': snippet['thumbnails'].get('high', {}).get('url') or
+                                        snippet['thumbnails'].get('medium', {}).get('url'),
+                        'channel_title': snippet['channelTitle'],
+                        'published_at': snippet['publishedAt'],
+                        'view_count': None,
+                        'duration': None,
+                        'is_geo_blocked': False,
+                        'blocked_countries': [],
+                        'allowed_countries': []
+                    })
+            
+            return videos[:max_results]
+            
+        except HttpError as e:
+            if 'quotaExceeded' in str(e):
+                if self._rotate_api_key():
+                    return self._search_youtube_direct(home_team, away_team, match_date, max_results)
+                return None
+            print(f"YouTube search error: {e}")
+            return []
     
     def _get_mock_highlights(self, home_team: str, away_team: str) -> List[Dict]:
         return [
