@@ -15,7 +15,8 @@ from .football_api import get_football_api
 from .cricket_api import CricketAPI
 from .sports_apis import (
     get_nba_api, get_tennis_api, get_nhl_api, 
-    get_nfl_api, get_mlb_api, get_fifa_api
+    get_nfl_api, get_mlb_api, get_fifa_api,
+    get_pga_api, get_ufc_api
 )
 from .youtube_service import get_youtube_service, YouTubeQuotaExhaustedError
 from .youtube_rss_service import get_rss_service
@@ -211,6 +212,8 @@ async def fetch_multi_sport_matches(db: Session) -> int:
         ("NFL", "nfl", get_nfl_api),
         ("MLB", "mlb", get_mlb_api),
         ("FIFA World Cup", "fifa-world-cup", get_fifa_api),
+        ("PGA", "pga", get_pga_api),
+        ("UFC", "ufc", get_ufc_api),
     ]
     
     for sport_name, sport_slug, api_getter in sports_config:

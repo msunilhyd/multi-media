@@ -486,6 +486,133 @@ class FIFAApi:
             return None
 
 
+class PGAApi:
+    """PGA Golf tournaments from ESPN API"""
+    BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/golf/pga"
+    
+    async def get_matches(self, target_date: Optional[date] = None) -> List[Dict]:
+        """Fetch PGA tournaments and rounds"""
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(f"{self.BASE_URL}/scoreboard")
+                response.raise_for_status()
+                data = response.json()
+                
+                matches = []
+                if data.get("events"):
+                    for event in data["events"]:
+                        parsed = self._parse_event(event)
+                        if parsed:
+                            matches.append(parsed)
+                
+                return matches
+        except Exception as e:
+            print(f"Error fetching PGA matches: {e}")
+            return []
+    
+    def _parse_event(self, event: Dict) -> Optional[Dict]:
+        """Parse PGA tournament into match format"""
+        try:
+            # PGA tournaments are multi-day events, we'll represent them as single matches
+            tournament_name = event.get("name", "")
+            
+            competitions = event.get("competitions", [{}])
+            if not competitions:
+                return None
+            
+            comp = competitions[0]
+            competitors = comp.get("competitors", [])
+            
+            if len(competitors) < 2:
+                return None
+            
+            # For golf, we'll use top 2 leaders as "competitors"
+            leader1 = competitors[0] if len(competitors) > 0 else {}
+            leader2 = competitors[1] if len(competitors) > 1 else {}
+            
+            match_date_str = event.get("date", "")
+            match_date = datetime.fromisoformat(match_date_str.replace("Z", "+00:00")).date() if match_date_str else date.today()
+            
+            status = comp.get("status", {}).get("type", "")
+            status_map = {"pre": "scheduled", "in": "live", "post": "finished"}
+            
+            return {
+                "home_team": leader1.get("athlete", {}).get("displayName", "Player 1"),
+                "away_team": leader2.get("athlete", {}).get("displayName", "Player 2"),
+                "match_date": match_date,
+                "match_time": match_date_str.split("T")[1][:5] if "T" in match_date_str else "09:00",
+                "status": status_map.get(status, "scheduled"),
+                "home_score": leader1.get("score"),
+                "away_score": leader2.get("score")
+            }
+        except Exception as e:
+            print(f"Error parsing PGA event: {e}")
+            return None
+
+
+class UFCApi:
+    """UFC fights from ESPN API"""
+    BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/mma/ufc"
+    
+    async def get_matches(self, target_date: Optional[date] = None) -> List[Dict]:
+        """Fetch UFC fights"""
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(f"{self.BASE_URL}/scoreboard")
+                response.raise_for_status()
+                data = response.json()
+                
+                matches = []
+                if data.get("events"):
+                    for event in data["events"]:
+                        parsed = self._parse_event(event)
+                        if parsed:
+                            matches.append(parsed)
+                
+                return matches
+        except Exception as e:
+            print(f"Error fetching UFC matches: {e}")
+            return []
+    
+    def _parse_event(self, event: Dict) -> Optional[Dict]:
+        """Parse UFC fight into match format"""
+        try:
+            competitions = event.get("competitions", [{}])
+            if not competitions:
+                return None
+            
+            comp = competitions[0]
+            competitors = comp.get("competitors", [])
+            
+            if len(competitors) < 2:
+                return None
+            
+            fighter1 = competitors[0]
+            fighter2 = competitors[1]
+            
+            match_date_str = event.get("date", "")
+            match_date = datetime.fromisoformat(match_date_str.replace("Z", "+00:00")).date() if match_date_str else date.today()
+            
+            status = comp.get("status", {}).get("type", "")
+            status_map = {"pre": "scheduled", "in": "live", "post": "finished"}
+            
+            fighter1_score = fighter1.get("score")
+            fighter2_score = fighter2.get("score")
+            
+            return {
+                "home_team": fighter1.get("athlete", {}).get("displayName", "Fighter 1"),
+                "away_team": fighter2.get("athlete", {}).get("displayName", "Fighter 2"),
+                "match_date": match_date,
+                "match_time": match_date_str.split("T")[1][:5] if "T" in match_date_str else "19:00",
+                "status": status_map.get(status, "scheduled"),
+                "home_score": fighter1_score,
+                "away_score": fighter2_score
+            }
+        except Exception as e:
+            print(f"Error parsing UFC event: {e}")
+            return None
+
+
 # Factory functions
 def get_nba_api() -> NBAApi:
     return NBAApi()
@@ -504,3 +631,9 @@ def get_mlb_api() -> MLBApi:
 
 def get_fifa_api() -> FIFAApi:
     return FIFAApi()
+
+def get_pga_api() -> PGAApi:
+    return PGAApi()
+
+def get_ufc_api() -> UFCApi:
+    return UFCApi()

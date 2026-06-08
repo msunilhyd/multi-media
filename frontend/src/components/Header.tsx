@@ -171,7 +171,7 @@ export default function Header() {
             <button
               onClick={() => setShowSportsMenu(!showSportsMenu)}
               className={`group relative flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm ${
-                showSportsMenu || ['football', 'nfl', 'mlb', 'fifa', 'ipl', 'nba', 'tennis', 'nhl'].some(sport => isActive(`/${sport}`))
+                showSportsMenu || ['football', 'nfl', 'mlb', 'fifa', 'ipl', 'nba', 'tennis', 'nhl', 'pga', 'ufc'].some(sport => isActive(`/${sport}`))
                   ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/40'
                   : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20'
               }`}
@@ -195,6 +195,8 @@ export default function Header() {
                     { name: 'NBA', path: '/nba', color: 'orange' },
                     { name: 'Tennis', path: '/tennis', color: 'green' },
                     { name: 'NHL', path: '/nhl', color: 'cyan' },
+                    { name: 'PGA', path: '/pga', color: 'amber' },
+                    { name: 'UFC', path: '/ufc', color: 'red' },
                   ].map((sport) => (
                     <Link
                       key={sport.path}
