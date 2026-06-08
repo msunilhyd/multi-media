@@ -424,7 +424,7 @@ async def trigger_prefetch_matches(background_tasks: BackgroundTasks):
 @router.post("/add-sample-matches")
 async def add_sample_matches(db: Session = Depends(get_db), fetch_highlights: bool = True) -> Dict[str, Any]:
     """
-    Add sample matches for all sports (NBA, Tennis, NHL, NFL, MLB, FIFA) for testing.
+    Add sample matches for all sports (NBA, Tennis, NHL, NFL, MLB, FIFA, PGA, UFC) for testing.
     
     Args:
         fetch_highlights: If True, immediately fetch highlights for the created matches
@@ -491,6 +491,24 @@ async def add_sample_matches(db: Session = Depends(get_db), fetch_highlights: bo
             "matches": [
                 {"home": "Argentina", "away": "France", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": 3, "away_score": 2},
                 {"home": "England", "away": "Brazil", "date": date.today() - timedelta(days=2), "status": "finished", "home_score": 2, "away_score": 1},
+            ]
+        },
+        # PGA
+        {
+            "league_name": "PGA",
+            "league_slug": "pga",
+            "matches": [
+                {"home": "Rory McIlroy", "away": "Jon Rahm", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": -12, "away_score": -10},
+                {"home": "Scottie Scheffler", "away": "Collin Morikawa", "date": date.today() - timedelta(days=2), "status": "finished", "home_score": -15, "away_score": -11},
+            ]
+        },
+        # UFC
+        {
+            "league_name": "UFC",
+            "league_slug": "ufc",
+            "matches": [
+                {"home": "Conor McGregor", "away": "Dustin Poirier", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": 2, "away_score": 1},
+                {"home": "Israel Adesanya", "away": "Sean Strickland", "date": date.today() - timedelta(days=2), "status": "finished", "home_score": 1, "away_score": 2},
             ]
         },
     ]
