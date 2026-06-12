@@ -644,6 +644,13 @@ def remove_duplicate_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
     }
     
     try:
+        # First, delete any orphaned highlights (with NULL match_id)
+        orphaned_highlights = db.query(models.Highlight).filter(
+            models.Highlight.match_id == None
+        ).delete()
+        if orphaned_highlights > 0:
+            print(f"[Admin] Deleted {orphaned_highlights} orphaned highlights")
+        
         # Get all matches grouped by league, home_team, away_team
         matches = db.query(models.Match).all()
         
