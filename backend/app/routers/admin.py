@@ -670,8 +670,12 @@ def remove_duplicate_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
             if len(group) > 1:
                 # Sort by match_date descending (most recent first)
                 sorted_group = sorted(group, key=lambda m: m.match_date, reverse=True)
-                # Keep the first (most recent), delete the rest
+                keep_match = sorted_group[0]  # Most recent match to keep
+                
+                # For each duplicate match, move its highlights to the keep_match
                 for match_to_delete in sorted_group[1:]:
+                    # Move highlights from duplicate to the kept match
+                    db.execute(text(f"UPDATE highlights SET match_id = {keep_match.id} WHERE match_id = {match_to_delete.id}"))
                     matches_to_delete.append(match_to_delete.id)
                     result["details"].append({
                         "league_id": match_to_delete.league_id,
@@ -680,11 +684,9 @@ def remove_duplicate_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
                         "action": "deleted"
                     })
         
-        # Delete all highlights for these matches using raw SQL
+        # Delete the duplicate matches using raw SQL
         if matches_to_delete:
             placeholders = ','.join([str(m_id) for m_id in matches_to_delete])
-            db.execute(text(f"DELETE FROM highlights WHERE match_id IN ({placeholders})"))
-            # Delete the matches using raw SQL
             db.execute(text(f"DELETE FROM matches WHERE id IN ({placeholders})"))
             result["duplicates_removed"] = len(matches_to_delete)
         
