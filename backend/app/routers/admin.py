@@ -635,10 +635,10 @@ async def add_sample_matches(db: Session = Depends(get_db), fetch_highlights: bo
 
 @router.post("/remove-duplicate-matches")
 def remove_duplicate_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
-    """Remove duplicate matches (same teams, same league, different dates)"""
+    """Remove duplicate matches - keeps only the most recent match for each team pairing"""
     
     result = {
-        "message": "Duplicate matches removed",
+        "message": "Duplicate matches removed successfully",
         "duplicates_removed": 0,
         "details": []
     }
