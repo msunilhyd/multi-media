@@ -79,41 +79,7 @@ class TennisApi:
             all_matches = []
             
             async with httpx.AsyncClient(timeout=30.0) as client:
-                # Source 1: Tennis Data API (free tier)
-                try:
-                    response = await client.get(
-                        "https://api.tennisdata.com/v1/matches",
-                        params={"status": "completed", "limit": 50},
-                        timeout=15.0
-                    )
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get("matches"):
-                            for match in data["matches"]:
-                                parsed = self._parse_match(match)
-                                if parsed:
-                                    all_matches.append(parsed)
-                except Exception as e:
-                    print(f"[Tennis API] Tennis Data API error: {e}")
-                
-                # Source 2: Rapid API Tennis Data (free tier available)
-                try:
-                    response = await client.get(
-                        "https://api.api-tennis.com/tennis",
-                        params={"method": "get_matches"},
-                        timeout=15.0
-                    )
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get("result"):
-                            for match in data["result"]:
-                                parsed = self._parse_rapid_api_match(match)
-                                if parsed:
-                                    all_matches.append(parsed)
-                except Exception as e:
-                    print(f"[Tennis API] Rapid API error: {e}")
-                
-                # Source 3: ESPN Tennis API (reliable fallback)
+                # Source 1: ESPN Tennis API (most reliable)
                 try:
                     response = await client.get(
                         "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard",
@@ -126,11 +92,31 @@ class TennisApi:
                                 parsed = self._parse_espn_tennis_match(event)
                                 if parsed:
                                     all_matches.append(parsed)
+                            print(f"[Tennis API] Found {len(all_matches)} ATP matches from ESPN")
                 except Exception as e:
                     print(f"[Tennis API] ESPN Tennis API error: {e}")
+                
+                # Source 2: ESPN WTA API
+                try:
+                    response = await client.get(
+                        "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard",
+                        timeout=15.0
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get("events"):
+                            wta_matches = []
+                            for event in data["events"]:
+                                parsed = self._parse_espn_tennis_match(event)
+                                if parsed:
+                                    wta_matches.append(parsed)
+                            all_matches.extend(wta_matches)
+                            print(f"[Tennis API] Found {len(wta_matches)} WTA matches from ESPN")
+                except Exception as e:
+                    print(f"[Tennis API] ESPN WTA API error: {e}")
             
             if all_matches:
-                print(f"[Tennis API] Found {len(all_matches)} tennis matches")
+                print(f"[Tennis API] Found {len(all_matches)} total tennis matches")
             else:
                 print(f"[Tennis API] No live data available from any source")
             
