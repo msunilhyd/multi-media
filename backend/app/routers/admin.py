@@ -644,12 +644,11 @@ def remove_duplicate_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
     }
     
     try:
-        # First, delete any orphaned highlights (with NULL match_id)
-        orphaned_highlights = db.query(models.Highlight).filter(
-            models.Highlight.match_id == None
-        ).delete()
-        if orphaned_highlights > 0:
-            print(f"[Admin] Deleted {orphaned_highlights} orphaned highlights")
+        from sqlalchemy import text
+        
+        # First, delete any orphaned highlights (with NULL match_id) using raw SQL
+        db.execute(text("DELETE FROM highlights WHERE match_id IS NULL"))
+        db.commit()
         
         # Get all matches grouped by league, home_team, away_team
         matches = db.query(models.Match).all()
@@ -666,25 +665,28 @@ def remove_duplicate_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
             match_groups[key].append(match)
         
         # For each group with duplicates, keep only the most recent one
+        matches_to_delete = []
         for key, group in match_groups.items():
             if len(group) > 1:
                 # Sort by match_date descending (most recent first)
                 sorted_group = sorted(group, key=lambda m: m.match_date, reverse=True)
                 # Keep the first (most recent), delete the rest
                 for match_to_delete in sorted_group[1:]:
-                    # First, delete all highlights associated with this match
-                    db.query(models.Highlight).filter(
-                        models.Highlight.match_id == match_to_delete.id
-                    ).delete()
-                    # Then delete the match
-                    db.delete(match_to_delete)
-                    result["duplicates_removed"] += 1
+                    matches_to_delete.append(match_to_delete.id)
                     result["details"].append({
                         "league_id": match_to_delete.league_id,
                         "match": f"{match_to_delete.home_team} vs {match_to_delete.away_team}",
                         "date": str(match_to_delete.match_date),
                         "action": "deleted"
                     })
+        
+        # Delete all highlights for these matches using raw SQL
+        if matches_to_delete:
+            placeholders = ','.join([str(m_id) for m_id in matches_to_delete])
+            db.execute(text(f"DELETE FROM highlights WHERE match_id IN ({placeholders})"))
+            # Delete the matches using raw SQL
+            db.execute(text(f"DELETE FROM matches WHERE id IN ({placeholders})"))
+            result["duplicates_removed"] = len(matches_to_delete)
         
         db.commit()
         result["success"] = True
