@@ -544,22 +544,31 @@ async def fetch_highlights_for_yesterday(send_notification: bool = False):
                 
                 if videos:
                     # Store ALL highlights in DB for better geo-filtering options
+                    added_count = 0
                     for video in videos:
-                        highlight = models.Highlight(
-                            match_id=match.id,
-                            youtube_video_id=video['video_id'],
-                            title=video['title'],
-                            description=video.get('description', ''),
-                            thumbnail_url=video.get('thumbnail_url', ''),
-                            channel_title=video.get('channel_title', ''),
-                            published_at=video.get('published_at'),
-                            view_count=video.get('view_count', 0),
-                            duration=video.get('duration', '')
-                        )
-                        db.add(highlight)
+                        # Check if this highlight already exists
+                        existing = db.query(models.Highlight).filter(
+                            models.Highlight.match_id == match.id,
+                            models.Highlight.youtube_video_id == video['video_id']
+                        ).first()
+                        
+                        if not existing:
+                            highlight = models.Highlight(
+                                match_id=match.id,
+                                youtube_video_id=video['video_id'],
+                                title=video['title'],
+                                description=video.get('description', ''),
+                                thumbnail_url=video.get('thumbnail_url', ''),
+                                channel_title=video.get('channel_title', ''),
+                                published_at=video.get('published_at'),
+                                view_count=video.get('view_count', 0),
+                                duration=video.get('duration', '')
+                            )
+                            db.add(highlight)
+                            added_count += 1
                     db.commit()
-                    highlights_found += len(videos)
-                    print(f"[Scheduler] ✓ Found {len(videos)} highlights for {match.home_team} vs {match.away_team}")
+                    highlights_found += added_count
+                    print(f"[Scheduler] ✓ Found {len(videos)} highlights, added {added_count} new ones for {match.home_team} vs {match.away_team}")
                 else:
                     print(f"[Scheduler] ✗ No highlights found for {match.home_team} vs {match.away_team}")
                     # Track this match for notification
@@ -670,22 +679,31 @@ async def fetch_highlights_for_today():
                 
                 if videos:
                     video = videos[0]
-                    # Store highlight in DB
-                    highlight = models.Highlight(
-                        match_id=match.id,
-                        youtube_video_id=video['video_id'],
-                        title=video['title'],
-                        description=video.get('description', ''),
-                        thumbnail_url=video.get('thumbnail_url', ''),
-                        channel_title=video.get('channel_title', ''),
-                        published_at=video.get('published_at'),
-                        view_count=video.get('view_count', 0),
-                        duration=video.get('duration', '')
-                    )
-                    db.add(highlight)
-                    db.commit()
-                    highlights_found += 1
-                    print(f"[Scheduler] ✓ Found: {video['title'][:50]}...")
+                    # Check if this highlight already exists
+                    existing = db.query(models.Highlight).filter(
+                        models.Highlight.match_id == match.id,
+                        models.Highlight.youtube_video_id == video['video_id']
+                    ).first()
+                    
+                    if not existing:
+                        # Store highlight in DB
+                        highlight = models.Highlight(
+                            match_id=match.id,
+                            youtube_video_id=video['video_id'],
+                            title=video['title'],
+                            description=video.get('description', ''),
+                            thumbnail_url=video.get('thumbnail_url', ''),
+                            channel_title=video.get('channel_title', ''),
+                            published_at=video.get('published_at'),
+                            view_count=video.get('view_count', 0),
+                            duration=video.get('duration', '')
+                        )
+                        db.add(highlight)
+                        db.commit()
+                        highlights_found += 1
+                        print(f"[Scheduler] ✓ Found: {video['title'][:50]}...")
+                    else:
+                        print(f"[Scheduler] ℹ️  Highlight already exists: {video['title'][:50]}...")
                 else:
                     print(f"[Scheduler] ✗ No highlights yet (will retry later)")
                     db.commit()  # Save the retry attempt count
@@ -774,21 +792,30 @@ async def fetch_highlights_for_matches_missing_them():
                 
                 if videos:
                     video = videos[0]
-                    highlight = models.Highlight(
-                        match_id=match.id,
-                        youtube_video_id=video['video_id'],
-                        title=video['title'],
-                        description=video.get('description', ''),
-                        thumbnail_url=video.get('thumbnail_url', ''),
-                        channel_title=video.get('channel_title', ''),
-                        published_at=video.get('published_at'),
-                        view_count=video.get('view_count', 0),
-                        duration=video.get('duration', '')
-                    )
-                    db.add(highlight)
-                    db.commit()
-                    highlights_found += 1
-                    print(f"[Scheduler] ✓ Found: {video['title'][:60]}...")
+                    # Check if this highlight already exists
+                    existing = db.query(models.Highlight).filter(
+                        models.Highlight.match_id == match.id,
+                        models.Highlight.youtube_video_id == video['video_id']
+                    ).first()
+                    
+                    if not existing:
+                        highlight = models.Highlight(
+                            match_id=match.id,
+                            youtube_video_id=video['video_id'],
+                            title=video['title'],
+                            description=video.get('description', ''),
+                            thumbnail_url=video.get('thumbnail_url', ''),
+                            channel_title=video.get('channel_title', ''),
+                            published_at=video.get('published_at'),
+                            view_count=video.get('view_count', 0),
+                            duration=video.get('duration', '')
+                        )
+                        db.add(highlight)
+                        db.commit()
+                        highlights_found += 1
+                        print(f"[Scheduler] ✓ Found: {video['title'][:60]}...")
+                    else:
+                        print(f"[Scheduler] ℹ️  Highlight already exists: {video['title'][:60]}...")
                 else:
                     print(f"[Scheduler] ✗ No highlights found yet")
                     
