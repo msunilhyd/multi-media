@@ -75,7 +75,7 @@ export default function Header() {
               </div>
               <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 absolute -top-1 -right-1 animate-pulse pointer-events-none" />
             </div>
-            <span className="text-lg sm:text-2xl font-[family-name:var(--font-playfair)] italic bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent font-bold hidden sm:block">
+            <span className="text-lg sm:text-2xl font-[family-name:var(--font-playfair)] bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent font-bold hidden sm:block">
               LinusPlaylists
             </span>
           </Link>

@@ -384,11 +384,9 @@ class YouTubeService:
                     highlight_keywords = ['highlight', 'extended', 'recap', 'goals', 'summary', 'resumen', 'full match', 'match highlights', 'vs', 'vs.']
                     has_highlight = any(kw in title_lower for kw in highlight_keywords)
                     
-                    # FLEXIBLE MATCHING: Accept if:
-                    # 1. Both teams mentioned + highlight keyword, OR
-                    # 2. Both teams mentioned (even without keyword), OR
-                    # 3. At least one team + strong highlight keyword
-                    if (home_match and away_match) or (has_highlight and (home_match or away_match)):
+                    # STRICT MATCHING: Only accept if BOTH teams are mentioned
+                    # This prevents matching "Boston Red Sox" when searching for "Boston Celtics"
+                    if home_match and away_match:
                         videos.append({
                             'video_id': snippet['resourceId']['videoId'],
                             'title': snippet['title'],
@@ -513,6 +511,15 @@ class YouTubeService:
             'newcastle united': ['newcastle'],
             'west ham united': ['west ham'],
             'aston villa': ['villa', 'aston villa'],
+            # NBA teams - prevent confusion with other sports
+            'boston celtics': ['celtics', 'boston celtics'],
+            'los angeles lakers': ['lakers', 'los angeles lakers'],
+            'golden state warriors': ['warriors', 'golden state warriors'],
+            'denver nuggets': ['nuggets', 'denver nuggets'],
+            'new york knicks': ['knicks', 'new york knicks'],
+            'miami heat': ['heat', 'miami heat'],
+            'chicago bulls': ['bulls', 'chicago bulls'],
+            'brooklyn nets': ['nets', 'brooklyn nets'],
         }
         
         # Best case: full team name appears (normalized)

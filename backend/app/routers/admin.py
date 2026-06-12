@@ -629,3 +629,54 @@ async def add_sample_matches(db: Session = Depends(get_db), fetch_highlights: bo
             result["highlight_fetch_error"] = str(e)
     
     return result
+
+
+@router.post("/remove-duplicate-highlights")
+def remove_duplicate_highlights(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Remove duplicate highlights from the database"""
+    
+    result = {
+        "duplicates_found": 0,
+        "duplicates_removed": 0,
+        "details": []
+    }
+    
+    try:
+        # Get all matches with highlights
+        matches = db.query(models.Match).all()
+        
+        for match in matches:
+            if not match.highlights:
+                continue
+            
+            # Group highlights by video_id
+            video_ids_seen = {}
+            duplicates = []
+            
+            for highlight in match.highlights:
+                if highlight.youtube_video_id in video_ids_seen:
+                    # This is a duplicate
+                    duplicates.append(highlight)
+                    result["duplicates_found"] += 1
+                else:
+                    video_ids_seen[highlight.youtube_video_id] = highlight.id
+            
+            # Remove duplicates
+            for duplicate in duplicates:
+                db.delete(duplicate)
+                result["duplicates_removed"] += 1
+                result["details"].append({
+                    "match": f"{match.home_team} vs {match.away_team}",
+                    "video_id": duplicate.youtube_video_id,
+                    "title": duplicate.title
+                })
+        
+        db.commit()
+        print(f"[Admin] Removed {result['duplicates_removed']} duplicate highlights")
+        
+    except Exception as e:
+        db.rollback()
+        print(f"[Admin] Error removing duplicates: {e}")
+        result["error"] = str(e)
+    
+    return result
