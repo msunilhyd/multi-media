@@ -20,8 +20,21 @@ async def get_highlights_grouped(
     league_slug: Optional[str] = Query(default=None, description="Filter by league slug (e.g., 'nfl', 'mlb', 'premier-league')"),
     db: Session = Depends(get_db)
 ):
-    """Get highlights grouped by league with optional team filtering and geo-filtering"""
-    target_date = match_date or date.today()
+    """Get highlights grouped by league with optional team filtering and geo-filtering.
+    
+    If match_date is provided, it's treated as the START of a date range (up to today).
+    This allows "this week" queries to work properly.
+    """
+    from datetime import timedelta
+    
+    # Determine date range for filtering
+    end_date = date.today()
+    if match_date:
+        # match_date is the start of the range (e.g., 7 days ago for "this week")
+        start_date = match_date
+    else:
+        # Default: just today
+        start_date = end_date
     
     # Detect user's country from IP
     client_ip = request.client.host if request.client else None
@@ -51,8 +64,8 @@ async def get_highlights_grouped(
     for league in leagues:
         matches_with_highlights = []
         for m in league.matches:
-            # Only include matches that have highlights AND match the date
-            if m.match_date == target_date and len(m.highlights) > 0:
+            # Only include matches that have highlights AND fall within the date range
+            if start_date <= m.match_date <= end_date and len(m.highlights) > 0:
                 # If team filter is provided, only include matches with those teams
                 if team_filter:
                     if m.home_team in team_filter or m.away_team in team_filter:
