@@ -450,11 +450,13 @@ async def add_sample_matches(db: Session = Depends(get_db), fetch_highlights: bo
         },
         # Tennis
         {
-            "league_name": "ATP",
-            "league_slug": "atp",
+            "league_name": "Tennis",
+            "league_slug": "tennis",
             "matches": [
                 {"home": "Novak Djokovic", "away": "Carlos Alcaraz", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": 2, "away_score": 1},
                 {"home": "Rafael Nadal", "away": "Jannik Sinner", "date": date.today() - timedelta(days=2), "status": "finished", "home_score": 1, "away_score": 2},
+                {"home": "Jannik Sinner", "away": "Daniil Medvedev", "date": date.today() - timedelta(days=3), "status": "finished", "home_score": 2, "away_score": 0},
+                {"home": "Taylor Fritz", "away": "Tommy Paul", "date": date.today() - timedelta(days=1), "status": "finished", "home_score": 1, "away_score": 2},
             ]
         },
         # NHL
