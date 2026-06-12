@@ -1,68 +1,17 @@
 'use client';
 
-import Link from 'next/link';
-import { Trophy, Music, Play, ChevronRight, Zap } from 'lucide-react';
-import Script from 'next/script';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  // Enhanced homepage structured data
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'LinusPlaylists',
-    alternateName: 'Linus Playlists',
-    url: 'https://www.linusplaylists.com',
-    description: 'Watch football match highlights from top leagues (Premier League, La Liga, Serie A) and stream curated music playlists. Free football highlights and music app.',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: {
-        '@type': 'EntryPoint',
-        urlTemplate: 'https://www.linusplaylists.com/music?search={search_term_string}'
-      },
-      'query-input': 'required name=search_term_string'
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'LinusPlaylists',
-      url: 'https://www.linusplaylists.com',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://www.linusplaylists.com/icon-512x512.png',
-        width: 512,
-        height: 512
-      },
-      sameAs: [
-        'https://twitter.com/linusplaylists'
-      ]
-    }
-  };
+  const router = useRouter();
 
-  return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Script
-        id="homepage-structured-data"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-      <Header />
-      
-      <main className="container mx-auto px-3 sm:px-4 py-8 sm:py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-3 sm:mb-4">
-            Welcome to <span className="font-[family-name:var(--font-playfair)] italic bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">LinusPlaylists</span>
-          </h1>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto px-2">
-            Your one-stop destination for football highlights, music playlists, and fun entertainment
-          </p>
-        </div>
-        
-        {/* Cards Section */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8 max-w-6xl mx-auto">
-          {/* Football Card */}
-          <Link href="/football" className="group">
+  useEffect(() => {
+    router.push('/music');
+  }, [router]);
+
+  return null;
+}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform group-hover:scale-[1.02]">
               <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-8">
                 <Trophy className="w-16 h-16 text-white mb-4" />

@@ -36,7 +36,7 @@ export default function FIFAPage() {
   const loadHighlights = async (date: string) => {
     try {
       setLoading(true);
-      const data = await fetchHighlightsGroupedByDate(date, 'fifa');
+      const data = await fetchHighlightsGroupedByDate(date, 'fifa-world-cup');
       setHighlights(data);
       setError(null);
     } catch (err) {
@@ -48,9 +48,10 @@ export default function FIFAPage() {
   };
 
   useEffect(() => {
-    const today = getTodayString();
-    setSelectedDate(today);
-    loadHighlights(today);
+    const sevenDaysAgo = getLastSevenDaysRange();
+    setSelectedDate(sevenDaysAgo);
+    setFilterMode('week');
+    loadHighlights(sevenDaysAgo);
   }, []);
 
   const handleTodayClick = () => {

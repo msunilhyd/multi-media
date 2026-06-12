@@ -48,9 +48,10 @@ export default function TennisPage() {
   };
 
   useEffect(() => {
-    const today = getTodayString();
-    setSelectedDate(today);
-    loadHighlights(today);
+    const sevenDaysAgo = getLastSevenDaysRange();
+    setSelectedDate(sevenDaysAgo);
+    setFilterMode('week');
+    loadHighlights(sevenDaysAgo);
   }, []);
 
   const handleTodayClick = () => {

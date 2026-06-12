@@ -48,9 +48,10 @@ export default function PGAPage() {
   };
 
   useEffect(() => {
-    const today = getTodayString();
-    setSelectedDate(today);
-    loadHighlights(today);
+    const sevenDaysAgo = getLastSevenDaysRange();
+    setSelectedDate(sevenDaysAgo);
+    setFilterMode('week');
+    loadHighlights(sevenDaysAgo);
   }, []);
 
   const handleFilterChange = (mode: 'today' | 'yesterday' | 'week' | 'custom') => {
