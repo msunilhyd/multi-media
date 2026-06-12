@@ -643,34 +643,45 @@ def remove_duplicate_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
         "details": []
     }
     
-    # Get all matches grouped by league, home_team, away_team
-    matches = db.query(models.Match).all()
+    try:
+        # Get all matches grouped by league, home_team, away_team
+        matches = db.query(models.Match).all()
+        
+        # Group by (league_id, home_team, away_team)
+        match_groups = {}
+        for match in matches:
+            # Skip matches with empty team names
+            if not match.home_team or not match.away_team:
+                continue
+            key = (match.league_id, match.home_team, match.away_team)
+            if key not in match_groups:
+                match_groups[key] = []
+            match_groups[key].append(match)
+        
+        # For each group with duplicates, keep only the most recent one
+        for key, group in match_groups.items():
+            if len(group) > 1:
+                # Sort by match_date descending (most recent first)
+                sorted_group = sorted(group, key=lambda m: m.match_date, reverse=True)
+                # Keep the first (most recent), delete the rest
+                for match_to_delete in sorted_group[1:]:
+                    db.delete(match_to_delete)
+                    result["duplicates_removed"] += 1
+                    result["details"].append({
+                        "league_id": match_to_delete.league_id,
+                        "match": f"{match_to_delete.home_team} vs {match_to_delete.away_team}",
+                        "date": str(match_to_delete.match_date),
+                        "action": "deleted"
+                    })
+        
+        db.commit()
+        result["success"] = True
+    except Exception as e:
+        db.rollback()
+        result["success"] = False
+        result["error"] = str(e)
+        print(f"[Admin] Error removing duplicate matches: {e}")
     
-    # Group by (league_id, home_team, away_team)
-    match_groups = {}
-    for match in matches:
-        key = (match.league_id, match.home_team, match.away_team)
-        if key not in match_groups:
-            match_groups[key] = []
-        match_groups[key].append(match)
-    
-    # For each group with duplicates, keep only the most recent one
-    for key, group in match_groups.items():
-        if len(group) > 1:
-            # Sort by match_date descending (most recent first)
-            sorted_group = sorted(group, key=lambda m: m.match_date, reverse=True)
-            # Keep the first (most recent), delete the rest
-            for match_to_delete in sorted_group[1:]:
-                db.delete(match_to_delete)
-                result["duplicates_removed"] += 1
-                result["details"].append({
-                    "league_id": match_to_delete.league_id,
-                    "match": f"{match_to_delete.home_team} vs {match_to_delete.away_team}",
-                    "date": str(match_to_delete.match_date),
-                    "action": "deleted"
-                })
-    
-    db.commit()
     return result
 
 
