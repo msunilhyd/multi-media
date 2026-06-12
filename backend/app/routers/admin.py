@@ -665,6 +665,11 @@ def remove_duplicate_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
                 sorted_group = sorted(group, key=lambda m: m.match_date, reverse=True)
                 # Keep the first (most recent), delete the rest
                 for match_to_delete in sorted_group[1:]:
+                    # First, delete all highlights associated with this match
+                    db.query(models.Highlight).filter(
+                        models.Highlight.match_id == match_to_delete.id
+                    ).delete()
+                    # Then delete the match
                     db.delete(match_to_delete)
                     result["duplicates_removed"] += 1
                     result["details"].append({
