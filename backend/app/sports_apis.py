@@ -436,10 +436,23 @@ class FIFAApi:
                         print(f"[FIFA API] Error fetching {league}: {e}")
                         continue
                 
-                # If no matches found, use fallback FIFA World Cup 2026 schedule
-                if not all_matches:
-                    print(f"[FIFA API] No matches from ESPN, using fallback FIFA World Cup 2026 schedule")
-                    all_matches = self._get_fallback_world_cup_matches()
+                # Always merge with fallback to ensure complete FIFA World Cup 2026 schedule
+                fallback_matches = self._get_fallback_world_cup_matches()
+                
+                # Merge ESPN matches with fallback, avoiding duplicates
+                existing_keys = set()
+                for match in all_matches:
+                    key = (match["home_team"], match["away_team"], match["match_date"])
+                    existing_keys.add(key)
+                
+                for fallback_match in fallback_matches:
+                    key = (fallback_match["home_team"], fallback_match["away_team"], fallback_match["match_date"])
+                    if key not in existing_keys:
+                        all_matches.append(fallback_match)
+                        existing_keys.add(key)
+                
+                if all_matches:
+                    print(f"[FIFA API] Merged ESPN data with fallback schedule")
                 
                 if all_matches:
                     print(f"[FIFA API] Total FIFA matches fetched: {len(all_matches)}")
