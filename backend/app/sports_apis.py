@@ -407,11 +407,17 @@ class FIFAApi:
     BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer"
     
     async def get_matches(self, target_date: Optional[date] = None) -> List[Dict]:
-        """Fetch FIFA/International matches"""
+        """Fetch FIFA/International matches from multiple sources"""
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 # Fetch from international competitions
-                leagues = ["fifa-world-cup", "confederation-cup", "olympics"]
+                leagues = [
+                    "fifa-world-cup",
+                    "fifa-world-cup-qualifier",
+                    "confederation-cup",
+                    "olympics",
+                    "international"
+                ]
                 all_matches = []
                 
                 for league in leagues:
@@ -425,8 +431,15 @@ class FIFAApi:
                                 parsed = self._parse_event(event)
                                 if parsed:
                                     all_matches.append(parsed)
-                    except:
+                        print(f"[FIFA API] Found {len(data.get('events', []))} events from {league}")
+                    except Exception as e:
+                        print(f"[FIFA API] Error fetching {league}: {e}")
                         continue
+                
+                if all_matches:
+                    print(f"[FIFA API] Total FIFA matches fetched: {len(all_matches)}")
+                else:
+                    print(f"[FIFA API] No FIFA matches found from any source")
                 
                 return all_matches
         except Exception as e:
