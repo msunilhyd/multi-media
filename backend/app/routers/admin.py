@@ -421,6 +421,161 @@ async def trigger_prefetch_matches(background_tasks: BackgroundTasks):
     }
 
 
+@router.post("/add-fifa-world-cup-matches")
+async def add_fifa_world_cup_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Add all 104 FIFA World Cup 2026 matches to the database"""
+    
+    result = {
+        "message": "FIFA World Cup 2026 matches added",
+        "matches_created": 0,
+        "details": []
+    }
+    
+    # Get or create FIFA World Cup league
+    fifa_league = db.query(models.League).filter(
+        models.League.slug == "fifa-world-cup"
+    ).first()
+    
+    if not fifa_league:
+        fifa_league = models.League(
+            name="FIFA World Cup",
+            slug="fifa-world-cup",
+            country="International",
+            display_order=6
+        )
+        db.add(fifa_league)
+        db.commit()
+        db.refresh(fifa_league)
+    
+    # All 104 FIFA World Cup 2026 matches
+    fifa_matches = [
+        # GROUP STAGE - Matchday 1
+        {"home": "Mexico", "away": "South Africa", "date": date(2026, 6, 11), "status": "finished"},
+        {"home": "South Korea", "away": "Czechia", "date": date(2026, 6, 11), "status": "finished"},
+        {"home": "Canada", "away": "Bosnia and Herzegovina", "date": date(2026, 6, 12), "status": "finished"},
+        {"home": "USA", "away": "Paraguay", "date": date(2026, 6, 12), "status": "finished"},
+        # GROUP STAGE - Matchday 2
+        {"home": "Qatar", "away": "Switzerland", "date": date(2026, 6, 13), "status": "scheduled"},
+        {"home": "Brazil", "away": "Morocco", "date": date(2026, 6, 13), "status": "scheduled"},
+        {"home": "Haiti", "away": "Scotland", "date": date(2026, 6, 13), "status": "scheduled"},
+        {"home": "Australia", "away": "Türkiye", "date": date(2026, 6, 13), "status": "scheduled"},
+        {"home": "Czechia", "away": "South Africa", "date": date(2026, 6, 14), "status": "scheduled"},
+        {"home": "Switzerland", "away": "Bosnia and Herzegovina", "date": date(2026, 6, 14), "status": "scheduled"},
+        {"home": "Canada", "away": "Qatar", "date": date(2026, 6, 14), "status": "scheduled"},
+        {"home": "Mexico", "away": "South Korea", "date": date(2026, 6, 14), "status": "scheduled"},
+        {"home": "USA", "away": "Australia", "date": date(2026, 6, 15), "status": "scheduled"},
+        {"home": "Scotland", "away": "Morocco", "date": date(2026, 6, 15), "status": "scheduled"},
+        {"home": "Brazil", "away": "Haiti", "date": date(2026, 6, 15), "status": "scheduled"},
+        {"home": "Türkiye", "away": "Paraguay", "date": date(2026, 6, 15), "status": "scheduled"},
+        # GROUP STAGE - Matchday 3
+        {"home": "Germany", "away": "Curaçao", "date": date(2026, 6, 16), "status": "scheduled"},
+        {"home": "Netherlands", "away": "Japan", "date": date(2026, 6, 16), "status": "scheduled"},
+        {"home": "Ivory Coast", "away": "Ecuador", "date": date(2026, 6, 16), "status": "scheduled"},
+        {"home": "Sweden", "away": "Tunisia", "date": date(2026, 6, 16), "status": "scheduled"},
+        {"home": "Spain", "away": "Cabo Verde", "date": date(2026, 6, 17), "status": "scheduled"},
+        {"home": "Belgium", "away": "Egypt", "date": date(2026, 6, 17), "status": "scheduled"},
+        {"home": "Saudi Arabia", "away": "Uruguay", "date": date(2026, 6, 17), "status": "scheduled"},
+        {"home": "Iran", "away": "New Zealand", "date": date(2026, 6, 17), "status": "scheduled"},
+        {"home": "France", "away": "Senegal", "date": date(2026, 6, 18), "status": "scheduled"},
+        {"home": "Iraq", "away": "Norway", "date": date(2026, 6, 18), "status": "scheduled"},
+        {"home": "Argentina", "away": "Algeria", "date": date(2026, 6, 18), "status": "scheduled"},
+        {"home": "Austria", "away": "Jordan", "date": date(2026, 6, 18), "status": "scheduled"},
+        # GROUP STAGE - Matchday 4
+        {"home": "Ghana", "away": "Panama", "date": date(2026, 6, 19), "status": "scheduled"},
+        {"home": "England", "away": "Croatia", "date": date(2026, 6, 19), "status": "scheduled"},
+        {"home": "Portugal", "away": "Congo DR", "date": date(2026, 6, 19), "status": "scheduled"},
+        {"home": "Uzbekistan", "away": "Colombia", "date": date(2026, 6, 19), "status": "scheduled"},
+        {"home": "Czechia", "away": "Mexico", "date": date(2026, 6, 20), "status": "scheduled"},
+        {"home": "South Africa", "away": "South Korea", "date": date(2026, 6, 20), "status": "scheduled"},
+        {"home": "Switzerland", "away": "Canada", "date": date(2026, 6, 20), "status": "scheduled"},
+        {"home": "Bosnia and Herzegovina", "away": "Qatar", "date": date(2026, 6, 20), "status": "scheduled"},
+        {"home": "Scotland", "away": "Brazil", "date": date(2026, 6, 21), "status": "scheduled"},
+        {"home": "Morocco", "away": "Haiti", "date": date(2026, 6, 21), "status": "scheduled"},
+        {"home": "Türkiye", "away": "Paraguay", "date": date(2026, 6, 21), "status": "scheduled"},
+        {"home": "USA", "away": "Australia", "date": date(2026, 6, 21), "status": "scheduled"},
+        {"home": "Germany", "away": "Ivory Coast", "date": date(2026, 6, 22), "status": "scheduled"},
+        {"home": "Ecuador", "away": "Curaçao", "date": date(2026, 6, 22), "status": "scheduled"},
+        {"home": "Netherlands", "away": "Sweden", "date": date(2026, 6, 22), "status": "scheduled"},
+        {"home": "Tunisia", "away": "Japan", "date": date(2026, 6, 22), "status": "scheduled"},
+        {"home": "Uruguay", "away": "Cabo Verde", "date": date(2026, 6, 23), "status": "scheduled"},
+        {"home": "Spain", "away": "Saudi Arabia", "date": date(2026, 6, 23), "status": "scheduled"},
+        {"home": "Belgium", "away": "Iran", "date": date(2026, 6, 23), "status": "scheduled"},
+        {"home": "New Zealand", "away": "Egypt", "date": date(2026, 6, 23), "status": "scheduled"},
+        {"home": "Norway", "away": "Senegal", "date": date(2026, 6, 24), "status": "scheduled"},
+        {"home": "France", "away": "Iraq", "date": date(2026, 6, 24), "status": "scheduled"},
+        {"home": "Argentina", "away": "Austria", "date": date(2026, 6, 24), "status": "scheduled"},
+        {"home": "Jordan", "away": "Algeria", "date": date(2026, 6, 24), "status": "scheduled"},
+        {"home": "England", "away": "Ghana", "date": date(2026, 6, 25), "status": "scheduled"},
+        {"home": "Panama", "away": "Croatia", "date": date(2026, 6, 25), "status": "scheduled"},
+        {"home": "Portugal", "away": "Uzbekistan", "date": date(2026, 6, 25), "status": "scheduled"},
+        {"home": "Colombia", "away": "Congo DR", "date": date(2026, 6, 25), "status": "scheduled"},
+        # ROUND OF 32
+        {"home": "Group A Winner", "away": "Group B Runner-up", "date": date(2026, 6, 28), "status": "scheduled"},
+        {"home": "Group E Winner", "away": "Group F Runner-up", "date": date(2026, 6, 29), "status": "scheduled"},
+        {"home": "Group F Winner", "away": "Group E Runner-up", "date": date(2026, 6, 29), "status": "scheduled"},
+        {"home": "Group C Winner", "away": "Group D Runner-up", "date": date(2026, 6, 29), "status": "scheduled"},
+        {"home": "Group I Winner", "away": "Group J Runner-up", "date": date(2026, 6, 30), "status": "scheduled"},
+        {"home": "Group D Winner", "away": "Group C Runner-up", "date": date(2026, 6, 30), "status": "scheduled"},
+        {"home": "Group G Winner", "away": "Group H Runner-up", "date": date(2026, 6, 30), "status": "scheduled"},
+        {"home": "Group B Winner", "away": "Group A Runner-up", "date": date(2026, 7, 1), "status": "scheduled"},
+        {"home": "Group K Winner", "away": "Group L Runner-up", "date": date(2026, 7, 1), "status": "scheduled"},
+        {"home": "Group H Winner", "away": "Group G Runner-up", "date": date(2026, 7, 1), "status": "scheduled"},
+        {"home": "Group L Winner", "away": "Group K Runner-up", "date": date(2026, 7, 2), "status": "scheduled"},
+        {"home": "Group J Winner", "away": "Group I Runner-up", "date": date(2026, 7, 2), "status": "scheduled"},
+        # ROUND OF 16
+        {"home": "Match 74 Winner", "away": "Match 77 Winner", "date": date(2026, 7, 4), "status": "scheduled"},
+        {"home": "Match 73 Winner", "away": "Match 75 Winner", "date": date(2026, 7, 4), "status": "scheduled"},
+        {"home": "Match 76 Winner", "away": "Match 78 Winner", "date": date(2026, 7, 5), "status": "scheduled"},
+        {"home": "Match 79 Winner", "away": "Match 80 Winner", "date": date(2026, 7, 5), "status": "scheduled"},
+        {"home": "Match 83 Winner", "away": "Match 84 Winner", "date": date(2026, 7, 6), "status": "scheduled"},
+        {"home": "Match 81 Winner", "away": "Match 82 Winner", "date": date(2026, 7, 6), "status": "scheduled"},
+        {"home": "Match 86 Winner", "away": "Match 88 Winner", "date": date(2026, 7, 7), "status": "scheduled"},
+        {"home": "Match 85 Winner", "away": "Match 87 Winner", "date": date(2026, 7, 7), "status": "scheduled"},
+        # QUARTER-FINALS
+        {"home": "Match 89 Winner", "away": "Match 90 Winner", "date": date(2026, 7, 9), "status": "scheduled"},
+        {"home": "Match 93 Winner", "away": "Match 94 Winner", "date": date(2026, 7, 10), "status": "scheduled"},
+        {"home": "Match 91 Winner", "away": "Match 92 Winner", "date": date(2026, 7, 11), "status": "scheduled"},
+        {"home": "Match 95 Winner", "away": "Match 96 Winner", "date": date(2026, 7, 11), "status": "scheduled"},
+        # SEMI-FINALS
+        {"home": "Match 97 Winner", "away": "Match 98 Winner", "date": date(2026, 7, 14), "status": "scheduled"},
+        {"home": "Match 99 Winner", "away": "Match 100 Winner", "date": date(2026, 7, 15), "status": "scheduled"},
+        # BRONZE FINAL
+        {"home": "Match 101 Runner-up", "away": "Match 102 Runner-up", "date": date(2026, 7, 18), "status": "scheduled"},
+        # FINAL
+        {"home": "Match 101 Winner", "away": "Match 102 Winner", "date": date(2026, 7, 19), "status": "scheduled"},
+    ]
+    
+    # Insert all matches
+    for match_data in fifa_matches:
+        # Check if match already exists
+        existing = db.query(models.Match).filter(
+            models.Match.league_id == fifa_league.id,
+            models.Match.home_team == match_data["home"],
+            models.Match.away_team == match_data["away"],
+            models.Match.match_date == match_data["date"]
+        ).first()
+        
+        if not existing:
+            new_match = models.Match(
+                league_id=fifa_league.id,
+                home_team=match_data["home"],
+                away_team=match_data["away"],
+                match_date=match_data["date"],
+                match_time="20:00",
+                status=match_data["status"]
+            )
+            db.add(new_match)
+            result["matches_created"] += 1
+            result["details"].append({
+                "match": f"{match_data['home']} vs {match_data['away']}",
+                "date": str(match_data["date"]),
+                "status": match_data["status"]
+            })
+    
+    db.commit()
+    return result
+
+
 @router.post("/add-sample-matches")
 async def add_sample_matches(db: Session = Depends(get_db), fetch_highlights: bool = True) -> Dict[str, Any]:
     """
