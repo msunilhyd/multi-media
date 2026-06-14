@@ -381,8 +381,15 @@ class YouTubeService:
                     away_match = self._team_matches_title(away_team, away_unique, title_lower)
                     
                     # Check for highlight-related keywords
-                    highlight_keywords = ['highlight', 'extended', 'recap', 'goals', 'summary', 'resumen', 'full match', 'match highlights', 'vs', 'vs.']
+                    highlight_keywords = ['highlight', 'extended', 'recap', 'goals', 'summary', 'resumen', 'full match', 'match highlights']
                     has_highlight = any(kw in title_lower for kw in highlight_keywords)
+                    
+                    # For FIFA World Cup matches, REQUIRE "highlight" keyword to avoid reaction videos
+                    # This prevents picking up reaction videos, analysis, and commentary
+                    if playlist_id in ["UU6c1z7bA__85CIWZ_jpCK-Q", "UUqZQlzSHbVJrwrn5XvzrzcA", "UUET00YnetHT7tOpu12v8jxg"]:
+                        # These are FIFA-related channels, require highlight keyword
+                        if not has_highlight:
+                            continue
                     
                     # STRICT MATCHING: Only accept if BOTH teams are mentioned
                     # This prevents matching "Boston Red Sox" when searching for "Boston Celtics"
@@ -769,6 +776,10 @@ class YouTubeService:
                 snippet = item['snippet']
                 video_id = item['id']['videoId']
                 title_lower = snippet['title'].lower()
+                
+                # For FIFA World Cup, require "highlight" keyword to avoid reaction/recap videos
+                if 'highlight' not in title_lower and 'extended' not in title_lower and 'goals' not in title_lower:
+                    continue
                 
                 # Basic filtering: both teams should be mentioned
                 home_in_title = home_team.lower() in title_lower or self._get_unique_team_identifier(home_team) in title_lower
