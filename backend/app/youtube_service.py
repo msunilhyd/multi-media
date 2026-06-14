@@ -44,7 +44,7 @@ class YouTubeService:
         "ATP": "UUqQo7ewe87aYAe7ub5UqXMw",                    # House of Highlights (ATP coverage)
         "NHL": "UUqQo7ewe87aYAe7ub5UqXMw",                    # House of Highlights (official NHL distributor)
         "IPL": "UUSQ8md_xMUPrIxiH-lT2-xw",                     # IPL Official Channel
-        "FIFA World Cup": "UUqZQlzSHbVJrwrn5XvzrzcA",        # NBC Sports (FIFA coverage)
+        "FIFA World Cup": "UUvLvDYA6z-c6dMudS2IkIQ",            # FOX Sports (FIFA Extended Highlights)
         "PGA": "UUNUYZLuoy1rq1aVMwx4aTzw",                    # PGA Tour Official Channel
         "UFC": "UUe8nCkqNmjlqtfiMIXrsTQA",                    # UFC Official Channel
     }
@@ -168,7 +168,7 @@ class YouTubeService:
         ],
         "FIFA World Cup": [
             "UU6c1z7bA__85CIWZ_jpCK-Q",   # ESPN FC (primary for FIFA)
-            "UUqZQlzSHbVJrwrn5XvzrzcA",   # FOX Sports (US broadcaster)
+            "UUqZQlzSHbVJrwrn5XvzrzcA",   # NBC Sports (US broadcaster)
             "UUET00YnetHT7tOpu12v8jxg",   # CBS Sports (US broadcaster)
         ],
         "PGA": [
@@ -384,11 +384,11 @@ class YouTubeService:
                     highlight_keywords = ['highlight', 'extended', 'recap', 'goals', 'summary', 'resumen', 'full match', 'match highlights']
                     has_highlight = any(kw in title_lower for kw in highlight_keywords)
                     
-                    # For FIFA World Cup matches, REQUIRE "highlight" keyword to avoid reaction videos
+                    # For FIFA World Cup matches, REQUIRE "extended highlights" keyword
                     # This prevents picking up reaction videos, analysis, and commentary
-                    if playlist_id in ["UU6c1z7bA__85CIWZ_jpCK-Q", "UUqZQlzSHbVJrwrn5XvzrzcA", "UUET00YnetHT7tOpu12v8jxg"]:
-                        # These are FIFA-related channels, require highlight keyword
-                        if not has_highlight:
+                    if playlist_id in ["UUvLvDYA6z-c6dMudS2IkIQ", "UU6c1z7bA__85CIWZ_jpCK-Q", "UUqZQlzSHbVJrwrn5XvzrzcA", "UUET00YnetHT7tOpu12v8jxg"]:
+                        # These are FIFA-related channels, require "extended highlights"
+                        if 'extended highlights' not in title_lower:
                             continue
                     
                     # STRICT MATCHING: Only accept if BOTH teams are mentioned
@@ -777,8 +777,8 @@ class YouTubeService:
                 video_id = item['id']['videoId']
                 title_lower = snippet['title'].lower()
                 
-                # For FIFA World Cup, require "highlight" keyword to avoid reaction/recap videos
-                if 'highlight' not in title_lower and 'extended' not in title_lower and 'goals' not in title_lower:
+                # For FIFA World Cup, require "Extended Highlights" keyword to get actual match highlights
+                if 'extended highlights' not in title_lower:
                     continue
                 
                 # Basic filtering: both teams should be mentioned
