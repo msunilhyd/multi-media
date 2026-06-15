@@ -421,6 +421,74 @@ async def trigger_prefetch_matches(background_tasks: BackgroundTasks):
     }
 
 
+@router.post("/add-fifa-highlight")
+def add_fifa_highlight(
+    home_team: str,
+    away_team: str,
+    video_id: str,
+    title: str = None,
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Manually add a FIFA World Cup highlight by video ID.
+    
+    Args:
+        home_team: Home team name
+        away_team: Away team name
+        video_id: YouTube video ID
+        title: Optional video title (will be fetched from YouTube if not provided)
+    """
+    try:
+        # Find the match
+        fifa_league = db.query(models.League).filter(
+            models.League.slug == "fifa-world-cup"
+        ).first()
+        
+        if not fifa_league:
+            return {"success": False, "error": "FIFA World Cup league not found"}
+        
+        match = db.query(models.Match).filter(
+            models.Match.league_id == fifa_league.id,
+            models.Match.home_team == home_team,
+            models.Match.away_team == away_team
+        ).first()
+        
+        if not match:
+            return {"success": False, "error": f"Match not found: {home_team} vs {away_team}"}
+        
+        # Check if highlight already exists
+        existing = db.query(models.Highlight).filter(
+            models.Highlight.match_id == match.id,
+            models.Highlight.youtube_video_id == video_id
+        ).first()
+        
+        if existing:
+            return {"success": False, "error": "Highlight already exists for this match"}
+        
+        # Create the highlight
+        highlight = models.Highlight(
+            match_id=match.id,
+            youtube_video_id=video_id,
+            title=title or f"{home_team} vs {away_team} - Extended Highlights",
+            description=f"FIFA World Cup 2026: {home_team} vs {away_team}",
+            thumbnail_url=f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
+            channel_title="FOX Sports"
+        )
+        
+        db.add(highlight)
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Highlight added for {home_team} vs {away_team}",
+            "video_id": video_id
+        }
+        
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "error": str(e)}
+
+
 @router.post("/fetch-fifa-highlights")
 async def fetch_fifa_highlights(background_tasks: BackgroundTasks) -> Dict[str, Any]:
     """
