@@ -48,6 +48,8 @@ export default function FIFAPage() {
   };
 
   useEffect(() => {
+    // Load highlights from the past 7 days by default
+    // This ensures FIFA matches from earlier in the week are visible
     const sevenDaysAgo = getLastSevenDaysRange();
     setSelectedDate(sevenDaysAgo);
     setFilterMode('week');
