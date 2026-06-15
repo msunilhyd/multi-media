@@ -423,9 +423,9 @@ async def trigger_prefetch_matches(background_tasks: BackgroundTasks):
 
 @router.post("/add-fifa-highlight")
 def add_fifa_highlight(
-    home_team: str,
-    away_team: str,
-    video_id: str,
+    home_team: str = None,
+    away_team: str = None,
+    video_id: str = None,
     title: str = None,
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
@@ -439,6 +439,9 @@ def add_fifa_highlight(
         title: Optional video title (will be fetched from YouTube if not provided)
     """
     try:
+        # Validate required parameters
+        if not home_team or not away_team or not video_id:
+            return {"success": False, "error": "home_team, away_team, and video_id are required"}
         # Find the match
         fifa_league = db.query(models.League).filter(
             models.League.slug == "fifa-world-cup"
