@@ -753,10 +753,11 @@ class YouTubeService:
         """
         Fallback: Search YouTube directly using the search API (100 units per search).
         Only used if channel playlists don't find anything.
+        For FIFA, search specifically for "Extended Highlights".
         """
         try:
-            # Build search query
-            query = f"{home_team} vs {away_team} highlights"
+            # Build search query - for FIFA World Cup, prioritize "Extended Highlights"
+            query = f"{home_team} vs {away_team} Extended Highlights"
             
             print(f"[YouTube] Searching YouTube for: {query}")
             
