@@ -495,13 +495,14 @@ def add_fifa_highlight(
 @router.post("/fetch-fifa-highlights")
 async def fetch_fifa_highlights(background_tasks: BackgroundTasks) -> Dict[str, Any]:
     """
-    Manually trigger FIFA World Cup highlight fetching.
-    Searches for "Extended Highlights" from FOX Sports and other official sources.
+    Optimized FIFA World Cup highlight fetching.
+    Searches YouTube directly for "{Team1} {Team2} Extended Highlights" to minimize token usage.
     """
     async def fetch_fifa_highlights_task():
         try:
             from ..youtube_service import get_youtube_service, YouTubeQuotaExhaustedError
             from datetime import datetime, timedelta
+            from googleapiclient.errors import HttpError
             
             youtube_service = get_youtube_service()
             db = next(get_db())
@@ -515,75 +516,97 @@ async def fetch_fifa_highlights(background_tasks: BackgroundTasks) -> Dict[str, 
                 print("[FIFA] FIFA World Cup league not found")
                 return
             
-            # Get matches from last 30 days that are finished
-            thirty_days_ago = datetime.utcnow().date() - timedelta(days=30)
-            matches = db.query(models.Match).filter(
+            # Get matches from last 60 days that are finished and don't have highlights
+            sixty_days_ago = datetime.utcnow().date() - timedelta(days=60)
+            all_matches = db.query(models.Match).filter(
                 models.Match.league_id == fifa_league.id,
-                models.Match.match_date >= thirty_days_ago,
+                models.Match.match_date >= sixty_days_ago,
                 models.Match.status == "finished"
             ).all()
             
-            print(f"[FIFA] Found {len(matches)} finished FIFA matches to fetch highlights for")
-            
-            highlights_found = 0
-            for match in matches:
-                # Check if match already has highlights
-                existing_highlights = db.query(models.Highlight).filter(
+            # Filter to only matches without highlights
+            matches_needing_highlights = []
+            for match in all_matches:
+                existing_count = db.query(models.Highlight).filter(
                     models.Highlight.match_id == match.id
                 ).count()
-                
-                if existing_highlights > 0:
-                    continue
-                
+                if existing_count == 0:
+                    matches_needing_highlights.append(match)
+            
+            print(f"[FIFA] Found {len(matches_needing_highlights)} finished FIFA matches needing highlights")
+            
+            highlights_found = 0
+            for match in matches_needing_highlights:
                 try:
-                    # Search for highlights with "Extended Highlights" keyword
-                    query = f"{match.home_team} vs {match.away_team} Extended Highlights"
-                    print(f"[FIFA] Searching: {query}")
+                    # Direct YouTube search: "{Team1} {Team2} Extended Highlights"
+                    # This is very specific and uses only 100 API units per search
+                    query = f"{match.home_team} {match.away_team} Extended Highlights"
+                    print(f"[FIFA] Searching YouTube: {query}")
                     
-                    highlights = youtube_service.search_highlights(
-                        match.home_team,
-                        match.away_team,
-                        league="FIFA World Cup",
-                        match_date=match.match_date,
-                        max_results=3
+                    request = youtube_service.youtube.search().list(
+                        part='snippet',
+                        q=query,
+                        type='video',
+                        maxResults=5,
+                        order='relevance',
+                        relevanceLanguage='en',
+                        videoDuration='medium'
                     )
                     
-                    if highlights:
-                        for highlight in highlights:
-                            # Check if highlight already exists
+                    response = request.execute()
+                    videos_added = 0
+                    
+                    for item in response.get('items', []):
+                        snippet = item['snippet']
+                        video_id = item['id']['videoId']
+                        title = snippet['title']
+                        
+                        # Strict filter: must contain both team names AND "extended highlights"
+                        title_lower = title.lower()
+                        home_in_title = match.home_team.lower() in title_lower
+                        away_in_title = match.away_team.lower() in title_lower
+                        has_extended = 'extended highlights' in title_lower
+                        
+                        if home_in_title and away_in_title and has_extended:
+                            # Check if already exists
                             existing = db.query(models.Highlight).filter(
                                 models.Highlight.match_id == match.id,
-                                models.Highlight.youtube_video_id == highlight['video_id']
+                                models.Highlight.youtube_video_id == video_id
                             ).first()
                             
                             if not existing:
                                 new_highlight = models.Highlight(
                                     match_id=match.id,
-                                    youtube_video_id=highlight['video_id'],
-                                    title=highlight['title'],
-                                    description=highlight['description'],
-                                    thumbnail_url=highlight.get('thumbnail_url', ''),
-                                    channel_title=highlight.get('channel_title', ''),
-                                    published_at=highlight.get('published_at'),
-                                    view_count=highlight.get('view_count'),
-                                    duration=highlight.get('duration')
+                                    youtube_video_id=video_id,
+                                    title=title,
+                                    description=snippet.get('description', ''),
+                                    thumbnail_url=snippet['thumbnails'].get('high', {}).get('url') or
+                                                  snippet['thumbnails'].get('medium', {}).get('url'),
+                                    channel_title=snippet['channelTitle'],
+                                    published_at=snippet.get('publishedAt')
                                 )
                                 db.add(new_highlight)
+                                videos_added += 1
                                 highlights_found += 1
-                                print(f"[FIFA] ✓ Added highlight: {highlight['title'][:60]}...")
-                        
+                                print(f"[FIFA] ✓ Added: {title[:60]}...")
+                    
+                    if videos_added > 0:
                         db.commit()
                     else:
-                        print(f"[FIFA] ✗ No Extended Highlights found for {match.home_team} vs {match.away_team}")
+                        print(f"[FIFA] ✗ No valid Extended Highlights found for {match.home_team} vs {match.away_team}")
                         
-                except YouTubeQuotaExhaustedError:
-                    print(f"[FIFA] YouTube quota exhausted - stopping")
-                    break
+                except HttpError as e:
+                    if 'quotaExceeded' in str(e):
+                        print(f"[FIFA] YouTube quota exhausted - stopping fetch")
+                        break
+                    else:
+                        print(f"[FIFA] YouTube API error: {e}")
+                        continue
                 except Exception as e:
                     print(f"[FIFA] Error fetching highlights for {match.home_team} vs {match.away_team}: {e}")
                     continue
             
-            print(f"[FIFA] Highlight fetch complete! Found {highlights_found} new highlights")
+            print(f"[FIFA] ✅ Highlight fetch complete! Found {highlights_found} new highlights")
             
         except Exception as e:
             print(f"[FIFA] Error during FIFA highlight fetch: {e}")
@@ -593,7 +616,7 @@ async def fetch_fifa_highlights(background_tasks: BackgroundTasks) -> Dict[str, 
     return {
         "success": True,
         "message": "FIFA highlight fetch job started in background",
-        "note": "Searching for 'Extended Highlights' from FOX Sports and other official sources"
+        "note": "Searching YouTube for '{Team1} {Team2} Extended Highlights' - optimized for token efficiency"
     }
 
 
