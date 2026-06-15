@@ -421,6 +421,111 @@ async def trigger_prefetch_matches(background_tasks: BackgroundTasks):
     }
 
 
+@router.post("/fetch-fifa-highlights")
+async def fetch_fifa_highlights(background_tasks: BackgroundTasks) -> Dict[str, Any]:
+    """
+    Manually trigger FIFA World Cup highlight fetching.
+    Searches for "Extended Highlights" from FOX Sports and other official sources.
+    """
+    async def fetch_fifa_highlights_task():
+        try:
+            from ..youtube_service import get_youtube_service, YouTubeQuotaExhaustedError
+            from datetime import datetime, timedelta
+            
+            youtube_service = get_youtube_service()
+            db = next(get_db())
+            
+            # Get all FIFA World Cup matches without highlights
+            fifa_league = db.query(models.League).filter(
+                models.League.slug == "fifa-world-cup"
+            ).first()
+            
+            if not fifa_league:
+                print("[FIFA] FIFA World Cup league not found")
+                return
+            
+            # Get matches from last 30 days that are finished
+            thirty_days_ago = datetime.utcnow().date() - timedelta(days=30)
+            matches = db.query(models.Match).filter(
+                models.Match.league_id == fifa_league.id,
+                models.Match.match_date >= thirty_days_ago,
+                models.Match.status == "finished"
+            ).all()
+            
+            print(f"[FIFA] Found {len(matches)} finished FIFA matches to fetch highlights for")
+            
+            highlights_found = 0
+            for match in matches:
+                # Check if match already has highlights
+                existing_highlights = db.query(models.Highlight).filter(
+                    models.Highlight.match_id == match.id
+                ).count()
+                
+                if existing_highlights > 0:
+                    continue
+                
+                try:
+                    # Search for highlights with "Extended Highlights" keyword
+                    query = f"{match.home_team} vs {match.away_team} Extended Highlights"
+                    print(f"[FIFA] Searching: {query}")
+                    
+                    highlights = youtube_service.search_highlights(
+                        match.home_team,
+                        match.away_team,
+                        league="FIFA World Cup",
+                        match_date=match.match_date,
+                        max_results=3
+                    )
+                    
+                    if highlights:
+                        for highlight in highlights:
+                            # Check if highlight already exists
+                            existing = db.query(models.Highlight).filter(
+                                models.Highlight.match_id == match.id,
+                                models.Highlight.youtube_video_id == highlight['video_id']
+                            ).first()
+                            
+                            if not existing:
+                                new_highlight = models.Highlight(
+                                    match_id=match.id,
+                                    youtube_video_id=highlight['video_id'],
+                                    title=highlight['title'],
+                                    description=highlight['description'],
+                                    thumbnail_url=highlight.get('thumbnail_url', ''),
+                                    channel_title=highlight.get('channel_title', ''),
+                                    published_at=highlight.get('published_at'),
+                                    view_count=highlight.get('view_count'),
+                                    duration=highlight.get('duration')
+                                )
+                                db.add(new_highlight)
+                                highlights_found += 1
+                                print(f"[FIFA] ✓ Added highlight: {highlight['title'][:60]}...")
+                        
+                        db.commit()
+                    else:
+                        print(f"[FIFA] ✗ No Extended Highlights found for {match.home_team} vs {match.away_team}")
+                        
+                except YouTubeQuotaExhaustedError:
+                    print(f"[FIFA] YouTube quota exhausted - stopping")
+                    break
+                except Exception as e:
+                    print(f"[FIFA] Error fetching highlights for {match.home_team} vs {match.away_team}: {e}")
+                    continue
+            
+            print(f"[FIFA] Highlight fetch complete! Found {highlights_found} new highlights")
+            
+        except Exception as e:
+            print(f"[FIFA] Error during FIFA highlight fetch: {e}")
+    
+    background_tasks.add_task(fetch_fifa_highlights_task)
+    
+    return {
+        "success": True,
+        "message": "FIFA highlight fetch job started in background",
+        "note": "Searching for 'Extended Highlights' from FOX Sports and other official sources"
+    }
+
+
 @router.post("/add-fifa-world-cup-matches")
 async def add_fifa_world_cup_matches(db: Session = Depends(get_db)) -> Dict[str, Any]:
     """Add all 104 FIFA World Cup 2026 matches to the database"""
