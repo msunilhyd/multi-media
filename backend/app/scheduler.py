@@ -311,6 +311,23 @@ async def prefetch_upcoming_matches():
         total_new_matches += multi_sport_matches
         print(f"[Scheduler] ✓ Fetched {multi_sport_matches} multi-sport matches")
         
+        # Auto-fix FIFA World Cup match statuses: mark past "scheduled" matches as "finished"
+        try:
+            fifa_league = db.query(models.League).filter(models.League.slug == "fifa-world-cup").first()
+            if fifa_league:
+                stale_fifa = db.query(models.Match).filter(
+                    models.Match.league_id == fifa_league.id,
+                    models.Match.status == "scheduled",
+                    models.Match.match_date < today
+                ).all()
+                if stale_fifa:
+                    for m in stale_fifa:
+                        m.status = "finished"
+                    db.commit()
+                    print(f"[Scheduler] ✓ Marked {len(stale_fifa)} past FIFA matches as finished")
+        except Exception as e:
+            print(f"[Scheduler] Error fixing FIFA statuses: {e}")
+        
         # Then fetch football matches for next 7 days
         for i in range(7):
             target_date = today + timedelta(days=i)

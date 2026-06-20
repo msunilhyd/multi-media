@@ -421,6 +421,41 @@ async def trigger_prefetch_matches(background_tasks: BackgroundTasks):
     }
 
 
+@router.post("/fix-fifa-match-statuses")
+def fix_fifa_match_statuses(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Mark past FIFA World Cup matches as 'finished' if they're still 'scheduled'."""
+    from datetime import datetime
+    
+    today = datetime.utcnow().date()
+    
+    fifa_league = db.query(models.League).filter(
+        models.League.slug == "fifa-world-cup"
+    ).first()
+    
+    if not fifa_league:
+        return {"success": False, "error": "FIFA World Cup league not found"}
+    
+    # Find scheduled matches with match_date before today
+    stale = db.query(models.Match).filter(
+        models.Match.league_id == fifa_league.id,
+        models.Match.status == "scheduled",
+        models.Match.match_date < today
+    ).all()
+    
+    updated = 0
+    for match in stale:
+        match.status = "finished"
+        updated += 1
+    
+    db.commit()
+    
+    return {
+        "success": True,
+        "matches_updated": updated,
+        "message": f"Marked {updated} past FIFA matches as finished"
+    }
+
+
 @router.post("/add-fifa-highlight")
 def add_fifa_highlight(
     home_team: str = None,
