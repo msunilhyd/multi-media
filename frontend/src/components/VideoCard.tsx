@@ -235,7 +235,7 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
           
           <iframe
             ref={iframeRef}
-            src={`https://www.youtube.com/embed/${youtube_video_id}?autoplay=1&mute=1&rel=0&fs=1&modestbranding=1`}
+            src={`https://www.youtube.com/embed/${youtube_video_id}?autoplay=1&mute=0&rel=0&fs=1&modestbranding=1`}
             title={title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen

@@ -188,28 +188,42 @@ export default function FIFAPage() {
           </div>
         )}
 
-        {/* Highlights Grid */}
+        {/* Highlights - Sorted by upload time, displayed horizontally */}
         {!loading && highlights.length > 0 ? (
           <div>
-            {highlights.map((leagueGroup) => (
-              <div key={leagueGroup.league.id} className="mb-12">
-                <h2 className="text-2xl font-bold text-white mb-6">
-                  {leagueGroup.league.name}
-                </h2>
-                {leagueGroup.matches.map((match) => (
-                  <div key={match.id} className="mb-8">
-                    <h3 className="text-lg font-semibold text-slate-300 mb-4">
-                      {match.home_team} vs {match.away_team}
-                    </h3>
-                    {match.highlights.length > 0 ? (
-                      <HighlightsGrid highlights={match.highlights} />
-                    ) : (
-                      <p className="text-slate-500">No highlights available for this match</p>
-                    )}
+            {highlights.map((leagueGroup) => {
+              // Flatten all highlights with match info, sort by published_at (newest first)
+              const allHighlights = leagueGroup.matches
+                .flatMap((match) =>
+                  match.highlights.map((hl) => ({
+                    ...hl,
+                    matchInfo: `${match.home_team} vs ${match.away_team}`,
+                    matchDate: match.match_date,
+                    matchTime: match.match_time,
+                  }))
+                )
+                .sort((a, b) => {
+                  const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
+                  const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
+                  return dateB - dateA;
+                });
+
+              return (
+                <div key={leagueGroup.league.id} className="mb-12">
+                  <h2 className="text-2xl font-bold text-white mb-6">
+                    {leagueGroup.league.name} — {allHighlights.length} highlights
+                  </h2>
+                  {/* Horizontal scrollable row */}
+                  <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                    {allHighlights.map((hl) => (
+                      <div key={hl.id} className="flex-shrink-0 w-[340px] sm:w-[380px]">
+                        <HighlightsGrid highlights={[hl]} showMatchInfo />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         ) : !loading ? (
           <div className="text-center py-12">

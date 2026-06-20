@@ -171,7 +171,7 @@ export default function Header() {
             <button
               onClick={() => setShowSportsMenu(!showSportsMenu)}
               className={`group relative flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm ${
-                showSportsMenu || ['football', 'nfl', 'mlb', 'fifa', 'ipl', 'nba', 'tennis', 'nhl', 'pga', 'ufc'].some(sport => isActive(`/${sport}`))
+                showSportsMenu || ['football', 'nfl', 'mlb', 'ipl', 'nba', 'tennis', 'nhl', 'pga', 'ufc'].some(sport => isActive(`/${sport}`))
                   ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/40'
                   : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20'
               }`}
@@ -190,7 +190,6 @@ export default function Header() {
                     { name: 'Football', path: '/football', color: 'blue' },
                     { name: 'NFL', path: '/nfl', color: 'red' },
                     { name: 'MLB', path: '/mlb', color: 'green' },
-                    { name: 'FIFA', path: '/fifa', color: 'amber' },
                     { name: 'IPL', path: '/ipl', color: 'indigo' },
                     { name: 'NBA', path: '/nba', color: 'orange' },
                     { name: 'Tennis', path: '/tennis', color: 'green' },
@@ -215,6 +214,30 @@ export default function Header() {
               </div>
             )}
           </div>
+
+          <Link
+            href="/fifa"
+            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
+              isActive('/fifa')
+                ? 'bg-gradient-to-r from-amber-600 via-yellow-500 to-orange-500 text-white shadow-xl shadow-amber-500/40'
+                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/20'
+            }`}
+            title="FIFA World Cup"
+          >
+            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
+              isActive('/fifa')
+                ? 'bg-white/20'
+                : 'bg-amber-500/20 group-hover:bg-amber-500/30'
+            }`}>
+              <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110 ${
+                isActive('/fifa') ? 'text-yellow-200' : 'text-amber-400'
+              }`} />
+            </div>
+            <span className="font-bold tracking-wide text-center sm:text-left">FIFA</span>
+            {isActive('/fifa') && (
+              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
+            )}
+          </Link>
           
           <Link
             href="/music"
@@ -247,7 +270,7 @@ export default function Header() {
                 ? 'bg-gradient-to-r from-orange-600 via-red-500 to-pink-500 text-white shadow-xl shadow-orange-500/40'
                 : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/20'
             }`}
-            title="Tamil Movie Soundtracks"
+            title="Admin"
           >
             <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
               isActive('/tamil-movies')
@@ -258,7 +281,7 @@ export default function Header() {
                 isActive('/tamil-movies') ? 'text-orange-200' : 'text-orange-400 group-hover:scale-110'
               }`} />
             </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">Tamil</span>
+            <span className="font-bold tracking-wide text-center sm:text-left">Admin</span>
             {isActive('/tamil-movies') && (
               <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
             )}
