@@ -507,8 +507,8 @@ async def fetch_fifa_highlights(background_tasks: BackgroundTasks) -> Dict[str, 
             youtube_service = get_youtube_service()
             db = next(get_db())
             
-            # FOX Sports channel uploads playlist ID
-            FOX_SPORTS_UPLOADS_PLAYLIST = "UUwNqHDsnBCKT-olwJwIFyfg"
+            # FOX Sports YouTube channel ID
+            FOX_SPORTS_CHANNEL_ID = "UCwNqHDsnBCKT-olwJwIFyfg"
             
             # Get all FIFA World Cup matches without highlights
             fifa_league = db.query(models.League).filter(
@@ -541,24 +541,25 @@ async def fetch_fifa_highlights(background_tasks: BackgroundTasks) -> Dict[str, 
             highlights_found = 0
             for match in matches_needing_highlights:
                 try:
-                    # Search in FOX Sports channel for "{Team1} vs {Team2} Extended Highlights"
+                    # Use search().list() with channelId to search WITHIN FOX Sports channel only
+                    # search().list() supports q= parameter - costs 100 units but scoped to 1 channel
                     query = f"{match.home_team} vs {match.away_team} Extended Highlights"
-                    print(f"[FIFA] Searching FOX Sports for: {query}")
+                    print(f"[FIFA] Searching FOX Sports channel for: {query}")
                     
-                    # Search FOX Sports channel uploads playlist
-                    request = youtube_service.youtube.playlistItems().list(
+                    response = youtube_service.youtube.search().list(
                         part='snippet',
-                        playlistId=FOX_SPORTS_UPLOADS_PLAYLIST,
-                        maxResults=50,
-                        q=query  # Search within the playlist
-                    )
+                        channelId=FOX_SPORTS_CHANNEL_ID,
+                        q=query,
+                        type='video',
+                        maxResults=5,
+                        order='relevance'
+                    ).execute()
                     
-                    response = request.execute()
                     videos_added = 0
                     
                     for item in response.get('items', []):
                         snippet = item['snippet']
-                        video_id = snippet['resourceId']['videoId']
+                        video_id = item['id']['videoId']
                         title = snippet['title']
                         
                         # Strict filter: must contain both team names AND "extended highlights"
@@ -582,18 +583,18 @@ async def fetch_fifa_highlights(background_tasks: BackgroundTasks) -> Dict[str, 
                                     description=snippet.get('description', ''),
                                     thumbnail_url=snippet['thumbnails'].get('high', {}).get('url') or
                                                   snippet['thumbnails'].get('medium', {}).get('url'),
-                                    channel_title=snippet['channelTitle'],
+                                    channel_title=snippet.get('channelTitle', 'FOX Sports'),
                                     published_at=snippet.get('publishedAt')
                                 )
                                 db.add(new_highlight)
                                 videos_added += 1
                                 highlights_found += 1
-                                print(f"[FIFA] ✓ Added from FOX: {title[:60]}...")
+                                print(f"[FIFA] ✓ Added from FOX Sports: {title[:70]}")
                     
                     if videos_added > 0:
                         db.commit()
                     else:
-                        print(f"[FIFA] ✗ No Extended Highlights found in FOX Sports for {match.home_team} vs {match.away_team}")
+                        print(f"[FIFA] ✗ No 'Extended Highlights' found in FOX Sports for {match.home_team} vs {match.away_team}")
                         
                 except HttpError as e:
                     if 'quotaExceeded' in str(e):
