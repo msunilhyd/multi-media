@@ -421,6 +421,67 @@ async def trigger_prefetch_matches(background_tasks: BackgroundTasks):
     }
 
 
+@router.post("/fix-fifa-match-dates")
+def fix_fifa_match_dates(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """
+    Correct wrong match dates in DB based on official FIFA 2026 schedule.
+    Also removes duplicate matches caused by old wrong-date entries.
+    """
+    from datetime import date as date_type
+
+    fifa_league = db.query(models.League).filter(models.League.slug == "fifa-world-cup").first()
+    if not fifa_league:
+        return {"success": False, "error": "FIFA league not found"}
+
+    # Map of (home_team, away_team) -> correct date
+    correct_dates = {
+        ("Tunisia", "Japan"): date_type(2026, 6, 20),
+        ("Ecuador", "Curaçao"): date_type(2026, 6, 20),
+        ("Netherlands", "Sweden"): date_type(2026, 6, 20),
+        ("Germany", "Côte d'Ivoire"): date_type(2026, 6, 20),
+        ("Germany", "Ivory Coast"): date_type(2026, 6, 20),
+        ("Türkiye", "Paraguay"): date_type(2026, 6, 15),
+        ("USA", "Australia"): date_type(2026, 6, 15),
+        ("Scotland", "Brazil"): date_type(2026, 6, 24),
+        ("Morocco", "Haiti"): date_type(2026, 6, 24),
+    }
+
+    updated = 0
+    deleted = 0
+
+    for (home, away), correct_date in correct_dates.items():
+        matches = db.query(models.Match).filter(
+            models.Match.league_id == fifa_league.id,
+            models.Match.home_team == home,
+            models.Match.away_team == away
+        ).order_by(models.Match.match_date).all()
+
+        if len(matches) > 1:
+            # Keep the one with the correct date or the first one; delete duplicates
+            keeper = next((m for m in matches if m.match_date == correct_date), matches[0])
+            keeper.match_date = correct_date
+            keeper.status = "finished" if correct_date <= date_type(2026, 6, 21) else "scheduled"
+            db.flush()
+            for dup in matches:
+                if dup.id != keeper.id:
+                    db.query(models.Highlight).filter(models.Highlight.match_id == dup.id).delete()
+                    db.delete(dup)
+                    deleted += 1
+            updated += 1
+        elif len(matches) == 1 and matches[0].match_date != correct_date:
+            matches[0].match_date = correct_date
+            matches[0].status = "finished" if correct_date <= date_type(2026, 6, 21) else "scheduled"
+            updated += 1
+
+    db.commit()
+    return {
+        "success": True,
+        "dates_corrected": updated,
+        "duplicates_removed": deleted,
+        "message": f"Corrected {updated} match dates, removed {deleted} duplicates"
+    }
+
+
 @router.post("/fix-fifa-match-statuses")
 def fix_fifa_match_statuses(db: Session = Depends(get_db)) -> Dict[str, Any]:
     """Mark past FIFA World Cup matches as 'finished' if they're still 'scheduled'."""

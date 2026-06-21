@@ -192,7 +192,7 @@ export default function FIFAPage() {
         {!loading && highlights.length > 0 ? (
           <div>
             {highlights.map((leagueGroup) => {
-              // Flatten all highlights with match info, sort by published_at (newest first)
+              // Flatten all highlights with match info, sort by match_date (latest match first)
               const allHighlights = leagueGroup.matches
                 .flatMap((match) =>
                   match.highlights.map((hl) => ({
@@ -203,8 +203,8 @@ export default function FIFAPage() {
                   }))
                 )
                 .sort((a, b) => {
-                  const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
-                  const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
+                  const dateA = a.matchDate ? new Date(a.matchDate).getTime() : 0;
+                  const dateB = b.matchDate ? new Date(b.matchDate).getTime() : 0;
                   return dateB - dateA;
                 });
 
