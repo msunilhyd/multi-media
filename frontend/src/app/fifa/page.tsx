@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Calendar, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from '@/components/Header';
-import HighlightsGrid from '@/components/HighlightsGrid';
+import VideoCard from '@/components/VideoCard';
 import Toast from '@/components/Toast';
 import { fetchHighlightsGroupedByDate } from '@/lib/api';
 import type { HighlightsGroupedByLeague } from '@/lib/api';
@@ -213,12 +213,10 @@ export default function FIFAPage() {
                   <h2 className="text-2xl font-bold text-white mb-6">
                     {leagueGroup.league.name} — {allHighlights.length} highlights
                   </h2>
-                  {/* Horizontal scrollable row */}
-                  <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                  {/* 4-column grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {allHighlights.map((hl) => (
-                      <div key={hl.id} className="flex-shrink-0 w-[340px] sm:w-[380px]">
-                        <HighlightsGrid highlights={[hl]} showMatchInfo />
-                      </div>
+                      <VideoCard key={hl.id} highlight={hl} showMatchInfo />
                     ))}
                   </div>
                 </div>
