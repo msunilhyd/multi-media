@@ -77,8 +77,6 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
     }
   };
 
-  const thumbnailSrc = thumbnail_url || `https://img.youtube.com/vi/${youtube_video_id}/hqdefault.jpg`;
-
   const handlePlay = async () => {
     setIsPlaying(true);
     // Wait for iframe to render, then request fullscreen
@@ -251,16 +249,12 @@ export default function VideoCard({ highlight, showMatchInfo = false }: VideoCar
       className="group cursor-pointer rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow bg-white dark:bg-gray-800"
       onClick={handlePlay}
     >
-      <div className="relative aspect-video">
-        <img
-          src={thumbnailSrc}
-          alt={title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center">
-          <div className="w-14 h-14 bg-red-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+      <div className="relative aspect-video bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center gap-3">
+          <div className="w-14 h-14 bg-red-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
             <Play className="w-7 h-7 text-white fill-white ml-1" />
           </div>
+          <p className="text-white/80 text-xs font-medium leading-snug line-clamp-2 max-w-[90%]">{title}</p>
         </div>
         {duration && (
           <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
