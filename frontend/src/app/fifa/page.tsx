@@ -1,12 +1,88 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Calendar, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import Header from '@/components/Header';
 import VideoCard from '@/components/VideoCard';
 import Toast from '@/components/Toast';
 import { fetchHighlightsGroupedByDate } from '@/lib/api';
 import type { HighlightsGroupedByLeague } from '@/lib/api';
+
+// FIFA World Cup 2026 Group Standings (updated manually as tournament progresses)
+const FIFA_GROUPS: { group: string; teams: { name: string; mp: number; w: number; d: number; l: number; gf: number; ga: number; pts: number; flag: string }[] }[] = [
+  { group: 'A', teams: [
+    { name: 'Mexico', mp: 2, w: 2, d: 0, l: 0, gf: 4, ga: 1, pts: 6, flag: '🇲🇽' },
+    { name: 'South Korea', mp: 2, w: 1, d: 0, l: 1, gf: 2, ga: 2, pts: 3, flag: '🇰🇷' },
+    { name: 'Czechia', mp: 2, w: 0, d: 1, l: 1, gf: 1, ga: 2, pts: 1, flag: '🇨🇿' },
+    { name: 'South Africa', mp: 2, w: 0, d: 1, l: 1, gf: 1, ga: 3, pts: 1, flag: '🇿🇦' },
+  ]},
+  { group: 'B', teams: [
+    { name: 'Canada', mp: 2, w: 2, d: 0, l: 0, gf: 8, ga: 1, pts: 6, flag: '🇨🇦' },
+    { name: 'Switzerland', mp: 2, w: 1, d: 0, l: 1, gf: 4, ga: 2, pts: 3, flag: '🇨🇭' },
+    { name: 'Bosnia & Herz.', mp: 2, w: 0, d: 0, l: 2, gf: 2, ga: 8, pts: 0, flag: '🇧🇦' },
+    { name: 'Qatar', mp: 2, w: 0, d: 0, l: 2, gf: 0, ga: 3, pts: 0, flag: '🇶🇦' },
+  ]},
+  { group: 'C', teams: [
+    { name: 'Morocco', mp: 2, w: 1, d: 0, l: 1, gf: 2, ga: 1, pts: 3, flag: '🇲🇦' },
+    { name: 'Brazil', mp: 2, w: 1, d: 0, l: 1, gf: 4, ga: 2, pts: 3, flag: '🇧🇷' },
+    { name: 'Scotland', mp: 2, w: 0, d: 0, l: 2, gf: 0, ga: 2, pts: 0, flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+    { name: 'Haiti', mp: 2, w: 0, d: 0, l: 2, gf: 0, ga: 1, pts: 0, flag: '🇭🇹' },
+  ]},
+  { group: 'D', teams: [
+    { name: 'Paraguay', mp: 2, w: 1, d: 0, l: 1, gf: 2, ga: 1, pts: 3, flag: '🇵🇾' },
+    { name: 'USA', mp: 2, w: 1, d: 0, l: 1, gf: 3, ga: 2, pts: 3, flag: '🇺🇸' },
+    { name: 'Türkiye', mp: 2, w: 1, d: 0, l: 1, gf: 1, ga: 2, pts: 3, flag: '🇹🇷' },
+    { name: 'Australia', mp: 2, w: 0, d: 0, l: 2, gf: 1, ga: 2, pts: 0, flag: '🇦🇺' },
+  ]},
+  { group: 'E', teams: [
+    { name: 'Germany', mp: 2, w: 2, d: 0, l: 0, gf: 6, ga: 1, pts: 6, flag: '🇩🇪' },
+    { name: 'Ecuador', mp: 2, w: 0, d: 2, l: 0, gf: 0, ga: 0, pts: 2, flag: '🇪🇨' },
+    { name: 'Ivory Coast', mp: 2, w: 0, d: 1, l: 1, gf: 1, ga: 3, pts: 1, flag: '🇨🇮' },
+    { name: 'Curaçao', mp: 2, w: 0, d: 1, l: 1, gf: 0, ga: 3, pts: 1, flag: '🇨🇼' },
+  ]},
+  { group: 'F', teams: [
+    { name: 'Netherlands', mp: 2, w: 2, d: 0, l: 0, gf: 6, ga: 1, pts: 6, flag: '🇳🇱' },
+    { name: 'Japan', mp: 2, w: 1, d: 0, l: 1, gf: 4, ga: 1, pts: 3, flag: '🇯🇵' },
+    { name: 'Sweden', mp: 2, w: 0, d: 0, l: 2, gf: 2, ga: 5, pts: 0, flag: '🇸🇪' },
+    { name: 'Tunisia', mp: 2, w: 0, d: 0, l: 2, gf: 0, ga: 5, pts: 0, flag: '🇹🇳' },
+  ]},
+  { group: 'G', teams: [
+    { name: 'Belgium', mp: 2, w: 1, d: 0, l: 1, gf: 3, ga: 2, pts: 3, flag: '🇧🇪' },
+    { name: 'New Zealand', mp: 2, w: 1, d: 0, l: 1, gf: 2, ga: 2, pts: 3, flag: '🇳🇿' },
+    { name: 'Iran', mp: 2, w: 1, d: 0, l: 1, gf: 2, ga: 3, pts: 3, flag: '🇮🇷' },
+    { name: 'Egypt', mp: 2, w: 0, d: 0, l: 2, gf: 1, ga: 1, pts: 0, flag: '🇪🇬' },
+  ]},
+  { group: 'H', teams: [
+    { name: 'Spain', mp: 2, w: 2, d: 0, l: 0, gf: 5, ga: 1, pts: 6, flag: '🇪🇸' },
+    { name: 'Uruguay', mp: 2, w: 1, d: 0, l: 1, gf: 3, ga: 2, pts: 3, flag: '🇺🇾' },
+    { name: 'Saudi Arabia', mp: 2, w: 0, d: 0, l: 2, gf: 1, ga: 3, pts: 0, flag: '🇸🇦' },
+    { name: 'Cabo Verde', mp: 2, w: 0, d: 0, l: 2, gf: 0, ga: 3, pts: 0, flag: '🇨🇻' },
+  ]},
+  { group: 'I', teams: [
+    { name: 'France', mp: 2, w: 2, d: 0, l: 0, gf: 5, ga: 0, pts: 6, flag: '🇫🇷' },
+    { name: 'Norway', mp: 2, w: 0, d: 1, l: 1, gf: 1, ga: 2, pts: 1, flag: '🇳🇴' },
+    { name: 'Senegal', mp: 2, w: 0, d: 1, l: 1, gf: 0, ga: 2, pts: 1, flag: '🇸🇳' },
+    { name: 'Iraq', mp: 2, w: 0, d: 0, l: 2, gf: 0, ga: 2, pts: 0, flag: '🇮🇶' },
+  ]},
+  { group: 'J', teams: [
+    { name: 'Argentina', mp: 2, w: 2, d: 0, l: 0, gf: 5, ga: 1, pts: 6, flag: '🇦🇷' },
+    { name: 'Algeria', mp: 2, w: 1, d: 0, l: 1, gf: 2, ga: 2, pts: 3, flag: '🇩🇿' },
+    { name: 'Austria', mp: 2, w: 0, d: 1, l: 1, gf: 1, ga: 2, pts: 1, flag: '🇦🇹' },
+    { name: 'Jordan', mp: 2, w: 0, d: 1, l: 1, gf: 0, ga: 3, pts: 1, flag: '🇯🇴' },
+  ]},
+  { group: 'K', teams: [
+    { name: 'Colombia', mp: 2, w: 1, d: 0, l: 1, gf: 4, ga: 2, pts: 3, flag: '🇨🇴' },
+    { name: 'Portugal', mp: 2, w: 1, d: 1, l: 0, gf: 2, ga: 1, pts: 4, flag: '🇵🇹' },
+    { name: 'Uzbekistan', mp: 2, w: 0, d: 1, l: 1, gf: 2, ga: 3, pts: 1, flag: '🇺🇿' },
+    { name: 'Congo DR', mp: 2, w: 0, d: 0, l: 2, gf: 1, ga: 3, pts: 0, flag: '🇨🇩' },
+  ]},
+  { group: 'L', teams: [
+    { name: 'England', mp: 2, w: 2, d: 0, l: 0, gf: 8, ga: 1, pts: 6, flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+    { name: 'Croatia', mp: 2, w: 0, d: 1, l: 1, gf: 2, ga: 5, pts: 1, flag: '🇭🇷' },
+    { name: 'Ghana', mp: 2, w: 0, d: 1, l: 1, gf: 1, ga: 4, pts: 1, flag: '🇬🇭' },
+    { name: 'Panama', mp: 2, w: 0, d: 0, l: 2, gf: 0, ga: 1, pts: 0, flag: '🇵🇦' },
+  ]},
+];
 
 const getTodayString = () => {
   const today = new Date();
@@ -32,6 +108,7 @@ export default function FIFAPage() {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<'today' | 'yesterday' | 'week' | 'custom'>('today');
+  const [showStandings, setShowStandings] = useState(true);
 
   const loadHighlights = async (date: string) => {
     try {
@@ -169,6 +246,69 @@ export default function FIFAPage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Group Standings Table */}
+        <div className="mb-8 bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+          <button
+            onClick={() => setShowStandings(!showStandings)}
+            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🏆</span>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-white">Group Standings</h2>
+              <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">After Matchday 2</span>
+            </div>
+            {showStandings ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+          </button>
+
+          {showStandings && (
+            <div className="p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {FIFA_GROUPS.map(({ group, teams }) => (
+                  <div key={group} className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <div className="bg-gradient-to-r from-amber-500 to-yellow-400 px-3 py-2">
+                      <h3 className="font-bold text-gray-900 text-sm">Group {group}</h3>
+                    </div>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                          <th className="text-left px-2 py-1.5 font-medium w-[40%]">Team</th>
+                          <th className="text-center px-1 py-1.5 font-medium">MP</th>
+                          <th className="text-center px-1 py-1.5 font-medium">W</th>
+                          <th className="text-center px-1 py-1.5 font-medium">D</th>
+                          <th className="text-center px-1 py-1.5 font-medium">L</th>
+                          <th className="text-center px-1 py-1.5 font-medium">GD</th>
+                          <th className="text-center px-1 py-1.5 font-semibold text-gray-700 dark:text-white">Pts</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...teams].sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga)).map((team, idx) => (
+                          <tr
+                            key={team.name}
+                            className={`border-t border-gray-100 dark:border-gray-800 ${
+                              idx < 2 ? 'bg-green-50 dark:bg-green-900/10' : ''
+                            }`}
+                          >
+                            <td className="px-2 py-1.5 font-medium text-gray-800 dark:text-gray-200 truncate">
+                              <span className="mr-1">{team.flag}</span>{team.name}
+                            </td>
+                            <td className="text-center px-1 py-1.5 text-gray-600 dark:text-gray-400">{team.mp}</td>
+                            <td className="text-center px-1 py-1.5 text-gray-600 dark:text-gray-400">{team.w}</td>
+                            <td className="text-center px-1 py-1.5 text-gray-600 dark:text-gray-400">{team.d}</td>
+                            <td className="text-center px-1 py-1.5 text-gray-600 dark:text-gray-400">{team.l}</td>
+                            <td className="text-center px-1 py-1.5 text-gray-600 dark:text-gray-400">{team.gf - team.ga > 0 ? '+' : ''}{team.gf - team.ga}</td>
+                            <td className="text-center px-1 py-1.5 font-bold text-gray-900 dark:text-white">{team.pts}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-3 text-center">🟢 Top 2 teams advance to Round of 32</p>
+            </div>
+          )}
         </div>
 
         {/* Error Message */}
