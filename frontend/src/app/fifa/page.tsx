@@ -78,9 +78,8 @@ export default function FIFAPage() {
     setFilterMode('week');
     loadHighlights(sevenDaysAgo);
 
-    // Fetch live standings from ESPN via our backend
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
-    fetch(`${API_BASE}/api/standings/fifa-world-cup`)
+    // Fetch live standings via Next.js API proxy route
+    fetch('/api/standings/fifa-world-cup')
       .then(r => r.json())
       .then((data: StandingGroup[]) => setGroups(data))
       .catch(() => setGroups([]))
