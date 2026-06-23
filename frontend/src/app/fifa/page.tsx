@@ -241,7 +241,7 @@ export default function FIFAPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {teams.map((team) => (
+                          {[...teams].sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf).map((team) => (
                             <tr
                               key={team.name}
                               className={`border-t border-gray-100 dark:border-gray-800 ${
