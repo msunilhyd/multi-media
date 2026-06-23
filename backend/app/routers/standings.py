@@ -1,5 +1,6 @@
+import httpx
 from fastapi import APIRouter, HTTPException
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from ..football_api import get_football_api
 
 router = APIRouter(prefix="/api/standings", tags=["standings"])
@@ -15,6 +16,54 @@ LEAGUE_ESPN_MAP = {
     "champions-league": "uefa.champions",
     "europa-league": "uefa.europa",
 }
+
+
+@router.get("/fifa-world-cup")
+async def get_fifa_standings() -> List[Dict]:
+    """Fetch live FIFA World Cup 2026 group standings from ESPN (no API key required)."""
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                "https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings",
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
+            if resp.status_code != 200:
+                raise HTTPException(status_code=502, detail="ESPN API unavailable")
+            data = resp.json()
+
+        groups = []
+        for child in data.get("children", []):
+            group_name = child.get("name", "")
+            entries = child.get("standings", {}).get("entries", [])
+            teams = []
+            for entry in entries:
+                team = entry.get("team", {})
+                note = entry.get("note", {})
+                stats = {s["name"]: s.get("value", 0) for s in entry.get("stats", []) if "value" in s}
+                logo = team.get("logos", [{}])[0].get("href", "") if team.get("logos") else ""
+                teams.append({
+                    "name": team.get("displayName", ""),
+                    "abbr": team.get("abbreviation", ""),
+                    "logo": logo,
+                    "mp": int(stats.get("gamesPlayed", 0)),
+                    "w": int(stats.get("wins", 0)),
+                    "d": int(stats.get("ties", 0)),
+                    "l": int(stats.get("losses", 0)),
+                    "gf": int(stats.get("pointsFor", 0)),
+                    "ga": int(stats.get("pointsAgainst", 0)),
+                    "gd": int(stats.get("pointDifferential", 0)),
+                    "pts": int(stats.get("points", 0)),
+                    "advancing": note.get("color", "") in ("#81D6AC", "#green") or "Advance" in note.get("description", ""),
+                    "note": note.get("description", ""),
+                })
+            groups.append({"group": group_name, "teams": teams})
+
+        return groups
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{league_slug}")
