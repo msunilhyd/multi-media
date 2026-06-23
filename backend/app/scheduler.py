@@ -318,7 +318,7 @@ async def prefetch_upcoming_matches():
                 stale_fifa = db.query(models.Match).filter(
                     models.Match.league_id == fifa_league.id,
                     models.Match.status == "scheduled",
-                    models.Match.match_date < today
+                    models.Match.match_date <= today
                 ).all()
                 if stale_fifa:
                     for m in stale_fifa:

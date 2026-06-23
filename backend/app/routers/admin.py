@@ -496,11 +496,11 @@ def fix_fifa_match_statuses(db: Session = Depends(get_db)) -> Dict[str, Any]:
     if not fifa_league:
         return {"success": False, "error": "FIFA World Cup league not found"}
     
-    # Find scheduled matches with match_date before today
+    # Find scheduled matches with match_date up to and including today
     stale = db.query(models.Match).filter(
         models.Match.league_id == fifa_league.id,
         models.Match.status == "scheduled",
-        models.Match.match_date < today
+        models.Match.match_date <= today
     ).all()
     
     updated = 0
