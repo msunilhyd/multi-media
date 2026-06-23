@@ -658,7 +658,7 @@ async def fetch_fifa_highlights(background_tasks: BackgroundTasks) -> Dict[str, 
                         video_id = item['id']['videoId']
                         title = snippet['title']
                         
-                        # Strict filter: must contain both team names AND "extended highlights"
+                        # Filter: must contain both team names AND "extended highlights"
                         title_lower = title.lower()
                         home_in_title = match.home_team.lower() in title_lower
                         away_in_title = match.away_team.lower() in title_lower
@@ -690,7 +690,7 @@ async def fetch_fifa_highlights(background_tasks: BackgroundTasks) -> Dict[str, 
                     if videos_added > 0:
                         db.commit()
                     else:
-                        print(f"[FIFA] ✗ No 'Extended Highlights' found in FOX Sports for {match.home_team} vs {match.away_team}")
+                        print(f"[FIFA] ✗ No highlights found in FOX Sports for {match.home_team} vs {match.away_team}")
                         
                 except HttpError as e:
                     if 'quotaExceeded' in str(e):
