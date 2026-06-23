@@ -635,6 +635,24 @@ async def fetch_highlights_for_today():
     max_retry_attempts = 12  # Stop after 12 attempts (24 hours with 2-hour intervals)
     
     try:
+        # Auto-fix FIFA match statuses before fetching highlights
+        # (FIFA matches stay "scheduled" until explicitly marked finished)
+        try:
+            fifa_league = db.query(models.League).filter(models.League.slug == "fifa-world-cup").first()
+            if fifa_league:
+                stale = db.query(models.Match).filter(
+                    models.Match.league_id == fifa_league.id,
+                    models.Match.status == "scheduled",
+                    models.Match.match_date <= today
+                ).all()
+                if stale:
+                    for m in stale:
+                        m.status = "finished"
+                    db.commit()
+                    print(f"[Scheduler] ✓ Auto-fixed {len(stale)} FIFA match statuses before highlight fetch")
+        except Exception as e:
+            print(f"[Scheduler] Warning: FIFA status fix failed: {e}")
+
         # Get today's finished matches without highlights
         todays_finished_matches = db.query(models.Match).filter(
             models.Match.match_date == today,
