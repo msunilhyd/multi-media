@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Form
 from sqlalchemy.orm import Session
 from typing import Dict, Any
 from datetime import date, timedelta
@@ -1229,6 +1229,110 @@ def remove_duplicate_highlights(db: Session = Depends(get_db)) -> Dict[str, Any]
     except Exception as e:
         db.rollback()
         print(f"[Admin] Error removing duplicates: {e}")
+        result["error"] = str(e)
+    
+    return result
+
+
+@router.post("/clear-all-songs")
+def clear_all_songs(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Remove all songs from the database"""
+    
+    result = {
+        "message": "All songs cleared successfully",
+        "songs_deleted": 0
+    }
+    
+    try:
+        from sqlalchemy import text
+        
+        # Delete all songs from the songs table
+        delete_result = db.execute(text("DELETE FROM songs"))
+        result["songs_deleted"] = delete_result.rowcount
+        
+        # Reset the sequence if using PostgreSQL
+        db.execute(text("ALTER SEQUENCE songs_id_seq RESTART WITH 1"))
+        
+        db.commit()
+        print(f"[Admin] Cleared {result['songs_deleted']} songs from database")
+        
+    except Exception as e:
+        db.rollback()
+        print(f"[Admin] Error clearing songs: {e}")
+        result["error"] = str(e)
+    
+    return result
+
+
+@router.post("/add-movie-songs")
+def add_movie_songs(
+    movie: str = Form(...),
+    urls: str = Form(...),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """Add songs for a movie from YouTube URLs"""
+    
+    result = {
+        "message": f"Songs added for {movie}",
+        "songs_added": 0,
+        "failed": []
+    }
+    
+    try:
+        from sqlalchemy import text
+        import re
+        
+        # Parse URLs (comma or newline separated)
+        url_list = re.split(r'[,\n]+', urls.strip())
+        url_list = [url.strip() for url in url_list if url.strip()]
+        
+        # Get or create artist
+        artist_result = db.execute(text("SELECT id FROM artists WHERE name = :name"), {"name": "Various Artists"})
+        artist_row = artist_result.fetchone()
+        
+        if not artist_row:
+            # Create artist
+            db.execute(text("INSERT INTO artists (name) VALUES (:name)"), {"name": "Various Artists"})
+            artist_result = db.execute(text("SELECT id FROM artists WHERE name = :name"), {"name": "Various Artists"})
+            artist_row = artist_result.fetchone()
+        
+        artist_id = artist_row.id
+        
+        # Add each song
+        for url in url_list:
+            try:
+                # Extract video ID from URL
+                video_id_match = re.search(r'youtube\.com/watch\?v=([^&]+)', url)
+                if not video_id_match:
+                    result["failed"].append({"url": url, "error": "Invalid YouTube URL"})
+                    continue
+                
+                video_id = video_id_match.group(1)
+                
+                # Insert song
+                db.execute(text("""
+                    INSERT INTO songs (title, language, year, artist_id, youtube_video_id, album)
+                    VALUES (:title, :language, :year, :artist_id, :video_id, :album)
+                """), {
+                    "title": f"{movie} Song",
+                    "language": "HINDI",
+                    "year": "2024",
+                    "artist_id": artist_id,
+                    "video_id": video_id,
+                    "album": movie
+                })
+                
+                result["songs_added"] += 1
+                
+            except Exception as e:
+                result["failed"].append({"url": url, "error": str(e)})
+        
+        db.commit()
+        print(f"[Admin] Added {result['songs_added']} songs for {movie}")
+        
+    except Exception as e:
+        db.rollback()
+        print(f"[Admin] Error adding songs: {e}")
         result["error"] = str(e)
     
     return result
