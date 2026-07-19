@@ -66,4 +66,4 @@ def root():
 @app.get("/api/health")
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "version": "1.0.0"}
