@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
-import { Trophy, Music, Home, Sparkles, Disc3, User, LogOut, Settings, Smile, Mail, ChevronDown } from 'lucide-react';
+import { Trophy, Home, Sparkles, Disc3, User, LogOut, Settings, Smile, Mail, ChevronDown } from 'lucide-react';
 import AuthModal from './AuthModal';
 
 export default function Header() {
@@ -259,30 +259,6 @@ export default function Header() {
             </div>
             <span className="font-bold tracking-wide text-center sm:text-left">Music</span>
             {isActive('/music') && (
-              <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
-            )}
-          </Link>
-          
-          <Link
-            href="/tamil-movies"
-            className={`group relative flex flex-col sm:flex-row items-center gap-1 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl transition-all duration-300 font-medium cursor-pointer pointer-events-auto text-xs sm:text-sm flex-shrink-0 sm:flex-shrink ${
-              isActive('/tamil-movies')
-                ? 'bg-gradient-to-r from-orange-600 via-red-500 to-pink-500 text-white shadow-xl shadow-orange-500/40'
-                : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/20'
-            }`}
-            title="Linus"
-          >
-            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
-              isActive('/tamil-movies')
-                ? 'bg-white/20'
-                : 'bg-orange-500/20 group-hover:bg-orange-500/30'
-            }`}>
-              <Music className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${
-                isActive('/tamil-movies') ? 'text-orange-200' : 'text-orange-400 group-hover:scale-110'
-              }`} />
-            </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">Linus</span>
-            {isActive('/tamil-movies') && (
               <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
             )}
           </Link>
