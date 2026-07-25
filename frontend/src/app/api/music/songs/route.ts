@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Use BACKEND_API_URL (server-only) with fallback to NEXT_PUBLIC_API_URL for compatibility
 const BACKEND_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const FETCH_TIMEOUT_MS = 10000; // 10 second timeout
+export const maxDuration = 30;
+
+const FETCH_TIMEOUT_MS = 30000; // 30 second timeout
 
 export async function GET(request: NextRequest) {
   const controller = new AbortController();

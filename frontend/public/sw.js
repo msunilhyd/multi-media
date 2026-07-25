@@ -1,6 +1,6 @@
 // Service Worker for Linus Playlists PWA
-const CACHE_NAME = 'linus-playlists-v1';
-const RUNTIME_CACHE = 'linus-runtime-cache';
+const CACHE_NAME = 'linus-playlists-v2';
+const RUNTIME_CACHE = 'linus-runtime-cache-v2';
 
 const PRECACHE_URLS = [
   '/',
@@ -63,8 +63,8 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => {
           if (response.status === 200) {
-            const cache = caches.open(RUNTIME_CACHE);
-            cache.then((c) => c.put(request, response.clone()));
+            const responseToCache = response.clone();
+            event.waitUntil(caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, responseToCache)));
           }
           return response;
         })
@@ -86,8 +86,8 @@ self.addEventListener('fetch', (event) => {
       return fetch(request)
         .then((response) => {
           if (response.status === 200 && (request.destination === 'style' || request.destination === 'script' || request.destination === 'image')) {
-            const cache = caches.open(RUNTIME_CACHE);
-            cache.then((c) => c.put(request, response.clone()));
+            const responseToCache = response.clone();
+            event.waitUntil(caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, responseToCache)));
           }
           return response;
         })
