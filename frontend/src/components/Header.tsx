@@ -270,7 +270,7 @@ export default function Header() {
                 ? 'bg-gradient-to-r from-orange-600 via-red-500 to-pink-500 text-white shadow-xl shadow-orange-500/40'
                 : 'bg-gray-800/80 hover:bg-gray-700 text-gray-200 border border-gray-600 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/20'
             }`}
-            title="Admin"
+            title="Linus"
           >
             <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center transition-all pointer-events-none flex-shrink-0 ${
               isActive('/tamil-movies')
@@ -281,7 +281,7 @@ export default function Header() {
                 isActive('/tamil-movies') ? 'text-orange-200' : 'text-orange-400 group-hover:scale-110'
               }`} />
             </div>
-            <span className="font-bold tracking-wide text-center sm:text-left">Admin</span>
+            <span className="font-bold tracking-wide text-center sm:text-left">Linus</span>
             {isActive('/tamil-movies') && (
               <span className="absolute top-1 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse pointer-events-none"></span>
             )}
