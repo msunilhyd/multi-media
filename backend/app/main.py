@@ -1,14 +1,11 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, Base
 from .routers import leagues, matches, highlights, admin, audio, teams, auth, music, playlists, entertainment, favorites, standings, user_songs, sample_playlists
 from .config import get_settings
 from .scheduler import start_scheduler, shutdown_scheduler
 
 settings = get_settings()
-
-Base.metadata.create_all(bind=engine)
 
 
 @asynccontextmanager
