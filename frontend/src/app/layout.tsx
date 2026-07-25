@@ -5,6 +5,8 @@ import GoogleAnalytics from '@/components/GoogleAnalytics'
 import PWAInstaller from '@/components/PWAInstaller'
 import JsonLd from '@/components/JsonLd'
 
+export const dynamic = 'force-dynamic'
+
 // Use system fonts as fallback to avoid CDN issues during deployment
 const inter = { className: '' }
 const playfair = { variable: '--font-playfair' }
