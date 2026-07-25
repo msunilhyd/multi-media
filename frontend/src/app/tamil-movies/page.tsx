@@ -34,13 +34,19 @@ export default function TamilMoviesPage() {
         if (!playlistsResponse.ok) throw new Error('Failed to load admin playlists');
 
         const playlists: SamplePlaylist[] = await playlistsResponse.json();
-        const details = await Promise.all(
-          playlists.map(async (playlist) => {
-            const response = await fetch(`/api/sample-playlists/${playlist.id}`, { cache: 'no-store' });
-            if (!response.ok) throw new Error(`Failed to load ${playlist.name}`);
-            return response.json() as Promise<SamplePlaylistDetail>;
-          })
-        );
+        const details: SamplePlaylistDetail[] = [];
+
+        for (let index = 0; index < playlists.length; index += 4) {
+          const batch = playlists.slice(index, index + 4);
+          const batchDetails = await Promise.all(
+            batch.map(async (playlist) => {
+              const response = await fetch(`/api/sample-playlists/${playlist.id}`, { cache: 'no-store' });
+              if (!response.ok) throw new Error(`Failed to load ${playlist.name}`);
+              return response.json() as Promise<SamplePlaylistDetail>;
+            })
+          );
+          details.push(...batchDetails);
+        }
 
         setSongs(details.flatMap((playlist) => playlist.songs.map((song) => ({
           id: song.id,
