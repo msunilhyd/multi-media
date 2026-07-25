@@ -42,42 +42,63 @@ class SamplePlaylistDetailSchema(SamplePlaylistSchema):
 
 
 @router.get("", response_model=List[SamplePlaylistSchema])
-async def get_sample_playlists(db: Session = Depends(get_db)):
+def get_sample_playlists(db: Session = Depends(get_db)):
     """Get all sample playlists"""
-    playlists = db.query(models.SamplePlaylist).all()
-    
-    result = []
-    for playlist in playlists:
-        result.append({
+    try:
+        playlists = db.query(models.SamplePlaylist).options(
+            joinedload(models.SamplePlaylist.songs)
+        ).all()
+        return [
+            {
+                "id": playlist.id,
+                "name": playlist.name,
+                "description": playlist.description,
+                "created_at": playlist.created_at,
+                "updated_at": playlist.updated_at,
+                "song_count": len(playlist.songs)
+            }
+            for playlist in playlists
+        ]
+    finally:
+        db.close()
+
+
+@router.get("/{playlist_id}", response_model=SamplePlaylistDetailSchema)
+def get_sample_playlist(playlist_id: int, db: Session = Depends(get_db)):
+    """Get a specific sample playlist with all songs"""
+    try:
+        playlist = db.query(models.SamplePlaylist).options(
+            joinedload(models.SamplePlaylist.songs)
+        ).filter(models.SamplePlaylist.id == playlist_id).first()
+
+        if not playlist:
+            raise HTTPException(status_code=404, detail="Playlist not found")
+
+        return {
             "id": playlist.id,
             "name": playlist.name,
             "description": playlist.description,
             "created_at": playlist.created_at,
             "updated_at": playlist.updated_at,
-            "song_count": len(playlist.songs)
-        })
-    
-    return result
-
-
-@router.get("/{playlist_id}", response_model=SamplePlaylistDetailSchema)
-async def get_sample_playlist(playlist_id: int, db: Session = Depends(get_db)):
-    """Get a specific sample playlist with all songs"""
-    playlist = db.query(models.SamplePlaylist).options(
-        joinedload(models.SamplePlaylist.songs)
-    ).filter(models.SamplePlaylist.id == playlist_id).first()
-    
-    if not playlist:
-        raise HTTPException(status_code=404, detail="Playlist not found")
-    
-    return {
-        "id": playlist.id,
-        "name": playlist.name,
-        "description": playlist.description,
-        "created_at": playlist.created_at,
-        "updated_at": playlist.updated_at,
-        "songs": sorted(playlist.songs, key=lambda x: x.position)
-    }
+            "songs": [
+                {
+                    "id": song.id,
+                    "title": song.title,
+                    "artist": song.artist,
+                    "youtube_video_id": song.youtube_video_id,
+                    "description": song.description,
+                    "thumbnail_url": song.thumbnail_url,
+                    "channel_title": song.channel_title,
+                    "published_at": song.published_at,
+                    "view_count": song.view_count,
+                    "duration": song.duration,
+                    "position": song.position
+                }
+                for song in sorted(playlist.songs, key=lambda song: song.position)
+            ]
+        }
+    finally:
+        db.close()
 
 
 @router.post("", response_model=SamplePlaylistSchema)
