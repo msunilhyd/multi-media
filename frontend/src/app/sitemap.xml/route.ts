@@ -48,6 +48,78 @@ export async function GET() {
     <priority>0.6</priority>
   </url>
 
+  <!-- FIFA World Cup -->
+  <url>
+    <loc>${BASE_URL}/fifa</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- NFL -->
+  <url>
+    <loc>${BASE_URL}/nfl</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- MLB -->
+  <url>
+    <loc>${BASE_URL}/mlb</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- NBA -->
+  <url>
+    <loc>${BASE_URL}/nba</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- IPL -->
+  <url>
+    <loc>${BASE_URL}/ipl</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- NHL -->
+  <url>
+    <loc>${BASE_URL}/nhl</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Tennis -->
+  <url>
+    <loc>${BASE_URL}/tennis</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- PGA -->
+  <url>
+    <loc>${BASE_URL}/pga</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- UFC -->
+  <url>
+    <loc>${BASE_URL}/ufc</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
 </urlset>`;
 
   return new NextResponse(sitemap, {
